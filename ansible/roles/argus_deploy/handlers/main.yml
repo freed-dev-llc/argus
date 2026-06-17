@@ -1,0 +1,9 @@
+---
+- name: Recreate Argus stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ argus_dest }}/deploy"
+    state: present
+    build: policy
+    recreate: always
+  environment:
+    PATH: "{{ argus_docker_path }}"

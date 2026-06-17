@@ -1,0 +1,8 @@
+---
+# Deploy the Argus stack to the hosts in the `argus_deploy` group.
+#   ansible-playbook -i inventory/hosts.yml deploy-argus.yml
+- name: Deploy Argus
+  hosts: argus_deploy
+  gather_facts: true
+  roles:
+    - argus_deploy

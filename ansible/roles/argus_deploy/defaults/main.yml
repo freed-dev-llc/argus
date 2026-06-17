@@ -1,0 +1,19 @@
+---
+# Where the Argus repo lives on the target, and whether this role manages it via git.
+argus_repo_url: "https://github.com/freed-dev-llc/argus.git"
+argus_version: "main"
+argus_dest: "{{ ansible_user_dir }}/argus"
+argus_manage_repo: true
+
+# NetBox image (pin as desired).
+argus_netbox_image: "netboxcommunity/netbox:v4.6-5.0.1"
+
+# UniFi discovery source. Leave blank to reuse whatever is already in the target's
+# deploy/.env (so re-runs don't wipe creds); set via group_vars / Ansible Vault to manage them.
+argus_unifi_url: ""
+argus_unifi_api_token: ""
+argus_unifi_site: "default"
+
+# PATH for the docker CLI on the target (OrbStack/Docker Desktop on macOS aren't on the
+# default non-login PATH). Adjust for Linux hosts if needed.
+argus_docker_path: "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
