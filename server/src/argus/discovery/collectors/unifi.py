@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 
 from ...config import get_settings
-from ..base import Collector, DiscoveredDevice, DiscoveryResult
+from ..base import Collector, DiscoveredClient, DiscoveredDevice, DiscoveryResult
 
 # Coarse NetBox device-role inference from the UniFi model prefix. Best-effort only;
 # the reconcile engine (P2) is responsible for final role assignment.
@@ -83,6 +83,14 @@ class UniFiCollector(Collector):
                 devices = (await _get(client, f"{base}/sites/{site['id']}/devices")).get(
                     "data", []
                 )
+                # Clients are best-effort: a controller without the endpoint still yields devices.
+                try:
+                    clients = (
+                        await _get(client, f"{base}/sites/{site['id']}/clients?limit=200")
+                    ).get("data", [])
+                except httpx.HTTPError as exc:
+                    clients = []
+                    result.notes.append(f"UniFi clients endpoint unavailable: {exc}")
         except httpx.HTTPError as exc:
             result.notes.append(f"UniFi API request failed: {exc}")
             return result
@@ -105,7 +113,21 @@ class UniFiCollector(Collector):
             if ip:
                 result.ip_addresses.append(ip)
 
+        for entry in clients:
+            ip = entry.get("ipAddress") or entry.get("ip")
+            result.clients.append(
+                DiscoveredClient(
+                    mac=entry.get("macAddress") or entry.get("mac"),
+                    ip=ip,
+                    hostname=entry.get("name") or entry.get("hostname"),
+                    raw=entry,
+                )
+            )
+            if ip:
+                result.ip_addresses.append(ip)
+
         result.notes.append(
-            f"Discovered {len(result.devices)} device(s) from UniFi site '{site_name}'."
+            f"Discovered {len(result.devices)} device(s) and {len(result.clients)} client(s) "
+            f"from UniFi site '{site_name}'."
         )
         return result

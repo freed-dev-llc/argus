@@ -27,11 +27,22 @@ class DiscoveredDevice:
 
 
 @dataclass
+class DiscoveredClient:
+    """An endpoint/client observed on the network (the IP/MAC-binding side)."""
+
+    mac: str | None = None
+    ip: str | None = None
+    hostname: str | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class DiscoveryResult:
     """The normalized output of a single collector run."""
 
     collector: str
     devices: list[DiscoveredDevice] = field(default_factory=list)
+    clients: list[DiscoveredClient] = field(default_factory=list)
     ip_addresses: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 

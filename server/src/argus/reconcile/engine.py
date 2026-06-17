@@ -158,6 +158,30 @@ class ReconcileEngine:
                 f"{len(stale)} device(s) in NetBox not seen by '{observed.collector}' "
                 f"(not auto-deleted): {', '.join(str(s) for s in stale)}"
             )
+
+        # Client IP/MAC bindings → IPAM: propose creating IPs NetBox doesn't have yet.
+        if observed.clients:
+            existing_ips = {
+                _ip_of(d.get("address"))
+                for d in (self.netbox.list_ip_addresses() if self.netbox else [])
+            }
+            existing_ips.discard(None)
+            seen_ips: set[str] = set()
+            for client in observed.clients:
+                if not client.ip:
+                    continue
+                ip = client.ip.split("/")[0]
+                if ip in seen_ips or ip in existing_ips:
+                    continue
+                seen_ips.add(ip)
+                plan.changes.append(
+                    ReconcileChange(
+                        action="create",
+                        object_type="ip_address",
+                        identifier=ip,
+                        details={"address": ip, "description": client.hostname or ""},
+                    )
+                )
         return plan
 
     @staticmethod
@@ -191,6 +215,8 @@ class ReconcileEngine:
     def _apply_change(self, change: ReconcileChange) -> dict[str, Any]:
         try:
             if change.action == "create":
+                if change.object_type == "ip_address":
+                    return self._create_ip(change)
                 return self._create_device(change)
             if change.action == "update":
                 return self._update_device(change)
@@ -234,6 +260,18 @@ class ReconcileEngine:
         if details.get("primary_ip"):
             nb.assign_primary_ip(details["name"], details["primary_ip"])
         return {"action": "create", "identifier": change.identifier, "status": "created"}
+
+    def _create_ip(self, change: ReconcileChange) -> dict[str, Any]:
+        """Create an IPAM IP address from a discovered client binding."""
+        nb = self.netbox
+        assert nb is not None
+        nb.ensure_ip_address(change.details["address"], change.details.get("description") or "")
+        return {
+            "action": "create",
+            "identifier": change.identifier,
+            "status": "created",
+            "detail": "ip_address",
+        }
 
     def _update_device(self, change: ReconcileChange) -> dict[str, Any]:
         """Resolve and apply field deltas to an existing device."""

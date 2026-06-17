@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UniFi client discovery → IPAM**: the UniFi collector now also pulls connected clients
+  (IP / MAC / hostname) from the Integration API `/clients` endpoint (best-effort — devices
+  still discover if it's absent), and the reconcile engine proposes/creates NetBox **IPAM IP
+  addresses** for client IPs it doesn't yet have. Covers much of what a DHCP/ARP collector
+  would, using the UniFi API already in use. `DiscoveryResult` gains `clients`.
 - **Web drift panel**: the dashboard now shows reconcile drift (proposed create/update
   changes with field deltas) and drives the two-step **confirm → apply** flow via
   `GET /api/drift` and `POST /api/reconcile`, rendering per-change apply results.

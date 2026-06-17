@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from argus.discovery.base import DiscoveredDevice, DiscoveryResult
+from argus.discovery.base import DiscoveredClient, DiscoveredDevice, DiscoveryResult
 from argus.reconcile.engine import ReconcileChange, ReconcileEngine, ReconcilePlan
 from argus.tools import reconcile_tools
 
@@ -12,15 +12,28 @@ from argus.tools import reconcile_tools
 class FakeNetBox:
     """Minimal stand-in for NetBoxClient, recording calls and returning fake ids."""
 
-    def __init__(self, devices: list[dict[str, Any]] | None = None) -> None:
+    def __init__(
+        self,
+        devices: list[dict[str, Any]] | None = None,
+        ips: list[dict[str, Any]] | None = None,
+    ) -> None:
         self._devices = devices or []
+        self._ips = ips or []
         self.created: list[dict[str, Any]] = []
         self.updated: list[tuple[str, dict[str, Any]]] = []
         self.ensured: list[tuple[Any, ...]] = []
         self.primary_ips: list[tuple[str, str]] = []
+        self.ensured_ips: list[tuple[str, str]] = []
 
     def list_devices(self) -> list[dict[str, Any]]:
         return self._devices
+
+    def list_ip_addresses(self) -> list[dict[str, Any]]:
+        return self._ips
+
+    def ensure_ip_address(self, address: str, description: str = "") -> int:
+        self.ensured_ips.append((address, description))
+        return 50
 
     def create_device(self, data: dict[str, Any]) -> dict[str, Any]:
         self.created.append(data)
@@ -96,6 +109,25 @@ def test_diff_notes_stale_netbox_only_devices():
     assert any("old-sw" in note for note in plan.notes)
 
 
+def test_diff_proposes_ip_create_for_new_client():
+    obs = DiscoveryResult(
+        collector="unifi", clients=[DiscoveredClient(ip="10.0.0.50", hostname="phone")]
+    )
+    plan = ReconcileEngine(FakeNetBox([], ips=[])).diff(obs)
+    ip_changes = [c for c in plan.changes if c.object_type == "ip_address"]
+    assert len(ip_changes) == 1
+    assert ip_changes[0].action == "create"
+    assert ip_changes[0].identifier == "10.0.0.50"
+    assert ip_changes[0].details["description"] == "phone"
+
+
+def test_diff_skips_existing_client_ip():
+    nb = FakeNetBox([], ips=[{"address": "10.0.0.50/24"}])
+    obs = DiscoveryResult(collector="unifi", clients=[DiscoveredClient(ip="10.0.0.50")])
+    plan = ReconcileEngine(nb).diff(obs)
+    assert [c for c in plan.changes if c.object_type == "ip_address"] == []
+
+
 # --- apply ----------------------------------------------------------------------
 
 
@@ -155,6 +187,21 @@ def test_apply_update_resolves_site_and_assigns_ip():
     assert result["results"][0]["status"] == "updated"
     assert nb.updated == [("sw1", {"site": 1})]
     assert nb.primary_ips == [("sw1", "10.0.0.2")]
+
+
+def test_apply_creates_ip_address():
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "create", "ip_address", "10.0.0.50",
+                {"address": "10.0.0.50", "description": "phone"},
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "created"
+    assert nb.ensured_ips == [("10.0.0.50", "phone")]
 
 
 def test_apply_captures_per_change_errors():
