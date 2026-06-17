@@ -1,0 +1,7 @@
+---
+# Install with: ansible-galaxy collection install -r requirements.yml
+# The nb_inventory plugin also needs these on the Ansible control node:
+#   pip install pynetbox pytz
+collections:
+  - name: netbox.netbox
+    version: ">=3.19.0"
