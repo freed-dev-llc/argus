@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     netbox_token: str = ""
     netbox_verify_ssl: bool = True
 
+    # UniFi Network controller (discovery collector — Integration API, X-API-KEY)
+    unifi_url: str = ""
+    unifi_api_token: str = ""
+    unifi_site: str = "default"
+    unifi_verify_ssl: bool = False  # UniFi controllers use self-signed certs
+
     # FastAPI HTTP server
     http_host: str = "0.0.0.0"
     http_port: int = 8080
@@ -29,6 +35,11 @@ class Settings(BaseSettings):
     def netbox_configured(self) -> bool:
         """True when both a NetBox URL and token are set."""
         return bool(self.netbox_url and self.netbox_token)
+
+    @property
+    def unifi_configured(self) -> bool:
+        """True when both a UniFi URL and API token are set."""
+        return bool(self.unifi_url and self.unifi_api_token)
 
 
 @lru_cache
