@@ -22,9 +22,9 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ `apply()` with confirmation gating and per-change dispatch (#10).
 - ✅ `drift_report` / `reconcile_apply` run a collector + diff against live NetBox; exposed
   at `GET /api/drift` and `POST /api/reconcile`.
-- **P2.1 — NetBox write FK-resolution** (follow-up): map discovery values to NetBox foreign
-  keys — resolve/create sites, device roles, device types, and IPAM IP objects — so `create`
-  and field updates beyond `primary_ip` actually persist. Wire the web drift panel to apply.
+- ✅ **P2.1 — NetBox write FK-resolution** (#29): `apply` find-or-creates sites, device
+  roles, manufacturers, and device types, and assigns primary IPs via IPAM, so create/update
+  persist. (Remaining: wire the web drift panel to trigger apply — folds into P3.)
 
 ## P3 — Visualize
 

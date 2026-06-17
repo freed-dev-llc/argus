@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pynetbox
+
+
+def _slugify(value: str) -> str:
+    """NetBox-style slug: lowercase, non-alphanumeric runs collapsed to hyphens."""
+    slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
+    return slug or "unknown"
 
 
 def _record(record: Any) -> dict[str, Any]:
@@ -83,3 +90,73 @@ class NetBoxClient:
             raise ValueError(f"Device '{name}' not found in NetBox")
         record.update(data)
         return _record(record)
+
+    # --- foreign-key resolution (find-or-create) -------------------------------
+
+    def ensure_site(self, name: str) -> int:
+        """Return the id of the site with this name, creating it if absent."""
+        slug = _slugify(name)
+        existing = self.api.dcim.sites.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(self.api.dcim.sites.create({"name": name, "slug": slug, "status": "active"}).id)
+
+    def ensure_role(self, name: str) -> int:
+        """Return the id of the device role with this name, creating it if absent."""
+        slug = _slugify(name)
+        existing = self.api.dcim.device_roles.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        created = self.api.dcim.device_roles.create(
+            {"name": name, "slug": slug, "color": "9e9e9e"}
+        )
+        return int(created.id)
+
+    def ensure_manufacturer(self, name: str) -> int:
+        """Return the id of the manufacturer with this name, creating it if absent."""
+        slug = _slugify(name)
+        existing = self.api.dcim.manufacturers.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(self.api.dcim.manufacturers.create({"name": name, "slug": slug}).id)
+
+    def ensure_device_type(self, model: str, manufacturer_id: int) -> int:
+        """Return the id of the device type for this model, creating it if absent."""
+        slug = _slugify(model)
+        existing = self.api.dcim.device_types.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        created = self.api.dcim.device_types.create(
+            {"model": model, "slug": slug, "manufacturer": manufacturer_id}
+        )
+        return int(created.id)
+
+    def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
+        """Ensure ``device`` has ``ip`` as its primary IPv4.
+
+        Creates a management interface and the IPAM IP object (assigned to that interface)
+        if they don't exist, then sets the device's ``primary_ip4``. Assumes /32 when no
+        mask is given. Best-effort, IPv4 only.
+        """
+        device = self.api.dcim.devices.get(name=device_name)
+        if device is None:
+            raise ValueError(f"Device '{device_name}' not found in NetBox")
+
+        interface = self.api.dcim.interfaces.get(device_id=device.id, name=interface_name)
+        if interface is None:
+            interface = self.api.dcim.interfaces.create(
+                {"device": device.id, "name": interface_name, "type": "virtual"}
+            )
+
+        address = ip if "/" in ip else f"{ip}/32"
+        ip_obj = self.api.ipam.ip_addresses.get(address=address)
+        if ip_obj is None:
+            ip_obj = self.api.ipam.ip_addresses.create(
+                {
+                    "address": address,
+                    "status": "active",
+                    "assigned_object_type": "dcim.interface",
+                    "assigned_object_id": interface.id,
+                }
+            )
+        device.update({"primary_ip4": ip_obj.id})

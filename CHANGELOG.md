@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **NetBox write & FK-resolution** for reconcile apply: `apply` now *persists* — it
+  find-or-creates the supporting NetBox objects (site, device role, manufacturer, device
+  type) and assigns the primary IPv4 (management interface + IPAM object), so discovered
+  devices are actually created/updated. `site` and `role` are reconciled alongside
+  `primary_ip`; discovery now carries `model`/`manufacturer`. Closes #29.
 - **Reconcile engine** (`ReconcileEngine`): diffs observed devices against NetBox
   (match by name → `create` for unknown devices, `update` for primary-IP drift; NetBox-only
   devices reported, never auto-deleted) and applies a plan through a confirmation-gated,
