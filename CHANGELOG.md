@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Topology map** in the dashboard (#11): replaces the placeholder with an SVG view of
+  NetBox devices grouped by site and colored by role (with primary IPs). Dependency-free;
+  real link edges (cabling / LLDP neighbors) and a graph library are deferred until a
+  collector provides neighbor data (#8).
 - **UniFi client discovery → IPAM**: the UniFi collector now also pulls connected clients
   (IP / MAC / hostname) from the Integration API `/clients` endpoint (best-effort — devices
   still discover if it's absent), and the reconcile engine proposes/creates NetBox **IPAM IP

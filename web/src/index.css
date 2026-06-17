@@ -161,6 +161,32 @@ button:disabled {
   margin-top: 0.75rem;
 }
 
+.topology {
+  overflow-x: auto;
+}
+
+.topology svg {
+  display: block;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 footer {
   margin-top: 2rem;
   font-size: 0.85rem;
