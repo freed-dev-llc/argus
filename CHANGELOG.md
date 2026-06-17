@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web drift panel**: the dashboard now shows reconcile drift (proposed create/update
+  changes with field deltas) and drives the two-step **confirm → apply** flow via
+  `GET /api/drift` and `POST /api/reconcile`, rendering per-change apply results.
 - **NetBox write & FK-resolution** for reconcile apply: `apply` now *persists* — it
   find-or-creates the supporting NetBox objects (site, device role, manufacturer, device
   type) and assigns the primary IPv4 (management interface + IPAM object), so discovered

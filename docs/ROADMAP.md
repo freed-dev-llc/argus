@@ -24,7 +24,7 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   at `GET /api/drift` and `POST /api/reconcile`.
 - ✅ **P2.1 — NetBox write FK-resolution** (#29): `apply` find-or-creates sites, device
   roles, manufacturers, and device types, and assigns primary IPs via IPAM, so create/update
-  persist. (Remaining: wire the web drift panel to trigger apply — folds into P3.)
+  persist. Web drift panel wired — view drift + run confirm→apply from the dashboard.
 
 ## P3 — Visualize
 
