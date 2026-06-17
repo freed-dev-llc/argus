@@ -17,7 +17,7 @@ from .tools.read_tools import (
     list_prefixes,
     search,
 )
-from .tools.reconcile_tools import drift_report
+from .tools.reconcile_tools import drift_report, reconcile_apply
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +84,15 @@ async def api_scan(collector: str) -> dict[str, Any]:
 
 
 @app.get("/api/drift")
-async def api_drift() -> dict[str, Any]:
-    return await drift_report()
+async def api_drift(collector: str = "unifi") -> dict[str, Any]:
+    return await drift_report(collector)
+
+
+@app.post("/api/reconcile")
+async def api_reconcile(
+    collector: str = "unifi", confirm_token: str | None = None
+) -> dict[str, Any]:
+    return await reconcile_apply(collector=collector, confirm_token=confirm_token)
 
 
 @app.post("/webhooks/netbox")

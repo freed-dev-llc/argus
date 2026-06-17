@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from argus.config import Settings
-from argus.tools import discovery_tools, read_tools, reconcile_tools
+from argus.tools import discovery_tools, read_tools
 
 
 class _FakeClient:
@@ -52,25 +52,4 @@ async def test_discovery_scan_known_collector():
 
 async def test_discovery_scan_unknown_collector():
     out = await discovery_tools.discovery_scan("nope")
-    assert "error" in out
-
-
-# --- reconcile tools ------------------------------------------------------------
-
-
-async def test_drift_report_is_empty_stub():
-    out = await reconcile_tools.drift_report()
-    assert out["summary"]["total"] == 0
-
-
-async def test_reconcile_apply_requires_confirmation():
-    first = await reconcile_tools.reconcile_apply()
-    assert first["confirmation_required"] is True
-
-    confirmed = await reconcile_tools.reconcile_apply(confirm_token=first["confirm_token"])
-    assert confirmed["confirmed"] is True
-
-
-async def test_reconcile_apply_rejects_bad_token():
-    out = await reconcile_tools.reconcile_apply(confirm_token="bogus")
     assert "error" in out

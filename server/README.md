@@ -46,5 +46,5 @@ pytest -v          # offline — NetBox is mocked
 | --- | --- | --- |
 | `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` | read | real (needs NetBox) |
 | `list_collectors`, `discovery_scan` | discovery | UniFi real (needs `UNIFI_*`); SNMP/LLDP + DHCP/ARP stubbed |
-| `drift_report`, `reconcile_apply` | reconcile | stub, confirmation-gated |
+| `drift_report`, `reconcile_apply` | reconcile | real diff + confirmation-gated apply (NetBox write FK-resolution WIP) |
 | `health` | meta | real |

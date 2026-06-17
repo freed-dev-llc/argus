@@ -1,6 +1,8 @@
 # ADR-0003: Pluggable Discovery + Dry-Run, Confirmation-Gated Reconciliation
 
-- **Status:** Accepted (design); implementation **Proposed** (stubs in place)
+- **Status:** Accepted; UniFi discovery (#7) and the reconcile `diff` + confirmation-gated
+  `apply` mechanism (#10) implemented 2026-06-17. Remaining: NetBox write FK-resolution
+  (sites/roles/device-types/IP objects) and the SNMP/LLDP + DHCP/ARP collectors.
 - **Date:** 2026-06-17
 - **Deciders:** Jon Freed
 - **Affected:** `server/src/argus/discovery/`, `reconcile/engine.py`, `confirmations.py`, `tools/`

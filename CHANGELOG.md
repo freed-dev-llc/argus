@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Reconcile engine** (`ReconcileEngine`): diffs observed devices against NetBox
+  (match by name → `create` for unknown devices, `update` for primary-IP drift; NetBox-only
+  devices reported, never auto-deleted) and applies a plan through a confirmation-gated,
+  per-change write path. `drift_report` and `reconcile_apply` now run a collector + diff
+  against live NetBox; `GET /api/drift` and `POST /api/reconcile` expose them. Resolving
+  discovery values into NetBox foreign keys (sites/roles/device-types/IPs) is a follow-up.
+  Closes #10.
 - **UniFi discovery collector** (`discovery_scan unifi`): pulls devices from the UniFi
   Network Integration API (X-API-KEY) and normalizes them to `DiscoveredDevice`
   (name/mac/primary_ip/site + coarse role inference from model). Configured via
