@@ -65,6 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reconcile diff is now **idempotent** for devices: NetBox device `site`/`role`/`primary_ip`
+  are read as resolved slugs/addresses instead of pynetbox `.serialize()`'s bare FK integer
+  IDs, so an already-synced device no longer shows perpetual phantom `update`s. Also gives
+  the dashboard human-readable values. Surfaced by live validation.
 - UniFi role inference now matches full model names (e.g. `UniFi Dream Machine PRO SE` →
   `gateway`) via keyword matching instead of code prefixes, so gateways are classified and
   reconciled instead of skipped. Surfaced by live validation against a real UniFi controller.
