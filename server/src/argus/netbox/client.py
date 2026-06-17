@@ -64,3 +64,22 @@ class NetBoxClient:
             "devices": [_record(r) for r in self.api.dcim.devices.filter(q=query)],
             "ip_addresses": [_record(r) for r in self.api.ipam.ip_addresses.filter(q=query)],
         }
+
+    # --- writes (used by the reconcile engine) ---------------------------------
+
+    def create_device(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a device in NetBox.
+
+        ``data`` must satisfy NetBox's required fields (notably ``device_type``,
+        ``role``, and ``site``). Raises whatever pynetbox raises on validation failure.
+        """
+        record = self.api.dcim.devices.create(data)
+        return _record(record)
+
+    def update_device(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update fields on an existing device, matched by name."""
+        record = self.api.dcim.devices.get(name=name)
+        if record is None:
+            raise ValueError(f"Device '{name}' not found in NetBox")
+        record.update(data)
+        return _record(record)

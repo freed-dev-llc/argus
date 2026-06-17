@@ -18,9 +18,13 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 
 ## P2 — Reconcile
 
-- Implement `ReconcileEngine.diff()`: compare observed state vs NetBox, emit a typed plan.
-- Implement `apply()` with confirmation gating and per-object create/update.
-- `drift_report` returns real drift; web drift panel shows it.
+- ✅ `ReconcileEngine.diff()`: compare observed state vs NetBox, emit a typed plan (#10).
+- ✅ `apply()` with confirmation gating and per-change dispatch (#10).
+- ✅ `drift_report` / `reconcile_apply` run a collector + diff against live NetBox; exposed
+  at `GET /api/drift` and `POST /api/reconcile`.
+- **P2.1 — NetBox write FK-resolution** (follow-up): map discovery values to NetBox foreign
+  keys — resolve/create sites, device roles, device types, and IPAM IP objects — so `create`
+  and field updates beyond `primary_ip` actually persist. Wire the web drift panel to apply.
 
 ## P3 — Visualize
 
