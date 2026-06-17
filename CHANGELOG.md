@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Docker deployment** (`deploy/`): a self-contained validation stack — bundled NetBox
-  (own internal Postgres/Redis, auto-provisioned superuser + API token) + `argus-server` +
-  `argus-web` (nginx serving the built dashboard, proxying `/api`). Plus a multi-stage
-  `web/Dockerfile`, `nginx.conf`, and `.dockerignore`s. One `docker compose up`.
+  (own internal Postgres/Redis) + `argus-server` + `argus-web` (nginx serving the built
+  dashboard, proxying `/api`). A `netbox-init` one-shot provisions a **v1** NetBox API token
+  for Argus (NetBox 4.6 v2 tokens use a `Bearer <key>.<token>` scheme pynetbox can't present).
+  Plus a multi-stage `web/Dockerfile`, `nginx.conf`, and `.dockerignore`s. One `docker compose up`.
+  Validated end-to-end against live UniFi + NetBox 4.6.
 - **IPAM prefix hierarchy** in the dashboard: builds a containment tree from
   `GET /api/prefixes` and renders it indented (CIDR + status + description). IPv4 prefixes
   nest by containment; IPv6/unparseable fall back to flat roots. Completes the P3 "IPAM

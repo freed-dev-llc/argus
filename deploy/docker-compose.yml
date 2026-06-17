@@ -28,7 +28,6 @@ x-netbox-env: &netbox-env
   SUPERUSER_NAME: admin
   SUPERUSER_EMAIL: admin@example.com
   SUPERUSER_PASSWORD: ${NETBOX_SUPERUSER_PASSWORD}
-  SUPERUSER_API_TOKEN: ${NETBOX_API_TOKEN}
 
 services:
   netbox-postgres:
@@ -56,7 +55,7 @@ services:
     restart: unless-stopped
 
   netbox:
-    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.2-3.2.1}
+    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
     depends_on:
       netbox-postgres:
         condition: service_healthy
@@ -80,7 +79,7 @@ services:
     restart: unless-stopped
 
   netbox-worker:
-    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.2-3.2.1}
+    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
     depends_on:
       netbox:
         condition: service_healthy
@@ -91,12 +90,45 @@ services:
       - rqworker
     restart: unless-stopped
 
+  # One-shot: create the v1 API token Argus uses. pynetbox sends "Token <value>", which
+  # NetBox 4.6 matches as a v1 token; NetBox's own provisioning only mints v2 tokens
+  # (Bearer <key>.<token>), which pynetbox can't present — so we create the v1 token here.
+  netbox-init:
+    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment:
+      <<: *netbox-env
+      NETBOX_API_TOKEN: ${NETBOX_API_TOKEN}
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - shell
+      - -c
+      - |
+        import os
+        from django.contrib.auth import get_user_model
+        from users.models import Token
+        u = get_user_model().objects.filter(is_superuser=True).order_by("pk").first()
+        key = os.environ.get("NETBOX_API_TOKEN", "")
+        if u and key and not Token.objects.filter(version=1, plaintext=key).exists():
+            t = Token(user=u, version=1)
+            t.token = key
+            t.save()
+            print("argus-init: created v1 API token")
+        else:
+            print("argus-init: token already present or no superuser")
+    restart: "no"
+
   argus-server:
     build: ../server
     image: argus-server:local
     depends_on:
       netbox:
         condition: service_healthy
+      netbox-init:
+        condition: service_completed_successfully
     environment:
       NETBOX_URL: http://netbox:8080
       NETBOX_TOKEN: ${NETBOX_API_TOKEN}
