@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UniFi discovery collector** (`discovery_scan unifi`): pulls devices from the UniFi
+  Network Integration API (X-API-KEY) and normalizes them to `DiscoveredDevice`
+  (name/mac/primary_ip/site + coarse role inference from model). Configured via
+  `UNIFI_URL` / `UNIFI_API_TOKEN` / `UNIFI_SITE`. Closes #7.
 - Initial monorepo scaffold for **Argus**, a NetBox-backed network source-of-truth
   automation server for MCP coding agents.
 - **Server** (`server/`): Python MCP (stdio) + FastAPI HTTP server.
