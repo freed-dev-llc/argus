@@ -14,8 +14,9 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ **UniFi collector** (#7): devices, plus connected **clients** (IP/MAC/hostname) feeding
   NetBox IPAM via reconcile — covers much of the DHCP/ARP intent using the UniFi API.
 - ✅ Normalized collector output (`DiscoveryResult`: devices + clients).
-- **SNMP/LLDP** (#8) and **DHCP/ARP** (#9) collectors — for non-UniFi gear / link topology;
-  deferred (env-dependent, and largely redundant with UniFi on this network).
+- ✅ **SNMP/LLDP** (#8): UniFi-native uplink topology (validated live) + a generic pysnmp
+  collector for non-UniFi gear (unvalidated vs live SNMP). **DHCP/ARP** (#9): closed —
+  covered by UniFi client discovery.
 - ✅ Web: device table populated from live NetBox data.
 
 ## P2 — Reconcile

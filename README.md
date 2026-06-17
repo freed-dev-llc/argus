@@ -15,8 +15,10 @@ drift, and trigger reconciliation by hand.
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
 
-> **Status:** early scaffold (v0.1.0). Read tools against NetBox work today; discovery
-> and reconciliation are stubbed behind a stable interface. See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status:** v0.1.0 — the full loop works end-to-end and is validated against a live UniFi
+> network + NetBox 4.6: discover (devices, clients, uplink topology) → diff → confirm →
+> reconcile NetBox (DCIM + IPAM), surfaced via MCP tools, a React dashboard, and Ansible
+> inventory. See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## How it fits together
 
@@ -76,8 +78,8 @@ npm run dev       # http://localhost:5173 — proxies /api to the server on :808
 (`pip install -e server`), Claude Code (and other MCP clients) can call:
 
 - `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` — read NetBox
-- `list_collectors`, `discovery_scan` — observe live network state (stubbed)
-- `drift_report`, `reconcile_apply` — review and apply reconciliation (stubbed, confirmation-gated)
+- `list_collectors`, `discovery_scan`, `network_topology` — observe live network state + topology
+- `drift_report`, `reconcile_apply` — review and apply reconciliation (confirmation-gated)
 
 ## Deployment
 
