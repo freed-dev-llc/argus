@@ -131,6 +131,17 @@ class NetBoxClient:
         )
         return int(created.id)
 
+    def ensure_ip_address(self, address: str, description: str = "") -> int:
+        """Return the id of the IPAM IP (find-or-create). Assumes /32 when no mask given."""
+        addr = address if "/" in address else f"{address}/32"
+        existing = self.api.ipam.ip_addresses.get(address=addr)
+        if existing is not None:
+            return int(existing.id)
+        data: dict[str, Any] = {"address": addr, "status": "active"}
+        if description:
+            data["description"] = description
+        return int(self.api.ipam.ip_addresses.create(data).id)
+
     def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
         """Ensure ``device`` has ``ip`` as its primary IPv4.
 

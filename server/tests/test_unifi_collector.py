@@ -44,6 +44,9 @@ async def test_collect_maps_devices(monkeypatch):
             },
         )
     )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
 
     result = await UniFiCollector().collect()
 
@@ -57,6 +60,60 @@ async def test_collect_maps_devices(monkeypatch):
     assert sw.role == "switch"
     assert ap.role == "ap"
     assert result.ip_addresses == ["10.0.0.2", "10.0.0.3"]
+
+
+@respx.mock
+async def test_collect_maps_clients(monkeypatch):
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(return_value=httpx.Response(200, json={"data": []}))
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"name": "phone", "macAddress": "de:ad:be:ef:00:01", "ipAddress": "10.0.0.50"},
+                    {"name": "laptop", "macAddress": "de:ad:be:ef:00:02", "ipAddress": "10.0.0.51"},
+                ]
+            },
+        )
+    )
+
+    result = await UniFiCollector().collect()
+
+    assert len(result.clients) == 2
+    phone = result.clients[0]
+    assert phone.hostname == "phone"
+    assert phone.mac == "de:ad:be:ef:00:01"
+    assert phone.ip == "10.0.0.50"
+    assert "10.0.0.50" in result.ip_addresses and "10.0.0.51" in result.ip_addresses
+
+
+@respx.mock
+async def test_collect_tolerates_missing_clients_endpoint(monkeypatch):
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"name": "sw1", "model": "USW-24", "ipAddress": "10.0.0.2"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(return_value=httpx.Response(404))
+
+    result = await UniFiCollector().collect()
+
+    # Device discovery still succeeds even though the clients endpoint 404s.
+    assert len(result.devices) == 1
+    assert result.clients == []
+    assert any("clients endpoint unavailable" in note for note in result.notes)
 
 
 async def test_collect_unconfigured(monkeypatch):

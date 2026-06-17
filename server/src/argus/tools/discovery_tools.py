@@ -27,6 +27,7 @@ async def discovery_scan(collector: str) -> dict[str, Any]:
     return {
         "collector": result.collector,
         "devices": [asdict(d) for d in result.devices],
+        "clients": [asdict(c) for c in result.clients],
         "ip_addresses": result.ip_addresses,
         "notes": result.notes,
     }
