@@ -1,0 +1,136 @@
+# Self-contained Argus validation stack: NetBox (with its own internal Postgres +
+# Redis) + Argus server + Argus web. Bring up from this directory with a populated
+# .env (see .env.example):
+#
+#   docker compose --env-file .env up -d --build
+#
+# Internal Postgres/Redis are NOT published — they won't clash with any host services.
+# Published ports: 8095 (Argus dashboard), 8096 (NetBox UI), 127.0.0.1:8094 (Argus API).
+name: argus
+
+x-netbox-env: &netbox-env
+  DB_HOST: netbox-postgres
+  DB_NAME: netbox
+  DB_USER: netbox
+  DB_PASSWORD: ${POSTGRES_PASSWORD}
+  DB_PORT: "5432"
+  REDIS_HOST: netbox-redis
+  REDIS_PORT: "6379"
+  REDIS_DATABASE: "0"
+  REDIS_SSL: "false"
+  REDIS_CACHE_HOST: netbox-redis
+  REDIS_CACHE_PORT: "6379"
+  REDIS_CACHE_DATABASE: "1"
+  REDIS_CACHE_SSL: "false"
+  SECRET_KEY: ${NETBOX_SECRET_KEY}
+  ALLOWED_HOSTS: "*"
+  SKIP_SUPERUSER: "false"
+  SUPERUSER_NAME: admin
+  SUPERUSER_EMAIL: admin@example.com
+  SUPERUSER_PASSWORD: ${NETBOX_SUPERUSER_PASSWORD}
+  SUPERUSER_API_TOKEN: ${NETBOX_API_TOKEN}
+
+services:
+  netbox-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: netbox
+      POSTGRES_USER: netbox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - netbox-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  netbox-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  netbox:
+    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.2-3.2.1}
+    depends_on:
+      netbox-postgres:
+        condition: service_healthy
+      netbox-redis:
+        condition: service_healthy
+    environment: *netbox-env
+    volumes:
+      - netbox-media:/opt/netbox/netbox/media
+    ports:
+      - "8096:8080"
+    healthcheck:
+      test:
+        - CMD
+        - /opt/netbox/venv/bin/python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/login/').status==200 else 1)"
+      interval: 15s
+      timeout: 10s
+      retries: 25
+      start_period: 180s
+    restart: unless-stopped
+
+  netbox-worker:
+    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.2-3.2.1}
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment: *netbox-env
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - rqworker
+    restart: unless-stopped
+
+  argus-server:
+    build: ../server
+    image: argus-server:local
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment:
+      NETBOX_URL: http://netbox:8080
+      NETBOX_TOKEN: ${NETBOX_API_TOKEN}
+      NETBOX_VERIFY_SSL: "true"
+      UNIFI_URL: ${UNIFI_URL:-}
+      UNIFI_API_TOKEN: ${UNIFI_API_TOKEN:-}
+      UNIFI_SITE: ${UNIFI_SITE:-default}
+      UNIFI_VERIFY_SSL: "false"
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: "8080"
+    ports:
+      - "127.0.0.1:8094:8080"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').status==200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  argus-web:
+    build: ../web
+    image: argus-web:local
+    depends_on:
+      argus-server:
+        condition: service_healthy
+    ports:
+      - "8095:80"
+    restart: unless-stopped
+
+volumes:
+  netbox-postgres-data:
+  netbox-media:

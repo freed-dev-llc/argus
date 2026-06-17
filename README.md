@@ -79,6 +79,13 @@ npm run dev       # http://localhost:5173 — proxies /api to the server on :808
 - `list_collectors`, `discovery_scan` — observe live network state (stubbed)
 - `drift_report`, `reconcile_apply` — review and apply reconciliation (stubbed, confirmation-gated)
 
+## Deployment
+
+For a complete, self-contained environment (NetBox + its datastore + Argus server + web),
+see [`deploy/`](deploy/README.md): `docker compose --env-file .env up -d --build` brings up
+a bundled NetBox (auto-provisioned with the API token Argus uses) plus the Argus server and
+dashboard. Intended for validation and home/lab use.
+
 ## Contributing
 
 This is a personal project run with the discipline of a shared one: changes land via
