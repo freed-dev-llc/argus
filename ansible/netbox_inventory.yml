@@ -1,0 +1,27 @@
+---
+# Ansible dynamic inventory sourced from NetBox — the source of truth Argus keeps current.
+# This is READ-ONLY: it never writes to NetBox, so it cannot conflict with Argus's reconcile
+# (see ADR-0004). Once Argus has populated NetBox, Ansible targets hosts by site/role/etc.
+#
+# Usage:
+#   export NETBOX_API=http://<netbox-host>:8096
+#   export NETBOX_TOKEN=<token>
+#   ansible-inventory -i netbox_inventory.yml --graph
+plugin: netbox.netbox.nb_inventory
+# api_endpoint and token are read from the NETBOX_API and NETBOX_TOKEN environment
+# variables natively (the plugin does not template Jinja here). Export them before running.
+validate_certs: false
+
+# Build Ansible groups from NetBox attributes.
+group_by:
+  - sites
+  - device_roles
+  - manufacturers
+  - device_types
+  - platforms
+  - status
+
+# Connect to each device on its NetBox primary IP (strip the CIDR mask). In `compose`,
+# primary_ip4 is the raw NetBox object, so read its `.address`.
+compose:
+  ansible_host: primary_ip4.address | default('') | regex_replace('/.*', '')

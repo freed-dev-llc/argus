@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Ansible dynamic inventory** (`ansible/`): read-only `netbox.netbox.nb_inventory` config
+  that sources hosts from the NetBox SoT Argus populates — grouped by site/role/manufacturer/
+  etc., with `ansible_host` set to each device's primary IP. Includes a demo playbook,
+  `requirements.yml`, and ADR-0004 (NetBox as the inventory hub + the two-writers rule). This
+  is the outbound half of the loop: discover → NetBox → Ansible consumes.
 - **Docker deployment** (`deploy/`): a self-contained validation stack — bundled NetBox
   (own internal Postgres/Redis) + `argus-server` + `argus-web` (nginx serving the built
   dashboard, proxying `/api`). A `netbox-init` one-shot provisions a **v1** NetBox API token

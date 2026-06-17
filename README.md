@@ -86,6 +86,15 @@ see [`deploy/`](deploy/README.md): `docker compose --env-file .env up -d --build
 a bundled NetBox (auto-provisioned with the API token Argus uses) plus the Argus server and
 dashboard. Intended for validation and home/lab use.
 
+## Integrations
+
+Argus is the **inbound** source-of-truth layer; outbound automation consumes NetBox:
+
+- **Ansible** ([`ansible/`](ansible/README.md)) — read-only `nb_inventory` dynamic inventory
+  sourced from the NetBox Argus keeps current; target hosts by site/role with no
+  hand-maintained inventory. See [ADR-0004](docs/architecture/adr/0004-netbox-ansible-inventory.md)
+  for how Argus, Ansible, and (future) Terraform share NetBox without fighting over it.
+
 ## Contributing
 
 This is a personal project run with the discipline of a shared one: changes land via
