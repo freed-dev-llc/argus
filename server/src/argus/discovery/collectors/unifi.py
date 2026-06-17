@@ -18,27 +18,22 @@ import httpx
 from ...config import get_settings
 from ..base import Collector, DiscoveredClient, DiscoveredDevice, DiscoveryResult
 
-# Coarse NetBox device-role inference from the UniFi model prefix. Best-effort only;
-# the reconcile engine (P2) is responsible for final role assignment.
-_MODEL_ROLE_PREFIXES: dict[str, str] = {
-    "UAP": "ap",
-    "U6": "ap",
-    "U7": "ap",
-    "USW": "switch",
-    "US-": "switch",
-    "UDM": "gateway",
-    "UGW": "gateway",
-    "UXG": "gateway",
-    "UCG": "gateway",
-}
+# Best-effort NetBox device-role inference from the UniFi model string. The Integration
+# API returns full model names ("UniFi Dream Machine PRO SE", "USW Pro 48 PoE", "U6 Pro"),
+# so match on keywords rather than code prefixes. Order matters — gateway is checked first.
+_ROLE_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("gateway", ("dream machine", "udm", "uxg", "ucg", "ugw", "cloud gateway", "security gateway", "gateway")),
+    ("switch", ("usw", "switch", "aggregation", "us-")),
+    ("ap", ("u6", "u7", "uap", "access point", "nanohd", "ac lite", "ac pro", "ac mesh")),
+)
 
 
 def _role_from_model(model: str | None) -> str | None:
     if not model:
         return None
-    upper = model.upper()
-    for prefix, role in _MODEL_ROLE_PREFIXES.items():
-        if upper.startswith(prefix):
+    text = model.lower()
+    for role, keywords in _ROLE_KEYWORDS:
+        if any(keyword in text for keyword in keywords):
             return role
     return None
 

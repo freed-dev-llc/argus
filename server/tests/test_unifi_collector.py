@@ -7,10 +7,21 @@ import respx
 
 from argus.config import Settings
 from argus.discovery.collectors import unifi
-from argus.discovery.collectors.unifi import UniFiCollector
+from argus.discovery.collectors.unifi import UniFiCollector, _role_from_model
 
 UNIFI = "https://unifi.test"
 BASE = f"{UNIFI}/proxy/network/integration/v1"
+
+
+def test_role_inference_handles_full_model_names():
+    assert _role_from_model("UniFi Dream Machine PRO SE") == "gateway"
+    assert _role_from_model("UCG-Ultra") == "gateway"
+    assert _role_from_model("USW Pro 48 PoE") == "switch"
+    assert _role_from_model("USW Pro Aggregation") == "switch"
+    assert _role_from_model("U6 Pro") == "ap"
+    assert _role_from_model("U7 Pro") == "ap"
+    assert _role_from_model("Some Random Thing") is None
+    assert _role_from_model(None) is None
 
 
 def _configured() -> Settings:

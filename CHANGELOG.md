@@ -63,6 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Governance: ADRs (0001–0003), architecture and roadmap docs, CI, Dependabot
   auto-merge, issue/PR templates, and the `freed-dev-llc` repo baseline.
 
+### Fixed
+
+- UniFi role inference now matches full model names (e.g. `UniFi Dream Machine PRO SE` →
+  `gateway`) via keyword matching instead of code prefixes, so gateways are classified and
+  reconciled instead of skipped. Surfaced by live validation against a real UniFi controller.
+
 ### Dependencies
 
 - Consolidated the initial Dependabot pile-up into one upgrade: server floors
