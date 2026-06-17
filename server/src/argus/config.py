@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     unifi_site: str = "default"
     unifi_verify_ssl: bool = False  # UniFi controllers use self-signed certs
 
+    # SNMP/LLDP collector (generic, for non-UniFi gear). Comma-separated host[:community].
+    snmp_targets: str = ""
+    snmp_community: str = "public"
+
     # FastAPI HTTP server
     http_host: str = "0.0.0.0"
     http_port: int = 8080

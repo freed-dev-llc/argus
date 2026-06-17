@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Integration API as `DiscoveredLink` edges (no SNMP needed). New `network_topology` tool +
   `GET /api/topology` return nodes + links, and the dashboard topology map now draws the
   uplink/neighbor edges between devices.
+- **SNMP/LLDP collector** (#8): generic `snmp_lldp` collector for non-UniFi gear — SNMP GET
+  `sysName` per target + an LLDP-MIB neighbor walk for links. Configured via `SNMP_TARGETS`
+  (`host[:community],...`) / `SNMP_COMMUNITY`; needs the `discovery` extra (pysnmp). Closes #8.
 - **Ansible deploy role** (`ansible/roles/argus_deploy` + `deploy-argus.yml`): stands up the
   full stack on a Docker host — repo checkout, `deploy/.env` rendering, and `docker compose up`
   via `community.docker.docker_compose_v2`. Secrets are generated once and **reused** from the
