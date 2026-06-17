@@ -1,0 +1,53 @@
+---
+- name: Ensure the Argus repo is present
+  ansible.builtin.git:
+    repo: "{{ argus_repo_url }}"
+    dest: "{{ argus_dest }}"
+    version: "{{ argus_version }}"
+  when: argus_manage_repo | bool
+  notify: Recreate Argus stack
+
+- name: Read existing deploy/.env (to reuse secrets across runs)
+  ansible.builtin.slurp:
+    src: "{{ argus_dest }}/deploy/.env"
+  register: argus_env_raw
+  failed_when: false
+  changed_when: false
+
+- name: Parse existing deploy/.env
+  ansible.builtin.set_fact:
+    argus_existing: >-
+      {{ dict((argus_env_raw.content | b64decode) | regex_findall('(?m)^([A-Z0-9_]+)=(.*)$'))
+         if (argus_env_raw.content is defined) else {} }}
+
+# Secrets are generated once and then reused from the existing .env, so re-running this
+# role never rotates them (which would break the NetBox DB / API token).
+- name: Resolve deploy/.env values
+  ansible.builtin.set_fact:
+    argus_env:
+      NETBOX_IMAGE: "{{ argus_netbox_image }}"
+      NETBOX_SECRET_KEY: "{{ argus_existing.NETBOX_SECRET_KEY | default(lookup('ansible.builtin.password', '/dev/null length=50 chars=ascii_letters,digits')) }}"
+      POSTGRES_PASSWORD: "{{ argus_existing.POSTGRES_PASSWORD | default(lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits')) }}"
+      NETBOX_SUPERUSER_PASSWORD: "{{ argus_existing.NETBOX_SUPERUSER_PASSWORD | default(lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits')) }}"
+      NETBOX_API_TOKEN: "{{ argus_existing.NETBOX_API_TOKEN | default(lookup('ansible.builtin.password', '/dev/null length=40 chars=ascii_lowercase,digits')) }}"
+      UNIFI_URL: "{{ argus_unifi_url or (argus_existing.UNIFI_URL | default('')) }}"
+      UNIFI_API_TOKEN: "{{ argus_unifi_api_token or (argus_existing.UNIFI_API_TOKEN | default('')) }}"
+      UNIFI_SITE: "{{ argus_unifi_site or (argus_existing.UNIFI_SITE | default('default')) }}"
+
+- name: Render deploy/.env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ argus_dest }}/deploy/.env"
+    mode: "0600"
+  no_log: true
+  notify: Recreate Argus stack
+
+- name: Bring up the Argus stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ argus_dest }}/deploy"
+    state: present
+    build: policy
+    pull: missing
+    recreate: never   # steady-state: don't restart unchanged containers; changes recreate via handlers
+  environment:
+    PATH: "{{ argus_docker_path }}"

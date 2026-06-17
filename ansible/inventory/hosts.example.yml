@@ -1,0 +1,17 @@
+---
+# Copy to hosts.yml and edit. The deploy target is the Docker host that runs the stack.
+all:
+  children:
+    argus_deploy:
+      hosts:
+        argus-host:
+          ansible_host: 10.10.88.130
+          ansible_user: aria
+          # Reuse the repo already on the host instead of git-cloning, and point at it:
+          # argus_manage_repo: false
+          # argus_dest: /Users/aria/Repos/argus
+      vars:
+        # Set these via Ansible Vault in real use (group_vars/argus_deploy/vault.yml):
+        # argus_unifi_url: "https://10.10.88.1"
+        # argus_unifi_api_token: "{{ vault_unifi_api_token }}"
+        argus_unifi_site: default

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Ansible deploy role** (`ansible/roles/argus_deploy` + `deploy-argus.yml`): stands up the
+  full stack on a Docker host — repo checkout, `deploy/.env` rendering, and `docker compose up`
+  via `community.docker.docker_compose_v2`. Secrets are generated once and **reused** from the
+  existing `.env`, so re-runs never rotate the NetBox DB password / API token. Replaces the
+  manual rsync + secret-gen + compose steps.
 - **Ansible dynamic inventory** (`ansible/`): read-only `netbox.netbox.nb_inventory` config
   that sources hosts from the NetBox SoT Argus populates — grouped by site/role/manufacturer/
   etc., with `ansible_host` set to each device's primary IP. Includes a demo playbook,

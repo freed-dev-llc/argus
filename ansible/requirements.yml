@@ -5,3 +5,6 @@
 collections:
   - name: netbox.netbox
     version: ">=3.19.0"
+  # For the argus_deploy role (docker_compose_v2):
+  - name: community.docker
+    version: ">=3.6.0"

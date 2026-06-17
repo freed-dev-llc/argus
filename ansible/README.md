@@ -37,6 +37,18 @@ ansible-playbook playbooks/facts.yml --limit device_roles_switch
 `device_roles_<slug>`, `manufacturers_<slug>`, `status_active`, etc. `ansible_host` is set
 to each device's NetBox primary IP (mask stripped).
 
+## Deploy Argus itself (role)
+
+The [`argus_deploy`](roles/argus_deploy/README.md) role stands up the whole stack on a Docker
+host — repo checkout, `.env` rendering (secrets generated once and **reused** on re-runs), and
+`docker compose up` — replacing the manual steps.
+
+```bash
+ansible-galaxy collection install -r requirements.yml
+cp inventory/hosts.example.yml inventory/hosts.yml   # edit host + Vault the UniFi creds
+ansible-playbook -i inventory/hosts.yml deploy-argus.yml
+```
+
 ## Notes
 
 - Actually *running tasks* against the devices needs reachability + credentials (SSH/API)
