@@ -187,6 +187,27 @@ button:disabled {
   vertical-align: middle;
 }
 
+.prefix-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0;
+}
+
+.prefix-tree li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.prefix-tree code {
+  color: var(--accent);
+}
+
+.prefix-tree .badge {
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+}
+
 footer {
   margin-top: 2rem;
   font-size: 0.85rem;

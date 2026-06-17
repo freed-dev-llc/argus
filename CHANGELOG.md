@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **IPAM prefix hierarchy** in the dashboard: builds a containment tree from
+  `GET /api/prefixes` and renders it indented (CIDR + status + description). IPv4 prefixes
+  nest by containment; IPv6/unparseable fall back to flat roots. Completes the P3 "IPAM
+  hierarchy" item.
 - **Topology map** in the dashboard (#11): replaces the placeholder with an SVG view of
   NetBox devices grouped by site and colored by role (with primary IPs). Dependency-free;
   real link edges (cabling / LLDP neighbors) and a graph library are deferred until a
