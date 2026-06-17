@@ -16,16 +16,29 @@ def test_constructs_api_and_sets_verify():
         assert api.http_session.verify is False
 
 
-def test_list_devices_uses_all_without_filters():
+def _mock_device(name="sw1", site="hq", role="switch", ip="10.0.0.2/24"):
+    r = MagicMock()
+    r.id = 1
+    r.name = name
+    r.status = "active"
+    r.site = MagicMock(slug=site)
+    r.role = MagicMock(slug=role)
+    r.primary_ip = ip
+    return r
+
+
+def test_list_devices_resolves_fk_fields():
     with patch("argus.netbox.client.pynetbox") as pnb:
         api = MagicMock()
         pnb.api.return_value = api
-        record = MagicMock()
-        record.serialize.return_value = {"name": "sw1", "id": 1}
-        api.dcim.devices.all.return_value = [record]
+        api.dcim.devices.all.return_value = [_mock_device()]
 
         client = NetBoxClient("https://nb", "tok")
-        assert client.list_devices() == [{"name": "sw1", "id": 1}]
+        out = client.list_devices()
+        assert out[0]["name"] == "sw1"
+        assert out[0]["site"] == "hq"
+        assert out[0]["role"] == "switch"
+        assert out[0]["primary_ip"] == "10.0.0.2/24"
         api.dcim.devices.all.assert_called_once()
         api.dcim.devices.filter.assert_not_called()
 
@@ -34,9 +47,7 @@ def test_list_devices_filters_when_given():
     with patch("argus.netbox.client.pynetbox") as pnb:
         api = MagicMock()
         pnb.api.return_value = api
-        record = MagicMock()
-        record.serialize.return_value = {"name": "sw1"}
-        api.dcim.devices.filter.return_value = [record]
+        api.dcim.devices.filter.return_value = [_mock_device()]
 
         client = NetBoxClient("https://nb", "tok")
         client.list_devices(site="hq", role="switch")

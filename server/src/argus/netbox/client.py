@@ -20,6 +20,33 @@ def _record(record: Any) -> dict[str, Any]:
     return dict(data)
 
 
+def _fk_name(value: Any) -> str | None:
+    """Resolve a pynetbox FK (nested record) to its slug/name string."""
+    if value is None:
+        return None
+    return getattr(value, "slug", None) or getattr(value, "name", None) or str(value) or None
+
+
+def _device_to_dict(record: Any) -> dict[str, Any]:
+    """Device → comparable dict with FK fields resolved to slugs/strings.
+
+    ``record.serialize()`` flattens FKs to bare integer IDs, which can't be compared
+    against discovered names — so we read the resolved attributes instead. This keeps
+    the reconcile diff idempotent and gives the dashboard human-readable values.
+    """
+    role = getattr(record, "role", None) or getattr(record, "device_role", None)
+    primary_ip = getattr(record, "primary_ip", None)
+    status = getattr(record, "status", None)
+    return {
+        "id": getattr(record, "id", None),
+        "name": getattr(record, "name", None),
+        "status": str(status) if status else None,
+        "site": _fk_name(getattr(record, "site", None)),
+        "role": _fk_name(role),
+        "primary_ip": str(primary_ip) if primary_ip else None,
+    }
+
+
 class NetBoxClient:
     """Read access to NetBox, the network's source of truth.
 
@@ -45,12 +72,12 @@ class NetBoxClient:
             if filters
             else self.api.dcim.devices.all()
         )
-        return [_record(r) for r in records]
+        return [_device_to_dict(r) for r in records]
 
     def get_device(self, name: str) -> dict[str, Any] | None:
         """Get a single device by name, or ``None`` if not found."""
         record = self.api.dcim.devices.get(name=name)
-        return _record(record) if record else None
+        return _device_to_dict(record) if record else None
 
     def list_prefixes(self) -> list[dict[str, Any]]:
         """List IPAM prefixes."""
