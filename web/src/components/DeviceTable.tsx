@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getDevices, type Device } from '../api/client'
-
-function display(value: unknown): string {
-  if (value == null) return '—'
-  if (typeof value === 'object') {
-    const obj = value as Record<string, unknown>
-    return String(obj.display ?? obj.name ?? obj.value ?? JSON.stringify(value))
-  }
-  return String(value)
-}
+import { display } from '../format'
 
 export function DeviceTable() {
   const [devices, setDevices] = useState<Device[]>([])
