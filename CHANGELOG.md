@@ -25,4 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Governance: ADRs (0001–0003), architecture and roadmap docs, CI, Dependabot
   auto-merge, issue/PR templates, and the `freed-dev-llc` repo baseline.
 
+### Dependencies
+
+- Consolidated the initial Dependabot pile-up into one upgrade: server floors
+  (`httpx`, `pydantic`, `pytest-cov`, `ruff`, `mypy`), web (`typescript` 6, `globals` 17,
+  `eslint-plugin-react-refresh` 0.5), and GitHub Actions (`checkout`, `setup-python`,
+  `setup-node`, `action-gh-release` majors).
+- Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
+  6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
+
 [Unreleased]: https://github.com/freed-dev-llc/argus/commits/main
