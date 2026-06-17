@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 # Heavy network-discovery libraries — declared for P1, not used by the scaffold yet.
 discovery = [
-    "napalm>=5.0",
+    "napalm>=5.1.0",
     "netmiko>=4.3",
     "pysnmp>=6.2",
 ]
