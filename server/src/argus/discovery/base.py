@@ -37,12 +37,24 @@ class DiscoveredClient:
 
 
 @dataclass
+class DiscoveredLink:
+    """A directed link between two devices (e.g. a device and its uplink)."""
+
+    local_device: str
+    remote_device: str
+    local_port: str | None = None
+    remote_port: str | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class DiscoveryResult:
     """The normalized output of a single collector run."""
 
     collector: str
     devices: list[DiscoveredDevice] = field(default_factory=list)
     clients: list[DiscoveredClient] = field(default_factory=list)
+    links: list[DiscoveredLink] = field(default_factory=list)
     ip_addresses: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 

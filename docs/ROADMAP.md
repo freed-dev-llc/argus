@@ -33,7 +33,8 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ Topology map in the web app (#11): devices grouped by site, colored by role (SVG,
   dependency-free). Decision: defer `react-flow`/`cytoscape` until there are real edges.
 - ✅ IPAM prefix hierarchy: containment tree from `/api/prefixes`, rendered indented.
-- Render cabling / LLDP neighbor **edges** (blocked on neighbor data — see #8).
+- ✅ Topology **edges**: UniFi-native uplink/neighbor links (#8) drawn on the map via
+  `GET /api/topology`. (Generic SNMP/LLDP edges for non-UniFi gear: see #8.)
 
 ## P4 — Stay current automatically
 

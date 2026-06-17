@@ -7,7 +7,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from .config import get_settings
-from .tools.discovery_tools import discovery_scan, list_collectors
+from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
 from .tools.read_tools import (
     get_device,
     list_devices,
@@ -39,6 +39,7 @@ mcp.tool()(search)
 # Discovery tools (observe live network state)
 mcp.tool()(list_collectors)
 mcp.tool()(discovery_scan)
+mcp.tool()(network_topology)
 
 # Reconcile tools (review drift, apply changes — confirmation-gated)
 mcp.tool()(drift_report)

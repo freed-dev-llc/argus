@@ -127,6 +127,38 @@ async def test_collect_tolerates_missing_clients_endpoint(monkeypatch):
     assert any("clients endpoint unavailable" in note for note in result.notes)
 
 
+@respx.mock
+async def test_collect_topology_from_uplinks(monkeypatch):
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"id": "agg", "name": "Aggregation", "model": "USW Pro Aggregation", "ipAddress": "10.0.0.2"},
+                    {"id": "sw", "name": "Switch", "model": "USW Pro 48", "ipAddress": "10.0.0.3"},
+                ]
+            },
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(return_value=httpx.Response(200, json={"data": []}))
+    respx.get(f"{BASE}/sites/s1/devices/agg").mock(return_value=httpx.Response(200, json={"id": "agg", "uplink": {}}))
+    respx.get(f"{BASE}/sites/s1/devices/sw").mock(
+        return_value=httpx.Response(200, json={"id": "sw", "uplink": {"deviceId": "agg"}})
+    )
+
+    result = await UniFiCollector().collect()
+
+    assert len(result.links) == 1
+    assert result.links[0].local_device == "Switch"
+    assert result.links[0].remote_device == "Aggregation"
+
+
 async def test_collect_unconfigured(monkeypatch):
     monkeypatch.setattr(
         unifi, "get_settings", lambda: Settings(unifi_url="", unifi_api_token="", _env_file=None)

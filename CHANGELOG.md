@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UniFi-native topology** (#8): the UniFi collector captures device uplinks from the
+  Integration API as `DiscoveredLink` edges (no SNMP needed). New `network_topology` tool +
+  `GET /api/topology` return nodes + links, and the dashboard topology map now draws the
+  uplink/neighbor edges between devices.
 - **Ansible deploy role** (`ansible/roles/argus_deploy` + `deploy-argus.yml`): stands up the
   full stack on a Docker host — repo checkout, `deploy/.env` rendering, and `docker compose up`
   via `community.docker.docker_compose_v2`. Secrets are generated once and **reused** from the
