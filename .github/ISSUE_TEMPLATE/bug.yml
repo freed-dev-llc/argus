@@ -1,0 +1,56 @@
+name: Bug Report
+description: Report a bug in Argus
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - server (MCP / FastAPI)
+        - web (React dashboard)
+        - discovery / reconciliation
+        - docs / CI
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Argus Version / Commit
+      placeholder: "e.g. 0.1.0 or a commit SHA"
+  - type: input
+    id: netbox-version
+    attributes:
+      label: NetBox Version
+      placeholder: "e.g. 4.2.1"
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Run `argus-http`
+        2. Call `list_devices`
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Output
+      render: shell

@@ -1,0 +1,90 @@
+# Argus
+
+> The all-seeing keeper of your network's truth.
+
+**Argus** is a home- and lab-network automation server built on
+[NetBox](https://netbox.dev). It treats NetBox as the **single source of truth (SoT)**
+for your network and works to keep that truth *continuously reflecting reality* —
+devices, IP addresses, prefixes, cabling, and topology — by **discovering** the live
+network, **diffing** it against NetBox, and **reconciling** the difference.
+
+Argus exposes this capability to **MCP-compliant coding agents** (Claude Code, Codex,
+Kimi, …) as a set of tools, and ships a small React dashboard to query state, review
+drift, and trigger reconciliation by hand.
+
+In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
+everything. That's the job: always watching, always keeping the record true.
+
+> **Status:** early scaffold (v0.1.0). Read tools against NetBox work today; discovery
+> and reconciliation are stubbed behind a stable interface. See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## How it fits together
+
+```
+Collectors (UniFi / SNMP-LLDP / DHCP-ARP …) ─► normalize ─► diff vs NetBox ─► reconcile plan ─► apply
+        (server/src/argus/discovery/)                          (reconcile/)     (dry-run default,
+                                                                                 confirmation-gated)
+NetBox ◄── pynetbox client ──► MCP tools (server/src/argus/tools/) ──► coding agents
+                            └─► FastAPI (http_server.py) ──► React dashboard (web/)
+```
+
+NetBox is authoritative; Argus never invents truth — it makes NetBox match what it
+observes. Writes are **dry-run by default** and real changes are **confirmation-gated**.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
+[Architecture Decision Records](docs/architecture/adr/).
+
+## Repository layout
+
+| Path | What |
+| --- | --- |
+| `server/` | Python MCP + FastAPI server (`mcp`, `fastapi`, `pynetbox`) |
+| `web/` | React + Vite + TypeScript dashboard |
+| `docs/` | Architecture, roadmap, and ADRs |
+| `.github/` | CI, Dependabot, issue/PR templates, CODEOWNERS |
+
+## Quickstart
+
+### Server
+
+```bash
+cd server
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Point Argus at your NetBox (see .env.example)
+export NETBOX_URL="https://netbox.lan"
+export NETBOX_TOKEN="<a NetBox API token>"
+
+argus-http        # FastAPI on :8080  (used by the web app)
+argus-mcp         # MCP server over stdio (used by coding agents)
+```
+
+If `NETBOX_URL` / `NETBOX_TOKEN` are unset, tools return a clear "NetBox not
+configured" message rather than failing — handy for first-run exploration.
+
+### Web dashboard
+
+```bash
+cd web
+npm install
+npm run dev       # http://localhost:5173 — proxies /api to the server on :8080
+```
+
+### Use from a coding agent (MCP)
+
+`.mcp.json` at the repo root registers the `argus` server. With the package installed
+(`pip install -e server`), Claude Code (and other MCP clients) can call:
+
+- `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` — read NetBox
+- `list_collectors`, `discovery_scan` — observe live network state (stubbed)
+- `drift_report`, `reconcile_apply` — review and apply reconciliation (stubbed, confirmation-gated)
+
+## Contributing
+
+This is a personal project run with the discipline of a shared one: changes land via
+**signed-commit pull requests** with a CHANGELOG entry, decisions are captured as
+**ADRs**, and work is tracked in **issues**. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[Apache-2.0](LICENSE).

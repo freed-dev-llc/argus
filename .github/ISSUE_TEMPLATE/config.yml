@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/freed-dev-llc/argus/security/advisories/new
+    about: Report security issues privately — do not open a public issue.
+  - name: Documentation
+    url: https://github.com/freed-dev-llc/argus#readme
+    about: Check the README, ARCHITECTURE.md, and ADRs first.

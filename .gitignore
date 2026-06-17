@@ -1,0 +1,43 @@
+# --- Local agent / editor context (intentionally not shared) ---
+CLAUDE.md
+.claude/
+
+# --- Secrets / local env ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.so
+
+# --- Node / web ---
+node_modules/
+web/dist/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- OS / editor ---
+.DS_Store
+*.swp
+.idea/
+.vscode/

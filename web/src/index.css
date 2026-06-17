@@ -1,0 +1,108 @@
+:root {
+  --bg: #0f1115;
+  --panel: #181b22;
+  --border: #2a2f3a;
+  --text: #e6e8eb;
+  --muted: #8b93a1;
+  --accent: #4ea1ff;
+  --ok: #2ecc71;
+  --warn: #f1c40f;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+header h1 {
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.tagline {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge.warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+main {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+section h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.placeholder {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+footer {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "argus": {
+      "command": "argus-mcp",
+      "env": {
+        "NETBOX_URL": "",
+        "NETBOX_TOKEN": ""
+      }
+    }
+  }
+}

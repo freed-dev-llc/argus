@@ -1,0 +1,38 @@
+name: Security
+
+# Lightweight, free dependency auditing — no GitHub Advanced Security required.
+# (CodeQL is deferred: it needs GHAS, and it has no linux/arm64 build, so it must
+#  run on github-hosted amd64 runners if/when GHAS is enabled.)
+# These jobs are advisory and are NOT required status checks.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - name: Audit server dependencies
+        working-directory: server
+        run: pip-audit --skip-editable . || true
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Audit web dependencies
+        working-directory: web
+        run: npm audit --audit-level=high || true

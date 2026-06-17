@@ -1,0 +1,14 @@
+# CODEOWNERS - Defines code owners for repository files
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @jfreed-dev
+
+# Workflow and CI configuration - require explicit review
+/.github/ @jfreed-dev
+
+# Security-sensitive files
+SECURITY.md @jfreed-dev
+
+# Architecture decisions
+/docs/architecture/ @jfreed-dev

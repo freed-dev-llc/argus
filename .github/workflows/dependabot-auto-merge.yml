@@ -1,0 +1,19 @@
+name: Dependabot Auto-Merge
+
+# Thin caller for the org reusable workflow in freed-dev-llc/.github.
+# Single source of truth lives there; this file should not diverge.
+# Requires the DEPENDABOT_AUTOMERGE_TOKEN *Dependabot* org secret to be
+# scoped to this repo.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    uses: freed-dev-llc/.github/.github/workflows/dependabot-auto-merge.yml@main
+    secrets:
+      DEPENDABOT_AUTOMERGE_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
