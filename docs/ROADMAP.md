@@ -42,5 +42,6 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 
 ## P5 — Hardening & open source
 
-- HTTP auth, deployment story (compose profile that bundles NetBox), container/PyPI publish.
+- ✅ Deployment story: self-contained `deploy/` compose bundling NetBox + Argus server + web.
+- HTTP auth on the Argus server/API; container image publishing (GHCR) and PyPI.
 - Docs pass, examples, and the public open-source flip.
