@@ -28,6 +28,27 @@ async def discovery_scan(collector: str) -> dict[str, Any]:
         "collector": result.collector,
         "devices": [asdict(d) for d in result.devices],
         "clients": [asdict(c) for c in result.clients],
+        "links": [asdict(link) for link in result.links],
         "ip_addresses": result.ip_addresses,
         "notes": result.notes,
     }
+
+
+async def network_topology(collector: str = "unifi") -> dict[str, Any]:
+    """Return the observed network topology — device nodes + links — from a collector.
+
+    Args:
+        collector: Collector name (default "unifi").
+    """
+    cls = COLLECTORS.get(collector)
+    if cls is None:
+        return {"error": f"Unknown collector '{collector}'. Available: {sorted(COLLECTORS)}"}
+    result = await cls().collect()
+    nodes = [
+        {"name": d.name, "role": d.role, "site": d.site, "primary_ip": d.primary_ip}
+        for d in result.devices
+    ]
+    links = [
+        {"source": link.local_device, "target": link.remote_device} for link in result.links
+    ]
+    return {"collector": result.collector, "nodes": nodes, "links": links, "notes": result.notes}

@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .tools.discovery_tools import discovery_scan, list_collectors
+from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
 from .tools.read_tools import (
     get_device,
     list_devices,
@@ -81,6 +81,11 @@ async def api_collectors() -> dict[str, Any]:
 @app.post("/api/collectors/{collector}/scan")
 async def api_scan(collector: str) -> dict[str, Any]:
     return await discovery_scan(collector)
+
+
+@app.get("/api/topology")
+async def api_topology(collector: str = "unifi") -> dict[str, Any]:
+    return await network_topology(collector)
 
 
 @app.get("/api/drift")

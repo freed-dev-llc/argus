@@ -111,6 +111,30 @@ export function postReconcile(confirmToken?: string, collector = 'unifi'): Promi
   return postJSON<ReconcileResponse>(`/api/reconcile?${params.toString()}`)
 }
 
+export interface TopologyNode {
+  name: string
+  role?: string | null
+  site?: string | null
+  primary_ip?: string | null
+}
+
+export interface TopologyLink {
+  source: string
+  target: string
+}
+
+export interface TopologyResponse {
+  collector?: string
+  nodes?: TopologyNode[]
+  links?: TopologyLink[]
+  notes?: string[]
+  error?: string
+}
+
+export function getTopology(collector = 'unifi'): Promise<TopologyResponse> {
+  return getJSON<TopologyResponse>(`/api/topology?collector=${encodeURIComponent(collector)}`)
+}
+
 export interface HealthResponse {
   status: string
   netbox_configured?: boolean

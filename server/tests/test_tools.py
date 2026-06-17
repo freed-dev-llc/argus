@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from argus.config import Settings
+from argus.discovery.base import DiscoveredDevice, DiscoveredLink, DiscoveryResult
 from argus.tools import discovery_tools, read_tools
 
 
@@ -52,4 +53,27 @@ async def test_discovery_scan_known_collector():
 
 async def test_discovery_scan_unknown_collector():
     out = await discovery_tools.discovery_scan("nope")
+    assert "error" in out
+
+
+class _FakeTopoCollector:
+    name = "faketopo"
+
+    async def collect(self):
+        return DiscoveryResult(
+            collector="faketopo",
+            devices=[DiscoveredDevice(name="a", role="switch"), DiscoveredDevice(name="b", role="ap")],
+            links=[DiscoveredLink(local_device="b", remote_device="a")],
+        )
+
+
+async def test_network_topology(monkeypatch):
+    monkeypatch.setitem(discovery_tools.COLLECTORS, "faketopo", _FakeTopoCollector)
+    out = await discovery_tools.network_topology("faketopo")
+    assert {n["name"] for n in out["nodes"]} == {"a", "b"}
+    assert out["links"] == [{"source": "b", "target": "a"}]
+
+
+async def test_network_topology_unknown_collector():
+    out = await discovery_tools.network_topology("nope")
     assert "error" in out

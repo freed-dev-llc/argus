@@ -16,7 +16,13 @@ from typing import Any
 import httpx
 
 from ...config import get_settings
-from ..base import Collector, DiscoveredClient, DiscoveredDevice, DiscoveryResult
+from ..base import (
+    Collector,
+    DiscoveredClient,
+    DiscoveredDevice,
+    DiscoveredLink,
+    DiscoveryResult,
+)
 
 # Best-effort NetBox device-role inference from the UniFi model string. The Integration
 # API returns full model names ("UniFi Dream Machine PRO SE", "USW Pro 48 PoE", "U6 Pro"),
@@ -86,6 +92,19 @@ class UniFiCollector(Collector):
                 except httpx.HTTPError as exc:
                     clients = []
                     result.notes.append(f"UniFi clients endpoint unavailable: {exc}")
+                # Topology (best-effort): each device's detail carries its uplink device id.
+                uplinks: dict[str, str] = {}
+                for device in devices:
+                    did = device.get("id")
+                    if not did:
+                        continue
+                    try:
+                        detail = await _get(client, f"{base}/sites/{site['id']}/devices/{did}")
+                    except httpx.HTTPError:
+                        continue
+                    remote = (detail.get("uplink") or {}).get("deviceId")
+                    if remote:
+                        uplinks[did] = remote
         except httpx.HTTPError as exc:
             result.notes.append(f"UniFi API request failed: {exc}")
             return result
@@ -121,8 +140,19 @@ class UniFiCollector(Collector):
             if ip:
                 result.ip_addresses.append(ip)
 
+        id_to_name = {
+            d.get("id"): (d.get("name") or d.get("macAddress") or d.get("id"))
+            for d in devices
+            if d.get("id")
+        }
+        for local_id, remote_id in uplinks.items():
+            local = id_to_name.get(local_id)
+            remote = id_to_name.get(remote_id)
+            if local and remote:
+                result.links.append(DiscoveredLink(local_device=local, remote_device=remote))
+
         result.notes.append(
-            f"Discovered {len(result.devices)} device(s) and {len(result.clients)} client(s) "
-            f"from UniFi site '{site_name}'."
+            f"Discovered {len(result.devices)} device(s), {len(result.clients)} client(s), "
+            f"{len(result.links)} link(s) from UniFi site '{site_name}'."
         )
         return result
