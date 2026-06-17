@@ -25,7 +25,7 @@ dependencies = [
 discovery = [
     "napalm>=5.1.0",
     "netmiko>=4.3",
-    "pysnmp>=6.2",
+    "pysnmp>=7.1.27",
 ]
 dev = [
     "pytest>=8.0",
