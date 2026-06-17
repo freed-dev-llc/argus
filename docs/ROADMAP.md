@@ -32,8 +32,8 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 
 - ✅ Topology map in the web app (#11): devices grouped by site, colored by role (SVG,
   dependency-free). Decision: defer `react-flow`/`cytoscape` until there are real edges.
-- Render cabling / LLDP neighbor **edges** (blocked on neighbor data — see #8) and the IPAM
-  prefix hierarchy.
+- ✅ IPAM prefix hierarchy: containment tree from `/api/prefixes`, rendered indented.
+- Render cabling / LLDP neighbor **edges** (blocked on neighbor data — see #8).
 
 ## P4 — Stay current automatically
 

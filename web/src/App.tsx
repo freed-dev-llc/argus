@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getHealth, type HealthResponse } from './api/client'
 import { DeviceTable } from './components/DeviceTable'
 import { DriftPanel } from './components/DriftPanel'
+import { IpamTree } from './components/IpamTree'
 import { TopologyMap } from './components/TopologyMap'
 
 export default function App() {
@@ -33,6 +34,10 @@ export default function App() {
         <section>
           <h2>Devices</h2>
           <DeviceTable />
+        </section>
+        <section>
+          <h2>IPAM</h2>
+          <IpamTree />
         </section>
         <section>
           <h2>Drift</h2>

@@ -38,6 +38,24 @@ export function getDevices(): Promise<DevicesResponse> {
   return getJSON<DevicesResponse>('/api/devices')
 }
 
+export interface Prefix {
+  prefix?: string
+  status?: unknown
+  description?: unknown
+  site?: unknown
+  [key: string]: unknown
+}
+
+export interface PrefixesResponse {
+  prefixes?: Prefix[]
+  count?: number
+  error?: string
+}
+
+export function getPrefixes(): Promise<PrefixesResponse> {
+  return getJSON<PrefixesResponse>('/api/prefixes')
+}
+
 export interface Change {
   action: string
   object_type: string
