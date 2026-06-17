@@ -21,6 +21,8 @@ class DiscoveredDevice:
     primary_ip: str | None = None
     site: str | None = None
     role: str | None = None
+    model: str | None = None
+    manufacturer: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 

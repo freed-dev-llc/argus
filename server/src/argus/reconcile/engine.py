@@ -24,10 +24,8 @@ from ..netbox.client import NetBoxClient
 
 Action = Literal["create", "update", "delete"]
 
-# Fields compared for update-drift. Kept to primary_ip for now — it is high-signal and
-# unambiguous. site/role comparison needs a name→slug mapping layer (ROADMAP P2.1), so
-# those are only included in `create` payloads, not used to trigger updates.
-COMPARE_FIELDS: tuple[str, ...] = ("primary_ip",)
+# Fields compared for update-drift. Resolved to NetBox foreign keys on apply.
+COMPARE_FIELDS: tuple[str, ...] = ("primary_ip", "site", "role")
 
 
 @dataclass
@@ -107,6 +105,10 @@ def _desired_device(device: DiscoveredDevice) -> dict[str, Any]:
         desired["site"] = device.site
     if device.role:
         desired["role"] = device.role
+    if device.model:
+        desired["model"] = device.model
+    if device.manufacturer:
+        desired["manufacturer"] = device.manufacturer
     return desired
 
 
@@ -187,28 +189,11 @@ class ReconcileEngine:
         }
 
     def _apply_change(self, change: ReconcileChange) -> dict[str, Any]:
-        assert self.netbox is not None  # guarded by apply()
         try:
             if change.action == "create":
-                if "device_type" not in change.details:
-                    return {
-                        "action": "create",
-                        "identifier": change.identifier,
-                        "status": "skipped",
-                        "detail": "device creation needs a NetBox device_type/role/site "
-                        "mapping (not provided by discovery; see ROADMAP P2.1)",
-                    }
-                self.netbox.create_device(change.details)
-                return {"action": "create", "identifier": change.identifier, "status": "created"}
+                return self._create_device(change)
             if change.action == "update":
-                fields = {name: delta["desired"] for name, delta in change.details.items()}
-                self.netbox.update_device(change.identifier, fields)
-                return {
-                    "action": "update",
-                    "identifier": change.identifier,
-                    "status": "updated",
-                    "detail": fields,
-                }
+                return self._update_device(change)
             return {
                 "action": change.action,
                 "identifier": change.identifier,
@@ -222,3 +207,58 @@ class ReconcileEngine:
                 "status": "error",
                 "detail": str(exc),
             }
+
+    def _create_device(self, change: ReconcileChange) -> dict[str, Any]:
+        """Resolve foreign keys (creating supporting objects as needed) and create the device."""
+        nb = self.netbox
+        assert nb is not None
+        details = change.details
+        if not (details.get("site") and details.get("role") and details.get("model")):
+            return {
+                "action": "create",
+                "identifier": change.identifier,
+                "status": "skipped",
+                "detail": "create needs site, role, and model to resolve the NetBox "
+                "site / role / device_type",
+            }
+        manufacturer_id = nb.ensure_manufacturer(details.get("manufacturer") or "Unknown")
+        nb.create_device(
+            {
+                "name": details["name"],
+                "device_type": nb.ensure_device_type(details["model"], manufacturer_id),
+                "role": nb.ensure_role(details["role"]),
+                "site": nb.ensure_site(details["site"]),
+                "status": "active",
+            }
+        )
+        if details.get("primary_ip"):
+            nb.assign_primary_ip(details["name"], details["primary_ip"])
+        return {"action": "create", "identifier": change.identifier, "status": "created"}
+
+    def _update_device(self, change: ReconcileChange) -> dict[str, Any]:
+        """Resolve and apply field deltas to an existing device."""
+        nb = self.netbox
+        assert nb is not None
+        fields: dict[str, Any] = {}
+        primary_ip: str | None = None
+        for field_name, delta in change.details.items():
+            desired = delta["desired"]
+            if field_name == "site":
+                fields["site"] = nb.ensure_site(desired)
+            elif field_name == "role":
+                fields["role"] = nb.ensure_role(desired)
+            elif field_name == "primary_ip":
+                primary_ip = desired
+        if fields:
+            nb.update_device(change.identifier, fields)
+        if primary_ip:
+            nb.assign_primary_ip(change.identifier, primary_ip)
+        applied = dict(fields)
+        if primary_ip:
+            applied["primary_ip"] = primary_ip
+        return {
+            "action": "update",
+            "identifier": change.identifier,
+            "status": "updated",
+            "detail": applied,
+        }

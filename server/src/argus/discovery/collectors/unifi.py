@@ -97,6 +97,8 @@ class UniFiCollector(Collector):
                     primary_ip=ip,
                     site=site_name,
                     role=_role_from_model(device.get("model")),
+                    model=device.get("model"),
+                    manufacturer="Ubiquiti",
                     raw=device,
                 )
             )

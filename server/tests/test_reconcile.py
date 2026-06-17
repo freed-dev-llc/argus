@@ -10,12 +10,14 @@ from argus.tools import reconcile_tools
 
 
 class FakeNetBox:
-    """Minimal stand-in for NetBoxClient."""
+    """Minimal stand-in for NetBoxClient, recording calls and returning fake ids."""
 
     def __init__(self, devices: list[dict[str, Any]] | None = None) -> None:
         self._devices = devices or []
         self.created: list[dict[str, Any]] = []
         self.updated: list[tuple[str, dict[str, Any]]] = []
+        self.ensured: list[tuple[Any, ...]] = []
+        self.primary_ips: list[tuple[str, str]] = []
 
     def list_devices(self) -> list[dict[str, Any]]:
         return self._devices
@@ -27,6 +29,25 @@ class FakeNetBox:
     def update_device(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
         self.updated.append((name, data))
         return {"name": name, **data}
+
+    def ensure_site(self, name: str) -> int:
+        self.ensured.append(("site", name))
+        return 1
+
+    def ensure_role(self, name: str) -> int:
+        self.ensured.append(("role", name))
+        return 2
+
+    def ensure_manufacturer(self, name: str) -> int:
+        self.ensured.append(("manufacturer", name))
+        return 3
+
+    def ensure_device_type(self, model: str, manufacturer_id: int) -> int:
+        self.ensured.append(("device_type", model, manufacturer_id))
+        return 4
+
+    def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
+        self.primary_ips.append((device_name, ip))
 
 
 def _observed(*devices: DiscoveredDevice) -> DiscoveryResult:
@@ -55,9 +76,17 @@ def test_diff_proposes_update_on_ip_drift():
     assert plan.changes[0].details["primary_ip"] == {"current": "10.0.0.9", "desired": "10.0.0.2"}
 
 
-def test_diff_no_change_when_ip_matches():
-    nb = FakeNetBox([{"name": "sw1", "primary_ip": {"address": "10.0.0.2/24"}}])
-    plan = ReconcileEngine(nb).diff(_observed(DiscoveredDevice(name="sw1", primary_ip="10.0.0.2")))
+def test_diff_proposes_update_on_site_drift():
+    nb = FakeNetBox([{"name": "sw1", "site": {"slug": "old-site"}}])
+    plan = ReconcileEngine(nb).diff(_observed(DiscoveredDevice(name="sw1", site="Home")))
+    assert plan.changes[0].details["site"] == {"current": "old-site", "desired": "Home"}
+
+
+def test_diff_no_change_when_everything_matches():
+    nb = FakeNetBox([{"name": "sw1", "primary_ip": {"address": "10.0.0.2/24"}, "site": {"slug": "home"}}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", primary_ip="10.0.0.2", site="home"))
+    )
     assert plan.changes == []
 
 
@@ -78,22 +107,28 @@ def test_apply_is_noop_without_confirm():
     assert nb.updated == []
 
 
-def test_apply_update_calls_client():
+def test_apply_create_persists_with_resolved_fks():
     nb = FakeNetBox([])
     plan = ReconcilePlan(
         changes=[
             ReconcileChange(
-                "update", "device", "sw1", {"primary_ip": {"current": "x", "desired": "10.0.0.2"}}
+                "create", "device", "sw1",
+                {
+                    "name": "sw1", "site": "Home", "role": "switch",
+                    "model": "USW-24-PoE", "manufacturer": "Ubiquiti", "primary_ip": "10.0.0.2",
+                },
             )
         ]
     )
     result = ReconcileEngine(nb).apply(plan, confirm=True)
-    assert nb.updated == [("sw1", {"primary_ip": "10.0.0.2"})]
-    assert result["applied_count"] == 1
-    assert result["results"][0]["status"] == "updated"
+    assert result["results"][0]["status"] == "created"
+    assert len(nb.created) == 1
+    created = nb.created[0]
+    assert created == {"name": "sw1", "device_type": 4, "role": 2, "site": 1, "status": "active"}
+    assert nb.primary_ips == [("sw1", "10.0.0.2")]
 
 
-def test_apply_create_skips_without_device_type():
+def test_apply_create_skips_without_required_fields():
     nb = FakeNetBox([])
     plan = ReconcilePlan(
         changes=[ReconcileChange("create", "device", "sw1", {"name": "sw1", "primary_ip": "10.0.0.2"})]
@@ -103,24 +138,28 @@ def test_apply_create_skips_without_device_type():
     assert nb.created == []
 
 
-def test_apply_create_with_device_type():
+def test_apply_update_resolves_site_and_assigns_ip():
     nb = FakeNetBox([])
     plan = ReconcilePlan(
         changes=[
             ReconcileChange(
-                "create", "device", "sw1",
-                {"name": "sw1", "device_type": "usw-24", "role": "switch", "site": "home"},
+                "update", "device", "sw1",
+                {
+                    "site": {"current": "old", "desired": "Home"},
+                    "primary_ip": {"current": "10.0.0.9", "desired": "10.0.0.2"},
+                },
             )
         ]
     )
     result = ReconcileEngine(nb).apply(plan, confirm=True)
-    assert len(nb.created) == 1
-    assert result["results"][0]["status"] == "created"
+    assert result["results"][0]["status"] == "updated"
+    assert nb.updated == [("sw1", {"site": 1})]
+    assert nb.primary_ips == [("sw1", "10.0.0.2")]
 
 
 def test_apply_captures_per_change_errors():
     class Boom(FakeNetBox):
-        def update_device(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
+        def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
             raise RuntimeError("netbox said no")
 
     plan = ReconcilePlan(
@@ -167,7 +206,7 @@ async def test_reconcile_apply_confirmation_flow(monkeypatch):
     confirmed = await reconcile_tools.reconcile_apply(confirm_token=first["confirm_token"])
     assert confirmed["confirmed"] is True
     assert confirmed["applied"] is True
-    assert nb.updated == [("sw1", {"primary_ip": "10.0.0.2"})]
+    assert nb.primary_ips == [("sw1", "10.0.0.2")]
 
 
 async def test_reconcile_apply_no_changes(monkeypatch):
