@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-17
+
+First tagged checkpoint: the full discover → diff → confirm → reconcile loop, validated
+end-to-end against a live UniFi network + NetBox 4.6, with a dashboard, Docker deployment,
+and Ansible integration.
+
 ### Added
 
 - **UniFi-native topology** (#8): the UniFi collector captures device uplinks from the
@@ -99,4 +105,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/commits/main
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/freed-dev-llc/argus/releases/tag/v0.1.0

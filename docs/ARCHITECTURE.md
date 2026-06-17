@@ -64,8 +64,9 @@ Both call the same underlying tool functions, so behavior can't drift between th
 
 ## Current status
 
-Read tools against NetBox are real. Discovery collectors and the reconcile diff/apply
-internals are **stubs** behind stable interfaces — they return clear "not yet
-implemented" results so the end-to-end shape (agent → tool → engine → NetBox, and
-server → HTTP → web) is exercisable today. See [ROADMAP.md](ROADMAP.md) and
-[ADR-0003](architecture/adr/0003-discovery-reconciliation-model.md).
+Implemented and validated end-to-end against a live UniFi network + NetBox 4.6: the UniFi
+collector discovers devices, clients, and uplink **topology**; the reconcile engine diffs and
+(on confirmation) **persists** to NetBox DCIM + IPAM, resolving/creating the needed foreign
+keys; the dashboard surfaces devices, the IPAM prefix tree, drift→apply, and the topology map;
+Ansible consumes NetBox via `nb_inventory`. The generic SNMP/LLDP collector is implemented but
+unvalidated against live SNMP. See [ROADMAP.md](ROADMAP.md) and the ADRs.
