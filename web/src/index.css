@@ -102,6 +102,65 @@ th {
   text-align: center;
 }
 
+button {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.changes {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.changes li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge.action-create,
+.badge.status-created {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge.action-update,
+.badge.status-updated {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.badge.action-delete,
+.badge.status-error {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.badge.status-skipped {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.apply-confirm,
+.apply-result {
+  margin-top: 0.75rem;
+}
+
 footer {
   margin-top: 2rem;
   font-size: 0.85rem;
