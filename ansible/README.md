@@ -15,7 +15,7 @@ cd ansible
 ansible-galaxy collection install -r requirements.yml
 pip install pynetbox pytz      # required by the plugin on the control node
 
-export NETBOX_API=http://10.10.88.130:8096   # your NetBox
+export NETBOX_API=http://10.0.0.10:8096   # your NetBox
 export NETBOX_TOKEN=<a NetBox API token>
 ```
 

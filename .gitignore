@@ -1,14 +1,24 @@
-# --- Local agent / editor context (mostly not shared) ---
+# --- Local agent / editor context (not shared) ---
 CLAUDE.md
-# Ignore .claude/ contents, but DO share the Sage/Nova/Vera persona system:
-# the slash commands and the handoff workflow README. Transient session
-# artifacts (current-brief, build-log, build-complete, review-result,
-# session-checkpoint) stay local.
-.claude/*
-!.claude/commands/
-!.claude/handoff/
-.claude/handoff/*
-!.claude/handoff/README.md
+SAGE.md
+NOVA.md
+VERA.md
+.claude/
+# Other coding agents' local context — keep private, same as CLAUDE.md:
+AGENTS.md          # Codex / OpenAI (also the cross-tool standard)
+GEMINI.md          # Google Gemini CLI
+KIMI.md            # Kimi / Moonshot
+QWEN.md            # Qwen Code
+.codex/
+.gemini/
+.cursor/
+.cursorrules
+.aider*
+.windsurf/
+.windsurfrules
+.clinerules
+.continue/
+.opencode/
 
 # --- Secrets / local env ---
 .env
