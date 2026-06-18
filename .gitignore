@@ -4,6 +4,21 @@ SAGE.md
 NOVA.md
 VERA.md
 .claude/
+# Other coding agents' local context — keep private, same as CLAUDE.md:
+AGENTS.md          # Codex / OpenAI (also the cross-tool standard)
+GEMINI.md          # Google Gemini CLI
+KIMI.md            # Kimi / Moonshot
+QWEN.md            # Qwen Code
+.codex/
+.gemini/
+.cursor/
+.cursorrules
+.aider*
+.windsurf/
+.windsurfrules
+.clinerules
+.continue/
+.opencode/
 
 # --- Secrets / local env ---
 .env
