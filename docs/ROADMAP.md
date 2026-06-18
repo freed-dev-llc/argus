@@ -55,5 +55,8 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   enforced when set — `/api` + `/webhooks` gated (constant-time compare), health public,
   unset = open. The bundled dashboard's nginx forwards the token, so it works against an
   auth-enabled API.
-- Container image publishing (GHCR) and PyPI.
-- Docs pass, examples, and the public open-source flip.
+- ✅ **Container image publishing (GHCR) + PyPI**: a `v*` tag pushes
+  `ghcr.io/freed-dev-llc/argus-server` + `argus-web` images and publishes the server to PyPI
+  (distribution `argus-netbox`, import `argus`) via trusted publishing (OIDC).
+- ✅ Docs pass + examples (this step).
+- The **public open-source flip** (repo visibility) — still pending, held for Jon.

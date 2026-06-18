@@ -35,6 +35,13 @@ observes. Writes are **dry-run by default** and real changes are **confirmation-
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
 [Architecture Decision Records](docs/architecture/adr/).
 
+The HTTP server also keeps the record current on its own: it receives NetBox **webhooks**
+(`POST /webhooks/netbox`, classify + structured-log) and can run an **opt-in scheduled drift
+loop** (`SCHEDULE_INTERVAL`) that diffs on an interval — read-only — serving the latest result at
+`GET /api/drift/status` and firing an optional alert webhook (`ALERT_WEBHOOK_URL`) on drift.
+Optional **bearer-token auth** (`HTTP_TOKEN`) gates `/api` + `/webhooks`. See
+[server/README.md](server/README.md) for setup and copy-pasteable examples.
+
 ## Repository layout
 
 | Path | What |
@@ -100,11 +107,12 @@ Released `v*` tags publish to GHCR and PyPI:
   docker pull ghcr.io/freed-dev-llc/argus-web:0.1.2
   ```
 
-- **Python package** — the server installs from PyPI as `argus-netbox` (the import name is
-  still `argus`):
+- **Python package** — the server installs from PyPI as `argus-netbox` (the import package stays
+  `argus`; the console scripts are `argus-mcp` / `argus-http`):
 
   ```bash
   pip install argus-netbox
+  argus-http        # FastAPI server on :8080   ·   argus-mcp = MCP over stdio
   ```
 
 ## Integrations
