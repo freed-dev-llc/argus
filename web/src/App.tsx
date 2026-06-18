@@ -50,7 +50,7 @@ export default function App() {
       </main>
 
       <footer>
-        <span className="muted">Argus v0.1.0 — NetBox is the source of truth.</span>
+        <span className="muted">Argus v{__APP_VERSION__} — NetBox is the source of truth.</span>
       </footer>
     </div>
   )
