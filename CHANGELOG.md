@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Deploy**: optional public-hostname exposure for the bundled NetBox — a new
+  `NETBOX_CSRF_TRUSTED_ORIGINS` knob wires NetBox v4's CSRF trusted origins so the UI can be
+  served over HTTPS behind a reverse proxy/tunnel, documented with a Cloudflare Tunnel
+  subdomain example (`netbox.<domain>` → `:8096`) in `deploy/README.md`.
+
 ### Changed
 
 - **Documentation pass** (P5): `server/README.md` Configure now lists the optional `HTTP_TOKEN`,
