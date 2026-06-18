@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # FastAPI HTTP server
     http_host: str = "0.0.0.0"
     http_port: int = 8080
+    http_token: str = ""  # optional static bearer token; unset disables auth
+
+    @property
+    def http_auth_enabled(self) -> bool:
+        """True when a static bearer token is configured for the HTTP API."""
+        return bool(self.http_token)
 
     @property
     def netbox_configured(self) -> bool:
