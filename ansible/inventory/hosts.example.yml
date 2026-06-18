@@ -15,3 +15,5 @@ all:
         # argus_unifi_url: "https://10.0.0.1"
         # argus_unifi_api_token: "{{ vault_unifi_api_token }}"
         argus_unifi_site: default
+        # Set if serving the NetBox UI on a public hostname over HTTPS (reverse proxy / tunnel):
+        # argus_netbox_csrf_trusted_origins: "https://netbox.example.com"

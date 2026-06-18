@@ -25,6 +25,7 @@ What it does:
 | `argus_version` | `main` | Git ref to deploy. |
 | `argus_netbox_image` | `netboxcommunity/netbox:v4.6-5.0.1` | NetBox image pin. |
 | `argus_unifi_url` / `argus_unifi_api_token` | `""` | Set via Vault; blank reuses the target's existing `.env`. |
+| `argus_netbox_csrf_trusted_origins` | `""` | Trusted https origin(s) for NetBox CSRF when served over HTTPS behind a proxy/tunnel; blank reuses existing `.env`. |
 | `argus_docker_path` | macOS OrbStack/Homebrew + system paths | PATH so the module finds `docker`. |
 
 ## Usage
