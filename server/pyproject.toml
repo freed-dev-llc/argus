@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argus"
-version = "0.1.0"
+version = "0.1.1"
 description = "NetBox-backed network source-of-truth automation server for MCP coding agents"
 readme = "README.md"
 license = "Apache-2.0"

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-18
+
 ### Added
 
 - **Dashboard auth passthrough** (P5): the bundled `argus-web` nginx now forwards the
@@ -150,5 +152,6 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/freed-dev-llc/argus/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/freed-dev-llc/argus/releases/tag/v0.1.0
