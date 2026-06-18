@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CI**: bump the release workflow's Docker actions to their Node 24 majors —
+  `docker/login-action@v4`, `docker/metadata-action@v6`, `docker/build-push-action@v7`
+  (silences the Node 20 deprecation warnings in the GHCR image job).
+
 ## [0.1.4] - 2026-06-18
 
 ### Changed
