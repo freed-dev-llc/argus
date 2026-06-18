@@ -14,6 +14,12 @@ argus_unifi_url: ""
 argus_unifi_api_token: ""
 argus_unifi_site: "default"
 
+# Optional: trusted https origin(s) for NetBox's CSRF check when the UI is served over HTTPS
+# behind a reverse proxy / tunnel (e.g. "https://netbox.example.com"; space-separated for
+# several). Blank reuses whatever is already in the target's deploy/.env, so a manual edit on
+# the host is preserved. See deploy/README.md for the Cloudflare Tunnel walkthrough.
+argus_netbox_csrf_trusted_origins: ""
+
 # PATH for the docker CLI on the target (OrbStack/Docker Desktop on macOS aren't on the
 # default non-login PATH). Adjust for Linux hosts if needed.
 argus_docker_path: "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"

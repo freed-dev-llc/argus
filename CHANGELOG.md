@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Ansible (`argus_deploy`)**: the role now templates `NETBOX_CSRF_TRUSTED_ORIGINS` into the
+  target's `deploy/.env` (new `argus_netbox_csrf_trusted_origins` var; blank reuses the existing
+  value). Previously the knob added in the deploy compose/`.env.example` was absent from `env.j2`,
+  so a manual `.env` edit on a managed host was wiped on the next playbook run.
+
 ## [0.1.3] - 2026-06-18
 
 ### Added
