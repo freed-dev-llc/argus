@@ -85,6 +85,28 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   by default (`0`/unset). Set `ALERT_WEBHOOK_URL` to also POST a Slack-compatible
   `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
   set). All three are commented in `docker-compose.yml`.
+- **Expose NetBox on a public hostname (Cloudflare Tunnel):** to reach the NetBox UI at a
+  subdomain like `https://netbox.example.com` — cleaner than a sub-path, since NetBox is a
+  root-served Django app — point a tunnel ingress rule at NetBox's published port and set the
+  CSRF origin so login works:
+
+  ```yaml
+  # ~/.cloudflared/config.yml  (or add a "Public Hostname" in the Zero Trust dashboard)
+  ingress:
+    - hostname: argus.example.com      # existing — Argus dashboard
+      service: http://localhost:8095
+    - hostname: netbox.example.com     # new — NetBox UI/API
+      service: http://localhost:8096
+    - service: http_status:404
+  ```
+
+  Create the DNS route (`cloudflared tunnel route dns <tunnel> netbox.example.com`) and set
+  `NETBOX_CSRF_TRUSTED_ORIGINS=https://netbox.example.com` in `.env`. Cloudflare terminates TLS
+  and forwards `X-Forwarded-Proto: https`, so NetBox v4 rejects the login POST as a CSRF failure
+  without a matching trusted origin. (If `cloudflared` runs as a container on the compose
+  network instead of on the host, use `service: http://netbox:8080`.) **Security:** this puts
+  NetBox's read/write UI on the public internet — gate the hostname behind Cloudflare Access (or
+  equivalent); don't rely on the NetBox login alone.
 - **Pre-built images:** released `v*` tags publish the server and web images to GHCR —
   `ghcr.io/freed-dev-llc/argus-server` and `ghcr.io/freed-dev-llc/argus-web` (tags `0.1.2` /
   `latest`). The default compose file builds locally (`--build`); to run the published images

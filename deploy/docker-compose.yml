@@ -24,6 +24,10 @@ x-netbox-env: &netbox-env
   REDIS_CACHE_SSL: "false"
   SECRET_KEY: ${NETBOX_SECRET_KEY}
   ALLOWED_HOSTS: "*"
+  # Space-separated https origin(s) trusted for CSRF when NetBox is served over HTTPS
+  # behind a proxy/tunnel (NetBox v4 / Django requires this for login + edit POSTs).
+  # Empty = none, e.g. NETBOX_CSRF_TRUSTED_ORIGINS=https://netbox.example.com — see README.
+  CSRF_TRUSTED_ORIGINS: ${NETBOX_CSRF_TRUSTED_ORIGINS:-}
   SKIP_SUPERUSER: "false"
   SUPERUSER_NAME: admin
   SUPERUSER_EMAIL: admin@example.com
