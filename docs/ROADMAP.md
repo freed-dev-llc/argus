@@ -39,7 +39,10 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 
 ## P4 — Stay current automatically
 
-- NetBox webhooks (`/webhooks/netbox`) → react to changes.
+- NetBox webhooks (`/webhooks/netbox`):
+  - ✅ **classify + structured-log** change events (event / model / object / actor), defensive
+    parsing into a `NetBoxEvent`. Observability half of P4.
+  - reacting/automating on events (discovery trigger / reconcile) — deferred.
 - Scheduled discovery + reconcile (dry-run) with drift alerting.
 
 ## P5 — Hardening & open source

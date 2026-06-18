@@ -20,6 +20,7 @@ from .tools.read_tools import (
     search,
 )
 from .tools.reconcile_tools import drift_report, reconcile_apply
+from .webhooks import parse_netbox_event
 
 logger = logging.getLogger(__name__)
 
@@ -133,15 +134,20 @@ async def api_reconcile(
 
 @app.post("/webhooks/netbox")
 async def netbox_webhook(request: Request) -> dict[str, Any]:
-    """Receive NetBox change events (stub — logs and acks; reactions planned P4)."""
+    """Classify and structured-log an inbound NetBox change event, then ack.
+
+    Observability only: the payload is parsed into a :class:`~argus.webhooks.NetBoxEvent`,
+    logged as a greppable summary with structured fields, and echoed back as the
+    classification. No discovery, reconcile, or NetBox write is triggered (reactions are a
+    later phase). Parsing is defensive — a malformed body never raises.
+    """
     try:
         payload = await request.json()
     except Exception:
         payload = {}
-    event = payload.get("event") if isinstance(payload, dict) else None
-    model = payload.get("model") if isinstance(payload, dict) else None
-    logger.info("NetBox webhook received: event=%s model=%s", event, model)
-    return {"received": True, "event": event, "model": model}
+    event = parse_netbox_event(payload if isinstance(payload, dict) else {})
+    logger.info("NetBox webhook: %s", event.summary(), extra=event.log_fields())
+    return {"received": True, **event.log_fields()}
 
 
 def main() -> None:
