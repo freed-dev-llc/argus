@@ -38,7 +38,9 @@ Argus handles credentials and has read/write access to your network's source of 
    credentials — never hardcode them or commit `.env`.
 2. Start with a **read-only** NetBox token. Only widen scope once you trust the
    reconciliation behavior in dry-run.
-3. Run the HTTP server bound to a trusted interface; it has no authentication layer yet.
+3. Run the HTTP server bound to a trusted interface, and set `HTTP_TOKEN` to require
+   `Authorization: Bearer <token>` on `/api` and `/webhooks` for any exposed deployment
+   (unset = open; `/health` stays public).
 4. Review the dry-run reconcile plan before confirming any apply.
 
 ## Supply Chain
