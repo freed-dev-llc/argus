@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation pass** (P5): `server/README.md` Configure now lists the optional `HTTP_TOKEN`,
+  `SCHEDULE_INTERVAL`, `SCHEDULE_COLLECTOR`, and `ALERT_WEBHOOK_URL` settings; the webhook
+  classify+log, scheduled-drift loop, alert webhook, and `GET /api/drift/status` are documented
+  with copy-pasteable examples (enable auth, enable scheduled drift + alerting, install from
+  PyPI/GHCR); and `docs/ROADMAP.md` P5 marks GHCR/PyPI publishing and the docs pass done (the
+  public open-source flip stays pending). Also corrected the stale `release.yml` header comment
+  (`argus` → `argus-netbox`, `v0.1.1` → `v0.1.2`).
+
 ## [0.1.2] - 2026-06-18
 
 ### Changed
