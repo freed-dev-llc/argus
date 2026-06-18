@@ -69,3 +69,9 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
 - The NetBox API token is shared via `NETBOX_API_TOKEN` (NetBox `SUPERUSER_API_TOKEN` ==
   Argus `NETBOX_TOKEN`).
 - To reset NetBox state: `docker compose down -v` (drops the Postgres/media volumes).
+- **API auth (optional):** set `HTTP_TOKEN` on `argus-server` (commented in
+  `docker-compose.yml`) to require `Authorization: Bearer <token>` on every `/api/*` and
+  `/webhooks/*` request. `/health` and `/health/deep` stay public; leaving `HTTP_TOKEN`
+  unset keeps the API open (the default). With a token set, add `-H "Authorization: Bearer
+  $HTTP_TOKEN"` to the `curl` calls above, and configure the NetBox webhook to send the
+  same header.

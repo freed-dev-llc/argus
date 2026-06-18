@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **HTTP bearer-token auth** (P5): optional static bearer-token authentication on the
+  FastAPI server. Set `HTTP_TOKEN` to require `Authorization: Bearer <token>` on every
+  `/api/*` and `/webhooks/*` route (constant-time compare); `/health` and `/health/deep`
+  stay public, and an unset token leaves the API open (back-compat / dev). CORS preflight
+  (`OPTIONS`) is exempt so the dashboard/dev server keeps working, and the `Bearer` scheme
+  is matched case-insensitively. When a token is set, NetBox webhooks must be configured to
+  send the matching `Authorization` header.
+
 ## [0.1.0] - 2026-06-17
 
 First tagged checkpoint: the full discover → diff → confirm → reconcile loop, validated

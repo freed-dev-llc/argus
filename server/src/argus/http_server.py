@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
@@ -21,6 +23,11 @@ from .tools.reconcile_tools import drift_report, reconcile_apply
 
 logger = logging.getLogger(__name__)
 
+# Routes under these prefixes require a bearer token when one is configured.
+_PROTECTED_PREFIXES = ("/api", "/webhooks")
+_AUTH_HEADER = "Authorization"
+_BEARER_SCHEME = "bearer"
+
 app = FastAPI(title="argus", version="0.1.0")
 
 # Allow the Vite dev server to call the API during development.
@@ -30,6 +37,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def require_bearer_token(request: Request, call_next: Any) -> Any:
+    """Gate ``/api`` and ``/webhooks`` behind a static bearer token when one is set.
+
+    No-ops when ``HTTP_TOKEN`` is unset (back-compat / dev) and always lets the health
+    endpoints through. CORS preflight (``OPTIONS``) is exempt — browsers never attach
+    credentials to a preflight, and the actual request is still gated. The token
+    comparison is constant-time; the ``Bearer`` scheme is matched case-insensitively.
+    """
+    settings = get_settings()
+    protected = request.url.path.startswith(_PROTECTED_PREFIXES)
+    if settings.http_auth_enabled and protected and request.method != "OPTIONS":
+        scheme, _, token = request.headers.get(_AUTH_HEADER, "").partition(" ")
+        if scheme.lower() != _BEARER_SCHEME or not secrets.compare_digest(
+            token, settings.http_token
+        ):
+            return JSONResponse(
+                {"detail": "unauthorized"},
+                status_code=401,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    return await call_next(request)
 
 
 @app.get("/health")
