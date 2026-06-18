@@ -8,6 +8,11 @@ server {
     location /api/ {
         proxy_pass http://argus-server:8080;
         proxy_set_header Host $host;
+        # ${HTTP_TOKEN} is substituted by the nginx image's envsubst at container
+        # start (it is always defined, default empty). When set to match
+        # argus-server's HTTP_TOKEN the dashboard authenticates to the auth-gated
+        # API; when empty it forwards an empty bearer the server ignores.
+        proxy_set_header Authorization "Bearer ${HTTP_TOKEN}";
     }
     location = /health {
         proxy_pass http://argus-server:8080/health;
