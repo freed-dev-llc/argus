@@ -4,11 +4,14 @@ SAGE.md
 NOVA.md
 VERA.md
 .claude/
-# Other coding agents' local context — keep private, same as CLAUDE.md:
-AGENTS.md          # Codex / OpenAI (also the cross-tool standard)
-GEMINI.md          # Google Gemini CLI
-KIMI.md            # Kimi / Moonshot
-QWEN.md            # Qwen Code
+# Other coding agents' local context — keep private, same as CLAUDE.md.
+# (gitignore has no inline-comment syntax; keep each pattern on its own line.)
+# AGENTS.md = Codex / OpenAI (also the cross-tool standard)
+# GEMINI.md = Google Gemini CLI · KIMI.md = Kimi / Moonshot · QWEN.md = Qwen Code
+AGENTS.md
+GEMINI.md
+KIMI.md
+QWEN.md
 .codex/
 .gemini/
 .cursor/
