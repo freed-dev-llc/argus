@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **CI**: bump `actions/setup-python` to `v6` in the release workflow's PyPI job, matching
   `ci.yml` / `security.yml` (silences the Node 20 deprecation warning on the runner).
+- **`.gitignore`**: ignore host-specific Ansible inventories (`ansible/inventory/*.yml`) so a
+  local `hosts.yml` (per the role README's `cp hosts.example.yml hosts.yml`) can't be committed;
+  the shared `hosts.example.yml` stays tracked.
 
 ### Fixed
 

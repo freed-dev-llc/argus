@@ -30,6 +30,10 @@ QWEN.md
 *.pem
 *.key
 
+# --- Ansible (host-specific inventories are local; only the example is shared) ---
+ansible/inventory/*.yml
+!ansible/inventory/hosts.example.yml
+
 # --- Python ---
 __pycache__/
 *.py[cod]
