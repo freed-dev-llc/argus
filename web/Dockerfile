@@ -8,6 +8,12 @@ COPY . .
 RUN npm run build
 
 FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Keep HTTP_TOKEN always defined (default empty) so the nginx image's envsubst step
+# substitutes ${HTTP_TOKEN} in the template instead of leaving it literal. Set it
+# (matching argus-server's HTTP_TOKEN) to make the dashboard authenticate to the API.
+ENV HTTP_TOKEN=""
+# Templated config: the nginx image runs envsubst over /etc/nginx/templates/*.template
+# at startup, writing the result to /etc/nginx/conf.d/default.conf.
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

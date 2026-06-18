@@ -169,6 +169,11 @@ services:
     depends_on:
       argus-server:
         condition: service_healthy
+    environment:
+      # Forwarded to nginx's envsubst so the dashboard's /api proxy sends
+      # Authorization: Bearer <token>. Must match argus-server's HTTP_TOKEN for the
+      # dashboard to authenticate against an auth-enabled API (unset = open default).
+      HTTP_TOKEN: ${HTTP_TOKEN:-}
     ports:
       - "8095:80"
     restart: unless-stopped

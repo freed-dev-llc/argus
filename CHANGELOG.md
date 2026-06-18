@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dashboard auth passthrough** (P5): the bundled `argus-web` nginx now forwards the
+  bearer token on its `/api` proxy, so the dashboard keeps working against an auth-enabled
+  API. `web/nginx.conf` became `web/nginx.conf.template` (consumed via the official nginx
+  image's `envsubst` templating) and injects `Authorization: Bearer ${HTTP_TOKEN}` on
+  `/api` only — `/health` and the SPA fallback are untouched. `HTTP_TOKEN` is always
+  defined in the web image (default empty), and compose passes the same `.env` value to
+  `argus-web` as to `argus-server`. This resolves the open nginx Known Gap left when HTTP
+  bearer auth landed: the default no-token deploy is unchanged (it forwards an empty bearer
+  the server ignores).
+
 - **Scheduled discovery + drift alerting** (P4): an opt-in, dependency-free in-process
   asyncio loop runs a discovery collector on a fixed interval, diffs it against NetBox, and
   records the latest outcome. Enable it with `SCHEDULE_INTERVAL` (seconds; `0`/unset =

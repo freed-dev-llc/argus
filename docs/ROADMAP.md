@@ -53,6 +53,7 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ Deployment story: self-contained `deploy/` compose bundling NetBox + Argus server + web.
 - ✅ **HTTP auth** on the Argus server/API: optional static bearer token (`HTTP_TOKEN`),
   enforced when set — `/api` + `/webhooks` gated (constant-time compare), health public,
-  unset = open. (nginx token-forwarding for the bundled dashboard tracked with publishing.)
+  unset = open. The bundled dashboard's nginx forwards the token, so it works against an
+  auth-enabled API.
 - Container image publishing (GHCR) and PyPI.
 - Docs pass, examples, and the public open-source flip.
