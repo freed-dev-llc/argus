@@ -44,6 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is matched case-insensitively. When a token is set, NetBox webhooks must be configured to
   send the matching `Authorization` header.
 
+### Changed
+
+- **Example env files kept current**: `server/.env.example` and `deploy/.env.example` now
+  include the loop's new optional settings (`HTTP_TOKEN`, `SCHEDULE_INTERVAL`,
+  `SCHEDULE_COLLECTOR`, `ALERT_WEBHOOK_URL`) — all empty/placeholder — with "copy to `.env`,
+  never commit real secrets" headers. `.env` stays gitignored (`.env` / `.env.*`, with
+  `!.env.example`); no real secret is, or ever was, tracked.
+
 ## [0.1.0] - 2026-06-17
 
 First tagged checkpoint: the full discover → diff → confirm → reconcile loop, validated
