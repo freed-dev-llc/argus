@@ -15,7 +15,7 @@ drift, and trigger reconciliation by hand.
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
 
-> **Status:** v0.1.0 — the full loop works end-to-end and is validated against a live UniFi
+> **Status:** v0.1.1 — the full loop works end-to-end and is validated against a live UniFi
 > network + NetBox 4.6: discover (devices, clients, uplink topology) → diff → confirm →
 > reconcile NetBox (DCIM + IPAM), surfaced via MCP tools, a React dashboard, and Ansible
 > inventory. See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
@@ -87,6 +87,24 @@ For a complete, self-contained environment (NetBox + its datastore + Argus serve
 see [`deploy/`](deploy/README.md): `docker compose --env-file .env up -d --build` brings up
 a bundled NetBox (auto-provisioned with the API token Argus uses) plus the Argus server and
 dashboard. Intended for validation and home/lab use.
+
+### Published artifacts
+
+Released `v*` tags publish to GHCR and PyPI:
+
+- **Container images** — `ghcr.io/freed-dev-llc/argus-server` and
+  `ghcr.io/freed-dev-llc/argus-web` (tags `0.1.1` and `latest`):
+
+  ```bash
+  docker pull ghcr.io/freed-dev-llc/argus-server:0.1.1
+  docker pull ghcr.io/freed-dev-llc/argus-web:0.1.1
+  ```
+
+- **Python package** — the server installs from PyPI:
+
+  ```bash
+  pip install argus
+  ```
 
 ## Integrations
 

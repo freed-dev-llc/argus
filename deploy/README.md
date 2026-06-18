@@ -85,3 +85,8 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   by default (`0`/unset). Set `ALERT_WEBHOOK_URL` to also POST a Slack-compatible
   `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
   set). All three are commented in `docker-compose.yml`.
+- **Pre-built images:** released `v*` tags publish the server and web images to GHCR —
+  `ghcr.io/freed-dev-llc/argus-server` and `ghcr.io/freed-dev-llc/argus-web` (tags `0.1.1` /
+  `latest`). The default compose file builds locally (`--build`); to run the published images
+  instead, point the `argus-server` / `argus-web` services at those tags. The server package
+  is also on PyPI (`pip install argus`).
