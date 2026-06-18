@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CI**: bump `actions/setup-python` to `v6` in the release workflow's PyPI job, matching
+  `ci.yml` / `security.yml` (silences the Node 20 deprecation warning on the runner).
+
 ### Fixed
 
 - **Ansible (`argus_deploy`)**: the role now templates `NETBOX_CSRF_TRUSTED_ORIGINS` into the
