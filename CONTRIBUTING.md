@@ -8,6 +8,9 @@ in it cleanly.
 
 - **Land changes via pull request**, not direct pushes to `main`. `main` is protected.
 - **Sign your commits** (`git commit -S`). Verified signatures are required.
+- **No agent attribution.** Do not add `Co-Authored-By: Claude` (or any other agent),
+  `🤖 Generated with Claude Code`, or similar attribution lines/trailers to commit messages
+  or PR bodies. Author commits as the human contributor only.
 - **Update [CHANGELOG.md](CHANGELOG.md)** under `## [Unreleased]` for any user-visible change.
 - **Capture decisions as ADRs.** Anything architectural goes in
   [`docs/architecture/adr/`](docs/architecture/adr/) — copy the format from an existing one

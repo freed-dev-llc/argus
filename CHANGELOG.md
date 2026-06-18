@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Contributing**: add a "no agent attribution" ground rule — commit messages and PR bodies
+  must not include `Co-Authored-By: Claude` / `🤖 Generated with Claude Code` (or any other
+  agent) attribution trailers.
 - **CI**: bump the release workflow's Docker actions to their Node 24 majors —
   `docker/login-action@v4`, `docker/metadata-action@v6`, `docker/build-push-action@v7`
   (silences the Node 20 deprecation warnings in the GHCR image job).
