@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **NetBox webhook classify + log** (P4): `POST /webhooks/netbox` now parses each NetBox
+  change event into a structured `NetBoxEvent` (`event`, `model`, `object_id`, `display`,
+  `username`, `request_id`, `timestamp`), emits a greppable structured log line, and acks
+  with the classification (still includes `received: True`). Parsing is total/defensive —
+  a malformed or non-dict payload never raises. Observability only: no discovery, reconcile,
+  or NetBox write is triggered. Known gap: NetBox's `X-Hook-Signature` HMAC is not verified
+  yet (authenticity relies on the optional `HTTP_TOKEN` bearer auth).
 - **HTTP bearer-token auth** (P5): optional static bearer-token authentication on the
   FastAPI server. Set `HTTP_TOKEN` to require `Authorization: Bearer <token>` on every
   `/api/*` and `/webhooks/*` route (constant-time compare); `/health` and `/health/deep`
