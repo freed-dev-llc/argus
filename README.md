@@ -1,5 +1,10 @@
 # Argus
 
+[![CI](https://github.com/freed-dev-llc/argus/actions/workflows/ci.yml/badge.svg)](https://github.com/freed-dev-llc/argus/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/argus-netbox.svg)](https://pypi.org/project/argus-netbox/)
+[![Python](https://img.shields.io/pypi/pyversions/argus-netbox.svg)](https://pypi.org/project/argus-netbox/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 > The all-seeing keeper of your network's truth.
 
 **Argus** is a home- and lab-network automation server built on
