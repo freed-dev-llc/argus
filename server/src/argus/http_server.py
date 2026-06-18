@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -11,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
+from .scheduler import get_drift_status, scheduler_loop
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
 from .tools.read_tools import (
     get_device,
@@ -29,7 +33,29 @@ _PROTECTED_PREFIXES = ("/api", "/webhooks")
 _AUTH_HEADER = "Authorization"
 _BEARER_SCHEME = "bearer"
 
-app = FastAPI(title="argus", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Start the drift scheduler on startup when enabled, and cancel it on shutdown.
+
+    The scheduler is opt-in: it runs only when ``SCHEDULE_INTERVAL`` is positive. When
+    disabled this is a no-op, so existing deployments and the plain ``TestClient(app)``
+    tests (which never enter the lifespan) are unaffected.
+    """
+    settings = get_settings()
+    task: asyncio.Task[None] | None = None
+    if settings.schedule_enabled:
+        task = asyncio.create_task(scheduler_loop())
+        logger.info("drift scheduler enabled (interval=%ss)", settings.schedule_interval)
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+
+app = FastAPI(title="argus", version="0.1.0", lifespan=lifespan)
 
 # Allow the Vite dev server to call the API during development.
 app.add_middleware(
@@ -123,6 +149,12 @@ async def api_topology(collector: str = "unifi") -> dict[str, Any]:
 @app.get("/api/drift")
 async def api_drift(collector: str = "unifi") -> dict[str, Any]:
     return await drift_report(collector)
+
+
+@app.get("/api/drift/status")
+async def api_drift_status() -> dict[str, Any]:
+    """Latest scheduled-drift outcome (or an empty status if the loop never ran)."""
+    return get_drift_status().as_dict()
 
 
 @app.post("/api/reconcile")

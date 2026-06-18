@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Scheduled discovery + drift alerting** (P4): an opt-in, dependency-free in-process
+  asyncio loop runs a discovery collector on a fixed interval, diffs it against NetBox, and
+  records the latest outcome. Enable it with `SCHEDULE_INTERVAL` (seconds; `0`/unset =
+  disabled) and pick the collector with `SCHEDULE_COLLECTOR` (default `unifi`). The result is
+  exposed at `GET /api/drift/status` (under the existing bearer-auth gate) plus a structured
+  log line each cycle. Setting `ALERT_WEBHOOK_URL` also POSTs a Slack-compatible
+  `{"text": ...}` alert — but only when drift is present and the URL is set; a failed alert
+  is swallowed and logged, never crashing the cycle. Strictly read-only: no reconcile or
+  NetBox write is triggered. The loop is started from the FastAPI lifespan and is a no-op
+  when disabled, so existing deployments are unaffected.
 - **NetBox webhook classify + log** (P4): `POST /webhooks/netbox` now parses each NetBox
   change event into a structured `NetBoxEvent` (`event`, `model`, `object_id`, `display`,
   `username`, `request_id`, `timestamp`), emits a greppable structured log line, and acks
