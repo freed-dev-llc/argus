@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   public open-source flip stays pending). Also corrected the stale `release.yml` header comment
   (`argus` → `argus-netbox`, `v0.1.1` → `v0.1.2`).
 
+### Fixed
+
+- **`.gitignore`**: the `AGENTS.md` / `GEMINI.md` / `KIMI.md` / `QWEN.md` agent-context rules
+  carried trailing inline `#` comments, which `.gitignore` does not support — git treated each
+  whole line as one literal pattern that matched no file, so the four were not actually ignored.
+  Moved the descriptions to standalone comment lines so the bare filenames are the patterns. (#56)
+
 ## [0.1.2] - 2026-06-18
 
 ### Changed
