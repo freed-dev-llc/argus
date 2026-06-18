@@ -43,7 +43,10 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   - ✅ **classify + structured-log** change events (event / model / object / actor), defensive
     parsing into a `NetBoxEvent`. Observability half of P4.
   - reacting/automating on events (discovery trigger / reconcile) — deferred.
-- Scheduled discovery + reconcile (dry-run) with drift alerting.
+- ✅ **Scheduled discovery + drift alerting**: opt-in, dependency-free in-process asyncio
+  scheduler (`SCHEDULE_INTERVAL`, off by default) runs discovery + diff on an interval, records
+  the latest drift at `GET /api/drift/status`, structured-logs it, and fires an optional
+  Slack-compatible webhook (`ALERT_WEBHOOK_URL`) on drift. Read-only (diff, no `apply`).
 
 ## P5 — Hardening & open source
 

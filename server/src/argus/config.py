@@ -36,10 +36,20 @@ class Settings(BaseSettings):
     http_port: int = 8080
     http_token: str = ""  # optional static bearer token; unset disables auth
 
+    # Scheduled discovery + drift alerting (in-process asyncio loop; opt-in)
+    schedule_interval: int = 0  # seconds between drift cycles; 0 disables (e.g. 300 = 5 min)
+    schedule_collector: str = "unifi"  # collector the scheduled drift cycle observes
+    alert_webhook_url: str = ""  # Slack-compatible webhook; alert fires only on drift when set
+
     @property
     def http_auth_enabled(self) -> bool:
         """True when a static bearer token is configured for the HTTP API."""
         return bool(self.http_token)
+
+    @property
+    def schedule_enabled(self) -> bool:
+        """True when the scheduled drift loop is enabled (a positive interval is set)."""
+        return self.schedule_interval > 0
 
     @property
     def netbox_configured(self) -> bool:

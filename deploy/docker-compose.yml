@@ -142,6 +142,13 @@ services:
       # Optional: require Authorization: Bearer <token> on /api and /webhooks.
       # Unset = open (default). When set, NetBox webhooks must send the matching header.
       # HTTP_TOKEN: ${HTTP_TOKEN:-}
+      # Optional: scheduled drift discovery (in-process). SCHEDULE_INTERVAL is seconds
+      # between cycles; 0/unset disables it (default). When >0, Argus runs the collector,
+      # diffs against NetBox, and exposes the result at GET /api/drift/status. Set
+      # ALERT_WEBHOOK_URL to also POST a Slack-compatible {"text": ...} alert on drift.
+      # SCHEDULE_INTERVAL: ${SCHEDULE_INTERVAL:-0}      # e.g. 300 = every 5 minutes
+      # SCHEDULE_COLLECTOR: ${SCHEDULE_COLLECTOR:-unifi}
+      # ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
     ports:
       - "127.0.0.1:8094:8080"
     healthcheck:

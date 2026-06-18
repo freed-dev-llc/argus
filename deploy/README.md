@@ -75,3 +75,10 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   unset keeps the API open (the default). With a token set, add `-H "Authorization: Bearer
   $HTTP_TOKEN"` to the `curl` calls above, and configure the NetBox webhook to send the
   same header.
+- **Scheduled drift (optional):** set `SCHEDULE_INTERVAL` (seconds, e.g. `300` = 5 min) on
+  `argus-server` to run an in-process drift cycle on that interval — it runs the collector
+  (`SCHEDULE_COLLECTOR`, default `unifi`), diffs against NetBox, and records the latest
+  outcome at `GET /api/drift/status`. It is **read-only** (no reconcile/writes) and **off**
+  by default (`0`/unset). Set `ALERT_WEBHOOK_URL` to also POST a Slack-compatible
+  `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
+  set). All three are commented in `docker-compose.yml`.
