@@ -3,8 +3,8 @@ requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "argus"
-version = "0.1.1"
+name = "argus-netbox"
+version = "0.1.2"
 description = "NetBox-backed network source-of-truth automation server for MCP coding agents"
 readme = "README.md"
 license = "Apache-2.0"
