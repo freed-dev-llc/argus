@@ -3,7 +3,11 @@
   community.docker.docker_compose_v2:
     project_src: "{{ argus_dest }}/deploy"
     state: present
-    build: policy
+    # `always`, not `policy`: the compose images are tagged `:local`, so once they exist
+    # `policy` never rebuilds them — a repo update (new release) would recreate the
+    # containers from the STALE image, leaving the web/server bundle behind. This handler
+    # only fires on a repo/.env change, so an unconditional rebuild here is correct.
+    build: always
     recreate: always
   environment:
     PATH: "{{ argus_docker_path }}"
