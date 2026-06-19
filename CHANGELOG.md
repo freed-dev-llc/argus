@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docker/login-action@v4`, `docker/metadata-action@v6`, `docker/build-push-action@v7`
   (silences the Node 20 deprecation warnings in the GHCR image job).
 
+### Fixed
+
+- **Ansible (`argus_deploy`)**: the `Recreate Argus stack` handler now builds with
+  `build: always` instead of `build: policy`. The deploy compose tags its images `:local`,
+  so once they exist `policy` never rebuilds them — a repo update (new release) recreated the
+  containers from the **stale** image, leaving the web footer and server bundle on the old
+  version. The handler only fires on a repo/`.env` change, so the unconditional rebuild is
+  scoped to actual releases.
+
 ## [0.1.4] - 2026-06-18
 
 ### Changed
