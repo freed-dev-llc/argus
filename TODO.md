@@ -10,6 +10,7 @@ packs' own repos, not here.
 - [ ] Reconcile: broaden drift comparison beyond `primary_ip`/`site`/`role` — [#74](https://github.com/freed-dev-llc/argus/issues/74)
 - [ ] Validate the generic SNMP/LLDP collector against live non-UniFi gear — [#75](https://github.com/freed-dev-llc/argus/issues/75)
 - [ ] Scope & implement the vendor-pack `practices` extension point — [#77](https://github.com/freed-dev-llc/argus/issues/77)
+- [ ] Multi-tenant (shared NetBox): stamp `tenant` on reconciled objects (`NETBOX_TENANT`) — [ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md), [#86](https://github.com/freed-dev-llc/argus/issues/86)
 
 ## Add-ons
 
