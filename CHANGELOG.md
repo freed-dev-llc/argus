@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Vendor packs** ([ADR-0005](docs/architecture/adr/0005-vendor-packs.md)): a host/plugin
+  layer for per-vendor discovery. A `VendorPack` bundles a collector with declarative
+  metadata (manufacturer, transport, capabilities, config vars) and model→role
+  normalization. The registry discovers **built-in** packs plus **external** packs from any
+  installed distribution that advertises an `argus.vendor_packs` entry point — so private,
+  out-of-tree vendor packs attach without changes to Argus, and this repo names none of
+  them. UniFi is refactored into the first in-tree pack (`discovery/vendors/unifi/`,
+  behaviour-preserving); `COLLECTORS` is now derived from the registry (name lookup
+  unchanged). Adds `examples/vendor-pack-template/` — a copy-to-start template for building
+  your own pack (public or private).
+
 ### Changed
 
 - **Contributing**: add a "no agent attribution" ground rule — commit messages and PR bodies
