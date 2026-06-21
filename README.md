@@ -47,6 +47,14 @@ loop** (`SCHEDULE_INTERVAL`) that diffs on an interval — read-only — serving
 Optional **bearer-token auth** (`HTTP_TOKEN`) gates `/api` + `/webhooks`. See
 [server/README.md](server/README.md) for setup and copy-pasteable examples.
 
+**Vendor packs.** Discovery is a host/plugin layer
+([ADR-0005](docs/architecture/adr/0005-vendor-packs.md)): each vendor is a self-contained
+`VendorPack` (a read-only collector + declarative metadata) discovered via an
+`argus.vendor_packs` entry point, so packs can live out-of-tree and ship independently.
+UniFi ships in-tree; build your own from
+[**argus-vendor-pack-template**](https://github.com/freed-dev-llc/argus-vendor-pack-template)
+(a GitHub “Use this template” repo).
+
 ## Repository layout
 
 | Path | What |

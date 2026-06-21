@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out-of-tree vendor packs attach without changes to Argus, and this repo names none of
   them. UniFi is refactored into the first in-tree pack (`discovery/vendors/unifi/`,
   behaviour-preserving); `COLLECTORS` is now derived from the registry (name lookup
-  unchanged). Adds `examples/vendor-pack-template/` — a copy-to-start template for building
-  your own pack (public or private).
+  unchanged). A copy-to-start pack template lives in its own GitHub *template* repo,
+  [`argus-vendor-pack-template`](https://github.com/freed-dev-llc/argus-vendor-pack-template).
 
 ### Changed
 
