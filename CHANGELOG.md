@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Devtools (`argus.devtools.release`)**: a manifest-driven, unit-tested release engine.
+  `argus-release bump X.Y.Z` rewrites every version reference from a single declarative
+  manifest (`release.toml`), cuts the CHANGELOG, and refreshes the compare links;
+  `argus-release verify` runs lint/type/test + the web build. Each version "site" declares
+  an exact occurrence count, so a bump aborts before writing if the repo has drifted from
+  the manifest — replacing the hand-done multi-file edit with one deterministic command an
+  agent or human can call.
 - **Vendor packs** ([ADR-0005](docs/architecture/adr/0005-vendor-packs.md)): a host/plugin
   layer for per-vendor discovery. A `VendorPack` bundles a collector with declarative
   metadata (manufacturer, transport, capabilities, config vars) and model→role
