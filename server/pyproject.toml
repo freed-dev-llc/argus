@@ -50,6 +50,7 @@ dev = [
 [project.scripts]
 argus-mcp = "argus.server:main"
 argus-http = "argus.http_server:main"
+argus-release = "argus.devtools.release:main"
 
 [project.urls]
 Homepage = "https://github.com/freed-dev-llc/argus"

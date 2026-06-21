@@ -1,0 +1,77 @@
+# release.toml — declarative inputs for the release/version-bump engine.
+#
+# Consumed by `argus.devtools.release` (CLI: `argus-release`, or `python -m
+# argus.devtools.release`). This is the single source of truth for every place the
+# project version appears. The engine asserts each site's expected occurrence `count`
+# and aborts loudly if reality drifts from this manifest — so a bump can never silently
+# miss a file the way a hand-done edit can.
+#
+# Variable-driven by design: point the engine at a different repo by editing only this
+# file (no code change). Each [[site]] is one of:
+#   * literal — a template containing `{version}`; every occurrence of the old version's
+#     rendering is replaced with the new version's.
+#   * regex   — a pattern with a named `(?P<version>...)` group; that group is rewritten
+#     to the new version (old-version-agnostic). Use this when whitespace varies.
+
+repo = "freed-dev-llc/argus"
+changelog = "CHANGELOG.md"
+version_file = "server/pyproject.toml"   # canonical current version: [project].version
+
+[[site]]
+path = "server/pyproject.toml"
+literal = 'version = "{version}"'
+count = 1
+
+[[site]]
+path = "server/src/argus/__init__.py"
+literal = '__version__ = "{version}"'
+count = 1
+
+[[site]]
+path = "server/src/argus/http_server.py"
+literal = 'title="argus", version="{version}"'
+count = 1
+
+[[site]]
+path = "web/package.json"
+literal = '"version": "{version}"'
+count = 1
+
+# package-lock has the root version twice (top level + packages[""]), at differing
+# indentation, and dependency `"version"` keys we must NOT touch — so anchor on the
+# project name and rewrite only the captured version.
+[[site]]
+path = "web/package-lock.json"
+regex = '"name": "argus-web",\s*"version": "(?P<version>[^"]+)"'
+count = 2
+
+# The release.yml header comment carries the tag-example three times on one line.
+[[site]]
+path = ".github/workflows/release.yml"
+literal = 'v{version}'
+count = 3
+
+[[site]]
+path = "README.md"
+literal = '**Status:** v{version}'
+count = 1
+
+[[site]]
+path = "README.md"
+literal = 'argus-server:{version}'
+count = 1
+
+[[site]]
+path = "README.md"
+literal = 'argus-web:{version}'
+count = 1
+
+[[site]]
+path = "README.md"
+literal = '(tags `{version}` and `latest`)'
+count = 1
+
+[[site]]
+path = "deploy/README.md"
+literal = '(tags `{version}` /'
+count = 1
