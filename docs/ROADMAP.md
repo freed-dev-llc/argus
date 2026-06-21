@@ -58,5 +58,27 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ **Container image publishing (GHCR) + PyPI**: a `v*` tag pushes
   `ghcr.io/freed-dev-llc/argus-server` + `argus-web` images and publishes the server to PyPI
   (distribution `argus-netbox`, import `argus`) via trusted publishing (OIDC).
+- ✅ **Release tooling** (`argus-release`, `argus.devtools.release`): a manifest-driven,
+  unit-tested devtool that bumps every version reference from `release.toml`, cuts the
+  CHANGELOG, and verifies the build — one command per release instead of a hand-done multi-file
+  edit. Latest release: **0.1.5** (PyPI `argus-netbox` + GHCR images).
 - ✅ Docs pass + examples (this step).
 - The **public open-source flip** (repo visibility) — still pending, held for Jon.
+
+## P6 — Multi-vendor extensibility (vendor packs)
+
+- ✅ **Vendor-pack host/plugin layer** ([ADR-0005](architecture/adr/0005-vendor-packs.md)): a
+  `VendorPack` bundles a read-only collector with declarative metadata (manufacturer, transport,
+  capabilities, config vars) + model→role normalization. The registry merges built-in packs with
+  **external packs** discovered via an `argus.vendor_packs` entry point, so packs ship out-of-tree
+  (public or private) with no change to Argus. `COLLECTORS` derives from it; name lookup unchanged.
+- ✅ **UniFi refactored into the first in-tree pack** (`discovery/vendors/unifi/`,
+  behaviour-preserving).
+- ✅ **Pack template**: public GitHub "Use this template" repo
+  [`argus-vendor-pack-template`](https://github.com/freed-dev-llc/argus-vendor-pack-template).
+- Surface pack `capabilities`/`transport` in `list_collectors` so agents can see what each pack
+  can discover.
+- Scope the `practices` (best-practice / validation) extension point.
+- Validate the generic non-UniFi SNMP/LLDP collector against live gear; per-device (SNMP/SSH)
+  transport packs.
+- Additional vendor packs ship in their own repos (public or private) via the entry point.

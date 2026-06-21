@@ -53,7 +53,8 @@ Optional **bearer-token auth** (`HTTP_TOKEN`) gates `/api` + `/webhooks`. See
 `argus.vendor_packs` entry point, so packs can live out-of-tree and ship independently.
 UniFi ships in-tree; build your own from
 [**argus-vendor-pack-template**](https://github.com/freed-dev-llc/argus-vendor-pack-template)
-(a GitHub “Use this template” repo).
+(a GitHub “Use this template” repo). See [docs/VENDOR_PACKS.md](docs/VENDOR_PACKS.md) to
+install or add packs.
 
 ## Repository layout
 
