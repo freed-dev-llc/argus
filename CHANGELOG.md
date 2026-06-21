@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Devtools (`argus.devtools.release`)**: a manifest-driven, unit-tested release engine.
+  `argus-release bump X.Y.Z` rewrites every version reference from a single declarative
+  manifest (`release.toml`), cuts the CHANGELOG, and refreshes the compare links;
+  `argus-release verify` runs lint/type/test + the web build. Each version "site" declares
+  an exact occurrence count, so a bump aborts before writing if the repo has drifted from
+  the manifest — replacing the hand-done multi-file edit with one deterministic command an
+  agent or human can call.
+
 ### Changed
 
 - **Contributing**: add a "no agent attribution" ground rule — commit messages and PR bodies
