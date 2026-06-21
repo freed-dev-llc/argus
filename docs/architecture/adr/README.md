@@ -30,6 +30,7 @@ repos.
 | [0002](0002-monorepo-python-server-react-web.md) | Monorepo: Python MCP/FastAPI Server + React/Vite/TS Web | 2026-06-17 | Accepted |
 | [0003](0003-discovery-reconciliation-model.md) | Pluggable Discovery + Dry-Run, Confirmation-Gated Reconciliation | 2026-06-17 | Accepted |
 | [0004](0004-netbox-ansible-inventory.md) | NetBox as the Inventory Hub for Ansible (and the Two-Writers Rule) | 2026-06-17 | Accepted |
+| [0005](0005-vendor-packs.md) | Vendor Packs — a Host/Plugin Boundary for Per-Vendor Discovery | 2026-06-21 | Accepted |
 
 ## Adding a new ADR
 

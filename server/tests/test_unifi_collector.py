@@ -6,8 +6,9 @@ import httpx
 import respx
 
 from argus.config import Settings
-from argus.discovery.collectors import unifi
-from argus.discovery.collectors.unifi import UniFiCollector, _role_from_model
+from argus.discovery.vendors.unifi import collector as unifi
+from argus.discovery.vendors.unifi.collector import UniFiCollector
+from argus.discovery.vendors.unifi.models import role_from_model as _role_from_model
 
 UNIFI = "https://unifi.test"
 BASE = f"{UNIFI}/proxy/network/integration/v1"

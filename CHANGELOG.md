@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an exact occurrence count, so a bump aborts before writing if the repo has drifted from
   the manifest — replacing the hand-done multi-file edit with one deterministic command an
   agent or human can call.
+- **Vendor packs** ([ADR-0005](docs/architecture/adr/0005-vendor-packs.md)): a host/plugin
+  layer for per-vendor discovery. A `VendorPack` bundles a collector with declarative
+  metadata (manufacturer, transport, capabilities, config vars) and model→role
+  normalization. The registry discovers **built-in** packs plus **external** packs from any
+  installed distribution that advertises an `argus.vendor_packs` entry point — so private,
+  out-of-tree vendor packs attach without changes to Argus, and this repo names none of
+  them. UniFi is refactored into the first in-tree pack (`discovery/vendors/unifi/`,
+  behaviour-preserving); `COLLECTORS` is now derived from the registry (name lookup
+  unchanged). A copy-to-start pack template lives in its own GitHub *template* repo,
+  [`argus-vendor-pack-template`](https://github.com/freed-dev-llc/argus-vendor-pack-template).
 
 ### Changed
 
