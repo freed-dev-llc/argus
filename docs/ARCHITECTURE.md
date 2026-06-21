@@ -80,6 +80,10 @@ Both call the same underlying tool functions, so behavior can't drift between th
 3. **Least-privilege token.** Start with a read-only NetBox token; widen only when
    reconciliation writes are trusted.
 
+> **Scope note.** Read-only-against-the-network is the *current-phase* stance, not a permanent
+> constraint. **Active device management** (writing config back to the network, e.g. via vendor
+> packs) is a planned future direction; it will be dry-run + confirmation-gated like reconcile.
+
 ## Current status
 
 Implemented and validated end-to-end against a live UniFi network + NetBox 4.6: the UniFi

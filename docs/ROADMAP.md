@@ -82,3 +82,11 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - Validate the generic non-UniFi SNMP/LLDP collector against live gear; per-device (SNMP/SSH)
   transport packs.
 - Additional vendor packs ship in their own repos (public or private) via the entry point.
+- Per-vendor `management` work starts with read-only management-plane data → NetBox.
+
+## Beyond — active management (write-back)
+
+Read-only discovery is the **current phase, not the end state**. A planned direction is
+**active management**: writing config back to the network (via vendor packs), under the same
+dry-run + confirmation-gating safety model as reconcile. The per-vendor `management` sub-issues
+begin with read-only management-plane data and lead toward this.
