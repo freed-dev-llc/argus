@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-06-21
+
 ### Changed
 
+- **Packaging (`argus-netbox`)**: round out the PyPI metadata — declare Python version trove
+  classifiers (`3` / `3.12` / `3.13`) plus `Development Status`, `Intended Audience`, `Topic`,
+  and `Operating System`; add `keywords` and a `[project.urls]` table (Homepage, Repository,
+  Issues, Changelog); and ship a PEP 561 `py.typed` marker so downstream consumers pick up the
+  package's type hints.
 - **Contributing**: add a "no agent attribution" ground rule — commit messages and PR bodies
   must not include `Co-Authored-By: Claude` / `🤖 Generated with Claude Code` (or any other
   agent) attribution trailers.
@@ -18,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **README / PyPI badge**: the `pypi/pyversions` badge rendered `python | missing` (red). The
+  published package declared `requires-python` but no `Programming Language :: Python` trove
+  classifiers — the only source shields.io reads for that badge. Fixed by the classifiers added
+  above.
 - **Ansible (`argus_deploy`)**: the `Recreate Argus stack` handler now builds with
   `build: always` instead of `build: policy`. The deploy compose tags its images `:local`,
   so once they exist `policy` never rebuilds them — a repo update (new release) recreated the
@@ -222,7 +233,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/freed-dev-llc/argus/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/freed-dev-llc/argus/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/freed-dev-llc/argus/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/freed-dev-llc/argus/compare/v0.1.1...v0.1.2

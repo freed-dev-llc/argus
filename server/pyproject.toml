@@ -4,12 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argus-netbox"
-version = "0.1.4"
+version = "0.1.5"
 description = "NetBox-backed network source-of-truth automation server for MCP coding agents"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 authors = [{ name = "Jon Freed" }]
+keywords = ["netbox", "network-automation", "mcp", "source-of-truth", "ipam", "dcim", "unifi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "Topic :: System :: Networking",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
     "mcp>=1.28.0",
     "pynetbox>=7.3",
@@ -40,8 +51,17 @@ dev = [
 argus-mcp = "argus.server:main"
 argus-http = "argus.http_server:main"
 
+[project.urls]
+Homepage = "https://github.com/freed-dev-llc/argus"
+Repository = "https://github.com/freed-dev-llc/argus"
+Issues = "https://github.com/freed-dev-llc/argus/issues"
+Changelog = "https://github.com/freed-dev-llc/argus/blob/main/CHANGELOG.md"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+argus = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
