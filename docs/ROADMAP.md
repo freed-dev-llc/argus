@@ -89,4 +89,6 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 Read-only discovery is the **current phase, not the end state**. A planned direction is
 **active management**: writing config back to the network (via vendor packs), under the same
 dry-run + confirmation-gating safety model as reconcile. The per-vendor `management` sub-issues
-begin with read-only management-plane data and lead toward this.
+begin with read-only management-plane data and lead toward this. The language/runtime boundary —
+Python brain, optional Go actuator — is recorded in
+[ADR-0006](architecture/adr/0006-python-brain-go-actuator.md).
