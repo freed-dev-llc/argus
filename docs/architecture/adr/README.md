@@ -32,6 +32,7 @@ repos.
 | [0004](0004-netbox-ansible-inventory.md) | NetBox as the Inventory Hub for Ansible (and the Two-Writers Rule) | 2026-06-17 | Accepted |
 | [0005](0005-vendor-packs.md) | Vendor Packs — a Host/Plugin Boundary for Per-Vendor Discovery | 2026-06-21 | Accepted |
 | [0006](0006-python-brain-go-actuator.md) | Python Brain, Optional Go Actuator — the Device-Action Boundary | 2026-06-21 | Accepted |
+| [0007](0007-multi-tenant-netbox.md) | Multi-Tenant NetBox — Per-Tenant Instance vs Shared + RBAC | 2026-06-21 | Accepted |
 
 ## Adding a new ADR
 
