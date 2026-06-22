@@ -57,6 +57,10 @@ export function DriftPanel() {
   }, [])
 
   useEffect(() => {
+    // Fetch drift on mount. loadDrift() resets to the loading state before an
+    // async fetch — a legitimate "synchronize with an external system" effect
+    // that react-hooks v7's set-state-in-effect rule false-positives on.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDrift()
   }, [loadDrift])
 

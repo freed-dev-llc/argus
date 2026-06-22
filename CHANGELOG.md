@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as set-but-empty vars that overrode `.env`/shell config) and declare `"type": "stdio"`.
 - **`.editorconfig`**: add a `[*.toml]` rule (4-space, matching the actual TOML files) and drop
   the redundant `[*.{yaml,yml}]` block (identical to the 2-space default).
+- **CI**: bump `actions/checkout` to `v7` across the CI, release, and security workflows (#90).
+- **Web devtools**: bump `eslint-plugin-react-hooks` 5 → 7 (#91). v7's `recommended` preset
+  enables the React-Compiler `set-state-in-effect` rule; the drift panel's fetch-on-mount
+  effect carries a scoped `eslint-disable` for it, since the rule false-positives on resetting
+  to a loading state before an async fetch.
 
 ## [0.1.5] - 2026-06-21
 
