@@ -27,6 +27,11 @@ cp .env.example .env
 # then set UNIFI_URL + UNIFI_API_TOKEN (+ UNIFI_SITE) in .env
 ```
 
+> Note: `>>` appends the generated secrets *below* the empty placeholders copied from
+> `.env.example`, leaving duplicate keys. Compose uses the last value for a duplicate key, so
+> this works as-is — just edit the appended lines (not the empty placeholders above) if you
+> need to change a secret later.
+
 ## 2. Bring it up
 
 ```bash
@@ -66,25 +71,25 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
 ## Notes
 
 - `NETBOX_IMAGE` pins the NetBox version; bump it in `.env` as needed.
-- The NetBox API token is shared via `NETBOX_API_TOKEN` (NetBox `SUPERUSER_API_TOKEN` ==
-  Argus `NETBOX_TOKEN`).
+- The NetBox API token is shared via `NETBOX_API_TOKEN`: the one-shot `netbox-init` service
+  creates a v1 token with that value (NetBox's own provisioning only mints v2 tokens, which
+  pynetbox can't present), and `argus-server` reads the same value as `NETBOX_TOKEN`.
 - To reset NetBox state: `docker compose down -v` (drops the Postgres/media volumes).
-- **API auth (optional):** set `HTTP_TOKEN` in `.env` and uncomment the `HTTP_TOKEN`
-  line on `argus-server` in `docker-compose.yml` to require `Authorization: Bearer
+- **API auth (optional):** set `HTTP_TOKEN` in `.env` to require `Authorization: Bearer
   <token>` on every `/api/*` and `/webhooks/*` request (constant-time compare). `/health`
   and `/health/deep` stay public; leaving `HTTP_TOKEN` unset keeps the API open (the
   default). The same `.env` value reaches **both** services — `argus-server` enforces it
   and `argus-web`'s nginx forwards it on the dashboard's `/api` proxy — so the bundled
-  dashboard keeps working against an auth-enabled API (set `HTTP_TOKEN` to the same value
-  on both for them to agree). For direct `curl` calls, add `-H "Authorization: Bearer
-  $HTTP_TOKEN"`, and configure the NetBox webhook to send the same header.
-- **Scheduled drift (optional):** set `SCHEDULE_INTERVAL` (seconds, e.g. `300` = 5 min) on
-  `argus-server` to run an in-process drift cycle on that interval — it runs the collector
+  dashboard keeps working against an auth-enabled API. For direct `curl` calls, add `-H
+  "Authorization: Bearer $HTTP_TOKEN"`, and configure the NetBox webhook to send the same
+  header.
+- **Scheduled drift (optional):** set `SCHEDULE_INTERVAL` (seconds, e.g. `300` = 5 min) in
+  `.env` to run an in-process drift cycle on that interval — it runs the collector
   (`SCHEDULE_COLLECTOR`, default `unifi`), diffs against NetBox, and records the latest
   outcome at `GET /api/drift/status`. It is **read-only** (no reconcile/writes) and **off**
   by default (`0`/unset). Set `ALERT_WEBHOOK_URL` to also POST a Slack-compatible
   `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
-  set). All three are commented in `docker-compose.yml`.
+  set).
 - **Expose NetBox on a public hostname (Cloudflare Tunnel):** to reach the NetBox UI at a
   subdomain like `https://netbox.example.com` — cleaner than a sub-path, since NetBox is a
   root-served Django app — point a tunnel ingress rule at NetBox's published port and set the
