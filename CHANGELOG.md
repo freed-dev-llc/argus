@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Deploy compose**: `HTTP_TOKEN` is now wired on `argus-server` (not just `argus-web`), so
+  setting it in `deploy/.env` actually enforces API/webhook auth instead of leaving the API
+  open while the dashboard sent a bearer token to it. The optional `SCHEDULE_INTERVAL`,
+  `SCHEDULE_COLLECTOR`, and `ALERT_WEBHOOK_URL` vars are likewise active by default (all keep
+  empty/`:-` defaults, so unset behaviour is unchanged) — they no longer require hand-editing
+  `docker-compose.yml` to take effect.
+- **Ansible `argus_deploy` role**: the rendered `deploy/.env` template now covers every stack
+  var. Previously it emitted only 9 of 13, so a re-run silently wiped any `HTTP_TOKEN`,
+  `SCHEDULE_*`, or `ALERT_WEBHOOK_URL` an operator had added to the host's `.env`. New role
+  vars (`argus_http_token`, `argus_schedule_interval`, `argus_schedule_collector`,
+  `argus_alert_webhook_url`) manage them, with the same blank-reuses-existing behaviour as the
+  UniFi/CSRF vars.
+
+### Changed
+
+- **`.mcp.json`**: drop the empty `NETBOX_URL` / `NETBOX_TOKEN` env entries (they were injected
+  as set-but-empty vars that overrode `.env`/shell config) and declare `"type": "stdio"`.
+- **`.editorconfig`**: add a `[*.toml]` rule (4-space, matching the actual TOML files) and drop
+  the redundant `[*.{yaml,yml}]` block (identical to the 2-space default).
+
 ## [0.1.5] - 2026-06-21
 
 ### Added

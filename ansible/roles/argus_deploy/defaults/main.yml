@@ -20,6 +20,14 @@ argus_unifi_site: "default"
 # the host is preserved. See deploy/README.md for the Cloudflare Tunnel walkthrough.
 argus_netbox_csrf_trusted_origins: ""
 
+# Optional Argus server features. Blank reuses whatever is already in the target's
+# deploy/.env (so a manual edit on the host survives re-runs); set here / via Vault to
+# manage them. SCHEDULE_INTERVAL/COLLECTOR fall back to the compose defaults (0 / unifi).
+argus_http_token: ""              # bearer token for /api + /webhooks; blank = open
+argus_schedule_interval: ""       # seconds between drift cycles; 0/blank disables
+argus_schedule_collector: ""      # collector the scheduled drift cycle observes
+argus_alert_webhook_url: ""       # Slack-compatible webhook; alerts on drift when set
+
 # PATH for the docker CLI on the target (OrbStack/Docker Desktop on macOS aren't on the
 # default non-login PATH). Adjust for Linux hosts if needed.
 argus_docker_path: "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
