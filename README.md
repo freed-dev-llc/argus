@@ -1,5 +1,7 @@
 # Argus
 
+![Argus Net](docs/assets/argus/logos/argus_logo_horizontal.svg)
+
 [![CI](https://github.com/freed-dev-llc/argus/actions/workflows/ci.yml/badge.svg)](https://github.com/freed-dev-llc/argus/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/argus-netbox.svg)](https://pypi.org/project/argus-netbox/)
 [![Python](https://img.shields.io/pypi/pyversions/argus-netbox.svg)](https://pypi.org/project/argus-netbox/)
@@ -16,6 +18,13 @@ network, **diffing** it against NetBox, and **reconciling** the difference.
 Argus exposes this capability to **MCP-compliant coding agents** (Claude Code, Codex,
 Kimi, …) as a set of tools, and ships a small React dashboard to query state, review
 drift, and trigger reconciliation by hand.
+
+**Part of the freed-dev-llc agent family** — Argus is the shared network source-of-truth
+tooling behind the AI assistants [Aria](https://github.com/freed-dev-llc/aria) (voice) and
+[Leeloo](https://github.com/freed-dev-llc/leeloo) (Kimi), plus Elara (a hosted Hermes agent).
+
+[![Aria — freed-dev-llc/aria](docs/assets/buttons/btn_aria.svg)](https://github.com/freed-dev-llc/aria)
+[![Leeloo — freed-dev-llc/leeloo](docs/assets/buttons/btn_leeloo.svg)](https://github.com/freed-dev-llc/leeloo)
 
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
