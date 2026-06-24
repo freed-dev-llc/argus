@@ -75,3 +75,14 @@ count = 1
 path = "deploy/README.md"
 literal = '(tags `{version}` /'
 count = 1
+
+# "Latest release" prose in the docs — version-stamped narrative, one each.
+[[site]]
+path = "docs/ROADMAP.md"
+literal = 'Latest release: **{version}**'
+count = 1
+
+[[site]]
+path = "docs/ARCHITECTURE.md"
+literal = 'Latest release: **{version}**'
+count = 1
