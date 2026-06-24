@@ -117,7 +117,7 @@ All repos share the system above; each gets its own glyph + warm accent. Cross�
 | [Aria](https://github.com/freed-dev-llc/aria) | Voice assistant | voice waveform | Terracotta `#C4683F` |
 | [Argus](https://github.com/freed-dev-llc/argus) | Network source‑of‑truth tooling | all‑seeing eye | Amber `#C5953F` |
 | [Leeloo](https://github.com/freed-dev-llc/leeloo) | Kimi‑powered agent | fifth‑element spark | Copper `#D2814E` |
-| Elara | Hosted Hermes agent (no public repo) | — | — |
+| [Elara](https://github.com/freed-dev-llc/elara) | Hosted Hermes messenger (Telegram) | paper‑plane | Rose‑clay `#CC7A5C` |
 
 Argus is the shared tooling the agents run on; the agents cross‑link to each other and to
 Argus.
