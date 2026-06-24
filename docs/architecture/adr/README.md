@@ -33,6 +33,9 @@ repos.
 | [0005](0005-vendor-packs.md) | Vendor Packs — a Host/Plugin Boundary for Per-Vendor Discovery | 2026-06-21 | Accepted |
 | [0006](0006-python-brain-go-actuator.md) | Python Brain, Optional Go Actuator — the Device-Action Boundary | 2026-06-21 | Accepted |
 | [0007](0007-multi-tenant-netbox.md) | Multi-Tenant NetBox — Per-Tenant Instance vs Shared + RBAC | 2026-06-21 | Accepted |
+| [0008](0008-ask-the-brain-mnemosyne.md) | Ask the Brain — Mnemosyne Integration | 2026-06-24 | Accepted |
+| [0009](0009-vendor-pack-practices-spi.md) | Vendor-Pack Practices SPI — Advisory Best-Practice Rules | 2026-06-24 | Accepted |
+| [0010](0010-management-plane-contract.md) | Management-Plane → NetBox Contract for Vendor Packs | 2026-06-24 | Accepted |
 
 ## Adding a new ADR
 
