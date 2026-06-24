@@ -27,6 +27,15 @@ everything. That's the job: always watching, always keeping the record true.
 > reconcile NetBox (DCIM + IPAM), surfaced via MCP tools, a React dashboard, and Ansible
 > inventory. See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
 
+**Part of the freed-dev-llc agent family** — Argus is shared tooling for the AI assistants [Aria](https://github.com/freed-dev-llc/aria), [Leeloo](https://github.com/freed-dev-llc/leeloo), and [Elara](https://github.com/freed-dev-llc/elara); sibling tools are [Reach](https://github.com/freed-dev-llc/reach) (remote access), [Sisyphus](https://github.com/freed-dev-llc/sisyphus) (SL1 workspace), and [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne) (RAG knowledge brain — it *explains* the vendors Argus *discovers*).
+
+[![Aria — freed-dev-llc/aria](docs/assets/buttons/btn_aria.svg)](https://github.com/freed-dev-llc/aria)
+[![Leeloo — freed-dev-llc/leeloo](docs/assets/buttons/btn_leeloo.svg)](https://github.com/freed-dev-llc/leeloo)
+[![Elara — freed-dev-llc/elara](docs/assets/buttons/btn_elara.svg)](https://github.com/freed-dev-llc/elara)
+[![Reach — freed-dev-llc/reach](docs/assets/buttons/btn_reach.svg)](https://github.com/freed-dev-llc/reach)
+[![Sisyphus — freed-dev-llc/sisyphus](docs/assets/buttons/btn_sisyphus.svg)](https://github.com/freed-dev-llc/sisyphus)
+[![Mnemosyne — freed-dev-llc/mnemosyne](docs/assets/buttons/btn_mnemosyne.svg)](https://github.com/freed-dev-llc/mnemosyne)
+
 ## How it fits together
 
 ```
