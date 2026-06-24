@@ -20,11 +20,12 @@ Kimi, …) as a set of tools, and ships a small React dashboard to query state, 
 drift, and trigger reconciliation by hand.
 
 **Part of the freed-dev-llc agent family** — Argus is the shared network source-of-truth
-tooling behind the AI assistants [Aria](https://github.com/freed-dev-llc/aria) (voice) and
-[Leeloo](https://github.com/freed-dev-llc/leeloo) (Kimi), plus Elara (a hosted Hermes agent).
+tooling behind the AI assistants [Aria](https://github.com/freed-dev-llc/aria) (voice),
+[Leeloo](https://github.com/freed-dev-llc/leeloo) (Kimi), and [Elara](https://github.com/freed-dev-llc/elara) (Hermes/Telegram).
 
 [![Aria — freed-dev-llc/aria](docs/assets/buttons/btn_aria.svg)](https://github.com/freed-dev-llc/aria)
 [![Leeloo — freed-dev-llc/leeloo](docs/assets/buttons/btn_leeloo.svg)](https://github.com/freed-dev-llc/leeloo)
+[![Elara — freed-dev-llc/elara](docs/assets/buttons/btn_elara.svg)](https://github.com/freed-dev-llc/elara)
 
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
