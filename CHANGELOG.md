@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-06-24
+
 ### Added
 
+- **Vendor-pack practices SPI** ([ADR-0009](docs/architecture/adr/0009-vendor-pack-practices-spi.md)):
+  defines the `practices` extension point ADR-0005 reserved. A `Practice` evaluates a
+  `PracticeContext` — carrying both the observed `DiscoveryResult` and a read-only NetBox
+  snapshot — and returns `Finding`s with a `Severity`. A new advisory, read-only
+  `evaluate_practices(collector)` tool (MCP) + `GET /api/practices` surface them; nothing is
+  written. UniFi ships the in-tree reference rules (`device-has-role`, `device-in-netbox`). (#100)
+- **Management-plane contract** ([ADR-0010](docs/architecture/adr/0010-management-plane-contract.md)):
+  a typed, optional `DeviceManagement` object on `DiscoveredDevice` (operational status,
+  firmware, serial, management IP/interface/VLAN, controller + site) that vendor packs populate
+  and `discovery_scan` surfaces — read-only first; NetBox write-back is a defined,
+  confirmation-gated follow-up, so the reconcile engine is untouched for now. UniFi populates it
+  from device state/version/serial. (#100)
 - **Ask the Brain** — a dashboard panel to ask the [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne)
   knowledge brain about your network and get grounded, cited answers (Argus discovers, Mnemosyne
   explains). A new `POST /api/ask` proxies server-to-server to a `mnemosyne-http` service set via
@@ -287,7 +301,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/freed-dev-llc/argus/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/freed-dev-llc/argus/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/freed-dev-llc/argus/compare/v0.1.2...v0.1.3
