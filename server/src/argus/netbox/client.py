@@ -48,10 +48,12 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
 
 
 class NetBoxClient:
-    """Read access to NetBox, the network's source of truth.
+    """Access to NetBox, the network's source of truth.
 
-    Only reads are implemented today; reconciliation writes will be added alongside the
-    reconcile engine (see ADR-0003).
+    Reads (DCIM + IPAM) plus the find-or-create / write operations the reconcile engine
+    needs — `create_device`, `update_device`, `assign_primary_ip`, and the `ensure_*`
+    foreign-key resolvers. Writes are driven only through the confirmation-gated reconcile
+    flow (see ADR-0003).
     """
 
     def __init__(self, url: str, token: str, *, verify_ssl: bool = True) -> None:
