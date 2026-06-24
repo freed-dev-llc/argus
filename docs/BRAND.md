@@ -109,18 +109,18 @@ an **eye**: an almond outline in Niagara, a faint iris ring, an **amber pupil** 
 
 ## 6. Family
 
-All repos share the system above; each gets its own glyph + warm accent. Cross‑link buttons
-(`docs/assets/buttons/btn_<repo>.svg`, 372×72) embed each repo's glyph + a mono slug.
+All repos share the system above; each gets its own glyph + warm accent. The private sibling
+repos carry sibling cross‑link buttons (`docs/assets/buttons/btn_<repo>.svg`, 372×72); this
+**public** repo omits them, since their targets aren't publicly reachable.
 
 | Repo | Role | Glyph | Accent |
 |------|------|-------|--------|
-| [Aria](https://github.com/freed-dev-llc/aria) | Voice assistant | voice waveform | Terracotta `#C4683F` |
+| Aria | Voice assistant | voice waveform | Terracotta `#C4683F` |
 | [Argus](https://github.com/freed-dev-llc/argus) | Network source‑of‑truth tooling | all‑seeing eye | Amber `#C5953F` |
-| [Leeloo](https://github.com/freed-dev-llc/leeloo) | Kimi‑powered agent | fifth‑element spark | Copper `#D2814E` |
-| [Elara](https://github.com/freed-dev-llc/elara) | Hosted Hermes messenger (Telegram) | paper‑plane | Rose‑clay `#CC7A5C` |
+| Leeloo | Kimi‑powered agent | fifth‑element spark | Copper `#D2814E` |
+| Elara | Hosted Hermes messenger (Telegram) | paper‑plane | Rose‑clay `#CC7A5C` |
 
-Argus is the shared tooling the agents run on; the agents cross‑link to each other and to
-Argus.
+Argus is the shared network source‑of‑truth tooling these agents run on.
 
 ---
 
