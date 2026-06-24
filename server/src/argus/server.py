@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .config import get_settings
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
+from .tools.practices_tools import evaluate_practices
 from .tools.read_tools import (
     get_device,
     list_devices,
@@ -44,6 +45,9 @@ mcp.tool()(network_topology)
 # Reconcile tools (review drift, apply changes — confirmation-gated)
 mcp.tool()(drift_report)
 mcp.tool()(reconcile_apply)
+
+# Practices tools (advisory best-practice checks — read-only)
+mcp.tool()(evaluate_practices)
 
 
 def main() -> None:

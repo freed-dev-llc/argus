@@ -18,12 +18,25 @@ import httpx
 from ....config import get_settings
 from ...base import (
     Collector,
+    DeviceManagement,
     DiscoveredClient,
     DiscoveredDevice,
     DiscoveredLink,
     DiscoveryResult,
 )
 from .models import MANUFACTURER, role_from_model
+
+
+def _management(device: dict[str, Any]) -> DeviceManagement | None:
+    """Pull management-plane facts (ADR-0010) out of a UniFi device payload, or None."""
+    mgmt = DeviceManagement(
+        status=device.get("state"),
+        serial=device.get("serial"),
+        firmware=device.get("version") or device.get("firmwareVersion"),
+    )
+    if mgmt.status or mgmt.serial or mgmt.firmware:
+        return mgmt
+    return None
 
 
 def _pick_site(sites: list[dict[str, Any]], reference: str) -> dict[str, Any] | None:
@@ -103,6 +116,7 @@ class UniFiCollector(Collector):
                     role=role_from_model(device.get("model")),
                     model=device.get("model"),
                     manufacturer=MANUFACTURER,
+                    management=_management(device),
                     raw=device,
                 )
             )

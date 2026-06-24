@@ -75,6 +75,41 @@ async def test_collect_maps_devices(monkeypatch):
 
 
 @respx.mock
+async def test_collect_populates_management(monkeypatch):
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"name": "sw1", "model": "USW-24-PoE", "ipAddress": "10.0.0.2",
+                     "state": "ONLINE", "version": "6.6.55", "serial": "ABC123"},
+                    {"name": "ap1", "model": "U6-Pro", "ipAddress": "10.0.0.3"},
+                ]
+            },
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+
+    result = await UniFiCollector().collect()
+
+    sw, ap = result.devices
+    assert sw.management is not None
+    assert sw.management.status == "ONLINE"
+    assert sw.management.firmware == "6.6.55"
+    assert sw.management.serial == "ABC123"
+    # A device with no management-plane fields stays None (nothing learned).
+    assert ap.management is None
+
+
+@respx.mock
 async def test_collect_maps_clients(monkeypatch):
     monkeypatch.setattr(unifi, "get_settings", _configured)
     respx.get(f"{BASE}/sites").mock(
