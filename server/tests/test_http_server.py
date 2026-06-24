@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+import respx
 from fastapi.testclient import TestClient
 
 from argus.config import get_settings
@@ -89,3 +91,33 @@ def test_health_endpoints_public_even_when_token_set(monkeypatch):
     get_settings.cache_clear()
     assert client.get("/health").status_code == 200
     assert client.get("/health/deep").status_code == 200
+
+
+def test_api_ask_unconfigured_returns_error(monkeypatch):
+    """With no MNEMOSYNE_URL set, /api/ask returns a clear error (feature disabled)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.delenv("MNEMOSYNE_URL", raising=False)
+    get_settings.cache_clear()
+    resp = client.post("/api/ask?q=anything")
+    assert resp.status_code == 200
+    assert "error" in resp.json()
+
+
+@respx.mock
+def test_api_ask_proxies_to_mnemosyne(monkeypatch):
+    """/api/ask proxies the question to MNEMOSYNE_URL and returns its answer + sources."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("MNEMOSYNE_URL", "http://mnemo.test:8088")
+    get_settings.cache_clear()
+    route = respx.post("http://mnemo.test:8088/ask").mock(
+        return_value=httpx.Response(
+            200,
+            json={"answer": "Adopt it over L3.", "sources": [{"title": "Remote Adoption"}]},
+        )
+    )
+    resp = client.post("/api/ask?q=how+do+I+adopt+remotely")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["answer"] == "Adopt it over L3."
+    assert body["sources"][0]["title"] == "Remote Adoption"
+    assert route.called

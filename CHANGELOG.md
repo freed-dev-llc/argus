@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Ask the Brain** — a dashboard panel to ask the [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne)
+  knowledge brain about your network and get grounded, cited answers (Argus discovers, Mnemosyne
+  explains). A new `POST /api/ask` proxies server-to-server to a `mnemosyne-http` service set via
+  `MNEMOSYNE_URL` (opt-in; empty disables it). See ADR-0008.
+
 ### Fixed
 
 - **Deploy compose**: `HTTP_TOKEN` is now wired on `argus-server` (not just `argus-web`), so

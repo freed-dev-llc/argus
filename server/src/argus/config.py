@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     schedule_collector: str = "unifi"  # collector the scheduled drift cycle observes
     alert_webhook_url: str = ""  # Slack-compatible webhook; alert fires only on drift when set
 
+    # Mnemosyne knowledge brain (RAG): base URL of a mnemosyne-http service. Powers the
+    # dashboard "Ask the Brain" feature — Argus discovers the network, Mnemosyne explains it.
+    # Empty disables the feature.
+    mnemosyne_url: str = ""
+
     @property
     def http_auth_enabled(self) -> bool:
         """True when a static bearer token is configured for the HTTP API."""
@@ -55,6 +60,11 @@ class Settings(BaseSettings):
     def netbox_configured(self) -> bool:
         """True when both a NetBox URL and token are set."""
         return bool(self.netbox_url and self.netbox_token)
+
+    @property
+    def mnemosyne_configured(self) -> bool:
+        """True when a Mnemosyne knowledge-brain URL is set."""
+        return bool(self.mnemosyne_url)
 
     @property
     def unifi_configured(self) -> bool:

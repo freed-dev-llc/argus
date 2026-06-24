@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getHealth, type HealthResponse } from './api/client'
+import { AskBrainPanel } from './components/AskBrainPanel'
 import { DeviceTable } from './components/DeviceTable'
 import { DriftPanel } from './components/DriftPanel'
 import { IpamTree } from './components/IpamTree'
@@ -31,6 +32,10 @@ export default function App() {
       </header>
 
       <main>
+        <section>
+          <h2>Ask the Brain</h2>
+          <AskBrainPanel />
+        </section>
         <section>
           <h2>Devices</h2>
           <DeviceTable />

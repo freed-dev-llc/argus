@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -162,6 +163,29 @@ async def api_reconcile(
     collector: str = "unifi", confirm_token: str | None = None
 ) -> dict[str, Any]:
     return await reconcile_apply(collector=collector, confirm_token=confirm_token)
+
+
+@app.post("/api/ask")
+async def api_ask(q: str, pack: str = "ubiquiti") -> dict[str, Any]:
+    """Ask the Mnemosyne knowledge brain a question, proxied server-to-server.
+
+    Argus discovers the network; Mnemosyne *explains* it. Returns Mnemosyne's
+    ``{answer, sources}`` (or ``{"error": ...}`` if unconfigured/unreachable). Set
+    ``MNEMOSYNE_URL`` to the base URL of a ``mnemosyne-http`` service to enable.
+    """
+    settings = get_settings()
+    if not settings.mnemosyne_configured:
+        return {"error": "Mnemosyne not configured (set MNEMOSYNE_URL)"}
+    url = settings.mnemosyne_url.rstrip("/") + "/ask"
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(url, json={"pack": pack, "question": q})
+    except httpx.HTTPError as exc:
+        return {"error": f"Mnemosyne unreachable: {exc}"}
+    if resp.status_code != 200:
+        return {"error": f"Mnemosyne returned {resp.status_code}: {resp.text[:200]}"}
+    answer: dict[str, Any] = resp.json()
+    return answer
 
 
 @app.post("/webhooks/netbox")

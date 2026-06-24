@@ -212,3 +212,47 @@ footer {
   margin-top: 2rem;
   font-size: 0.85rem;
 }
+
+/* Ask the Brain panel */
+.ask-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.ask-form input {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.ask-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ask-response {
+  margin-top: 0.75rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.75rem;
+}
+
+.ask-answer {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+}
+
+.ask-sources {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ask-sources li {
+  padding: 0.15rem 0;
+}
