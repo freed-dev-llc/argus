@@ -62,6 +62,23 @@ build against ships in `argus-netbox`: `argus.discovery.base` (`Collector`, `Dis
 `Discovered*`) and `argus.discovery.vendors.pack` (`VendorPack`, `Transport`, capability
 constants).
 
+## Practices & management (optional)
+
+A pack can do more than discover devices:
+
+- **Practices** ([ADR-0009](architecture/adr/0009-vendor-pack-practices-spi.md)) — ship
+  best-practice / validation rules on `VendorPack.practices`. A `Practice` (in
+  `argus.discovery.practices`) is a small, self-describing rule
+  (`id` / `title` / `severity` / `evaluate`) that inspects a `PracticeContext` — the live
+  observation **and** a read-only NetBox snapshot — and returns advisory `Finding`s. Run them
+  with the `evaluate_practices` tool. Practices never write; reconcile stays the only writer.
+- **Management-plane data** ([ADR-0010](architecture/adr/0010-management-plane-contract.md)) —
+  populate the optional `DiscoveredDevice.management` (`DeviceManagement`: status, serial,
+  firmware, mgmt IP / interface / VLAN). Surfaced by discovery today (read-only); NetBox
+  write-back is the gated follow-up.
+
+The in-tree UniFi pack is the worked example for both.
+
 ## Public or private
 
 A pack can live in its own repo at any visibility. **Private** packs depend only on the public
