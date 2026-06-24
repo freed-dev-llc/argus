@@ -143,3 +143,25 @@ export interface HealthResponse {
 export function getHealth(): Promise<HealthResponse> {
   return getJSON<HealthResponse>('/health/deep')
 }
+
+export interface AskSource {
+  n?: number
+  title?: string
+  source?: string
+  page?: number | null
+}
+
+export interface AskResponse {
+  answer?: string
+  sources?: AskSource[]
+  pack?: string
+  question?: string
+  error?: string
+}
+
+// Ask the Mnemosyne knowledge brain (proxied by the Argus backend). Argus discovers the
+// network; Mnemosyne explains it.
+export function askBrain(question: string, pack = 'ubiquiti'): Promise<AskResponse> {
+  const params = new URLSearchParams({ q: question, pack })
+  return postJSON<AskResponse>(`/api/ask?${params.toString()}`)
+}
