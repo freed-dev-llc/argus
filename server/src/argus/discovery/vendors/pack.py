@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from ..base import Collector
+from ..practices import Practice
 
 #: Entry-point group an external distribution uses to register its packs. Each entry
 #: point must resolve to a :class:`VendorPack` instance, e.g. in its ``pyproject.toml``::
@@ -49,5 +50,5 @@ class VendorPack:
     #: Settings/env vars this pack consumes (documentation + future validation).
     config_vars: tuple[str, ...]
     collector: type[Collector]
-    #: Best-practice / validation rules — reserved extension point (ADR-0005); empty now.
-    practices: tuple[object, ...] = field(default_factory=tuple)
+    #: Best-practice / validation rules this pack ships (ADR-0009); empty by default.
+    practices: tuple[Practice, ...] = field(default_factory=tuple)

@@ -13,6 +13,24 @@ from typing import Any
 
 
 @dataclass
+class DeviceManagement:
+    """Management-plane facts about a device (read-only first; see ADR-0010).
+
+    Optional, vendor-reported management metadata that doesn't fit the core identity fields.
+    Surfaced by discovery today; writing it back into NetBox is the gated next phase (it
+    reuses the reconcile confirmation flow, ADR-0003). All fields optional — a pack populates
+    what it knows.
+    """
+
+    status: str | None = None  # operational state, e.g. "active" / "online" / "offline"
+    serial: str | None = None
+    firmware: str | None = None
+    mgmt_ip: str | None = None  # management IP, if distinct from primary_ip
+    mgmt_interface: str | None = None
+    mgmt_vlan: int | None = None
+
+
+@dataclass
 class DiscoveredDevice:
     """A device observed on the live network, normalized across collectors."""
 
@@ -23,6 +41,7 @@ class DiscoveredDevice:
     role: str | None = None
     model: str | None = None
     manufacturer: str | None = None
+    management: DeviceManagement | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 

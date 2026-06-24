@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from .config import get_settings
 from .scheduler import get_drift_status, scheduler_loop
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
+from .tools.practices_tools import evaluate_practices
 from .tools.read_tools import (
     get_device,
     list_devices,
@@ -150,6 +151,11 @@ async def api_topology(collector: str = "unifi") -> dict[str, Any]:
 @app.get("/api/drift")
 async def api_drift(collector: str = "unifi") -> dict[str, Any]:
     return await drift_report(collector)
+
+
+@app.get("/api/practices")
+async def api_practices(collector: str = "unifi") -> dict[str, Any]:
+    return await evaluate_practices(collector)
 
 
 @app.get("/api/drift/status")
