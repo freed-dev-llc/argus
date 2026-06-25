@@ -96,4 +96,5 @@ pytest -v          # offline — NetBox is mocked
 | `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` | read | real (needs NetBox) |
 | `list_collectors`, `discovery_scan`, `network_topology` | discovery | UniFi real — devices + clients + uplink topology (needs `UNIFI_*`); SNMP/LLDP real for non-UniFi gear (needs `SNMP_TARGETS` + `argus-netbox[discovery]`) |
 | `drift_report`, `reconcile_apply` | reconcile | real — diffs and (on confirm) persists, auto-creating supporting NetBox objects |
+| `evaluate_practices` | practices | real — runs a collector's best-practice rules, returning advisory `Finding`s (read-only; also `GET /api/practices`) |
 | `health` | meta | real |

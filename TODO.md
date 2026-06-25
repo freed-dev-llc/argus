@@ -9,7 +9,7 @@ packs' own repos, not here.
 - [ ] Webhook reactions — trigger discovery/reconcile on NetBox events (P4) — [#72](https://github.com/freed-dev-llc/argus/issues/72)
 - [ ] Reconcile: broaden drift comparison beyond `primary_ip`/`site`/`role` — [#74](https://github.com/freed-dev-llc/argus/issues/74)
 - [ ] Validate the generic SNMP/LLDP collector against live non-UniFi gear — [#75](https://github.com/freed-dev-llc/argus/issues/75)
-- [ ] Scope & implement the vendor-pack `practices` extension point — [#77](https://github.com/freed-dev-llc/argus/issues/77)
+- [x] Scope & implement the vendor-pack `practices` extension point — [#77](https://github.com/freed-dev-llc/argus/issues/77) (shipped in v0.1.6, [ADR-0009](docs/architecture/adr/0009-vendor-pack-practices-spi.md))
 - [ ] Multi-tenant (shared NetBox): stamp `tenant` on reconciled objects (`NETBOX_TENANT`) — [ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md), [#86](https://github.com/freed-dev-llc/argus/issues/86)
 
 ## Add-ons
@@ -21,7 +21,7 @@ packs' own repos, not here.
 
 - [ ] Webhook: verify NetBox `X-Hook-Signature` (HMAC) — [#71](https://github.com/freed-dev-llc/argus/issues/71)
 - [ ] Reconcile: drop IPv4 / `/32` / hardcoded `mgmt`-interface assumptions in primary-IP assignment — [#73](https://github.com/freed-dev-llc/argus/issues/73)
-- [ ] Fix stale `netbox/client.py` "reads-only" docstring — [#79](https://github.com/freed-dev-llc/argus/issues/79)
+- [x] Fix stale `netbox/client.py` "reads-only" docstring — [#79](https://github.com/freed-dev-llc/argus/issues/79) (done in [#101](https://github.com/freed-dev-llc/argus/issues/101))
 
 ## Notes (deliberate — not bugs)
 

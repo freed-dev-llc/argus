@@ -31,5 +31,6 @@ in a `.env` file for a deployed dashboard that points at a remote Argus server.
 
 ## Status
 
-Dashboard shell: a live device table (from NetBox via the API), a drift panel (stub),
-and a topology-map placeholder (planned P3).
+A live device table (from NetBox via the API), a drift panel (view drift + run the
+confirm→apply flow), and a topology map (devices grouped by site, colored by role, with
+UniFi-native uplink edges).

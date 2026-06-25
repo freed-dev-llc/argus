@@ -113,6 +113,7 @@ npm run dev       # http://localhost:5173 — proxies /api to the server on :808
 - `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` — read NetBox
 - `list_collectors`, `discovery_scan`, `network_topology` — observe live network state + topology
 - `drift_report`, `reconcile_apply` — review and apply reconciliation (confirmation-gated)
+- `evaluate_practices` — run a collector's best-practice rules for advisory findings (read-only)
 
 ## Deployment
 
