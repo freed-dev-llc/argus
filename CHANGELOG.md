@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-25
+
 ### Changed
 
 - **Track `CLAUDE.md`**: the coding-agent orientation file is now versioned in-repo (removed
@@ -319,7 +321,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/freed-dev-llc/argus/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/freed-dev-llc/argus/compare/v0.1.3...v0.1.4
