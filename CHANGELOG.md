@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Track `CLAUDE.md`**: the coding-agent orientation file is now versioned in-repo (removed
+  from `.gitignore`) instead of kept local-only, so the orientation stays in sync with the code.
+
 ### Fixed
 
 - **Docs accuracy pass (post-v0.1.6)**: corrected stale status/tooling references across the
