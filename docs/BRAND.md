@@ -119,6 +119,7 @@ repos carry sibling cross‑link buttons (`docs/assets/buttons/btn_<repo>.svg`, 
 | [Argus](https://github.com/freed-dev-llc/argus) | Network source‑of‑truth tooling | all‑seeing eye | Amber `#C5953F` |
 | Leeloo | Kimi‑powered agent | fifth‑element spark | Copper `#D2814E` |
 | Elara | Hosted Hermes messenger (Telegram) | paper‑plane | Rose‑clay `#CC7A5C` |
+| [Helios](https://github.com/freed-dev-llc/helios) | Fleet observability server | watching sun | Solar gold `#E6A93C` |
 
 Argus is the shared network source‑of‑truth tooling these agents run on.
 

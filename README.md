@@ -35,6 +35,7 @@ everything. That's the job: always watching, always keeping the record true.
 [![Reach — freed-dev-llc/reach](docs/assets/buttons/btn_reach.svg)](https://github.com/freed-dev-llc/reach)
 [![Sisyphus — freed-dev-llc/sisyphus](docs/assets/buttons/btn_sisyphus.svg)](https://github.com/freed-dev-llc/sisyphus)
 [![Mnemosyne — freed-dev-llc/mnemosyne](docs/assets/buttons/btn_mnemosyne.svg)](https://github.com/freed-dev-llc/mnemosyne)
+[![Helios — freed-dev-llc/helios](docs/assets/buttons/btn_helios.svg)](https://github.com/freed-dev-llc/helios)
 
 ## How it fits together
 
