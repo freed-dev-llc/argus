@@ -78,11 +78,19 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   [`argus-vendor-pack-template`](https://github.com/freed-dev-llc/argus-vendor-pack-template).
 - Surface pack `capabilities`/`transport` in `list_collectors` so agents can see what each pack
   can discover.
-- Scope the `practices` (best-practice / validation) extension point.
+- ✅ **Practices SPI** ([ADR-0009](architecture/adr/0009-vendor-pack-practices-spi.md)): the
+  `practices` (best-practice / validation) extension point ADR-0005 reserved. A `Practice`
+  evaluates a `PracticeContext` (observed `DiscoveryResult` + read-only NetBox snapshot) and
+  returns `Finding`s; surfaced advisory/read-only via `evaluate_practices` (MCP) + `GET
+  /api/practices`. UniFi ships the reference rules.
 - Validate the generic non-UniFi SNMP/LLDP collector against live gear; per-device (SNMP/SSH)
   transport packs.
 - Additional vendor packs ship in their own repos (public or private) via the entry point.
-- Per-vendor `management` work starts with read-only management-plane data → NetBox.
+- ✅ **Management-plane read** ([ADR-0010](architecture/adr/0010-management-plane-contract.md)):
+  per-vendor `management` work starts with read-only management-plane data — a typed
+  `DeviceManagement` object on `DiscoveredDevice` that packs populate and `discovery_scan`
+  surfaces (UniFi populates it). NetBox write-back of that data is a defined, confirmation-gated
+  follow-up (pending).
 
 ## Beyond — active management (write-back)
 
