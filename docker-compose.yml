@@ -1,5 +1,6 @@
 # Runs the Argus HTTP server against an EXTERNAL, already-running NetBox.
-# Bundling NetBox itself (Postgres + Redis + the app) is a separate, later profile.
+# For a self-contained stack that bundles NetBox itself (Postgres + Redis + the app)
+# plus the Argus server and web dashboard, use deploy/docker-compose.yml (see deploy/README.md).
 #
 #   NETBOX_URL=https://netbox.lan NETBOX_TOKEN=xxxx docker compose up --build
 #

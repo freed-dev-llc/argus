@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Track `CLAUDE.md`**: the coding-agent orientation file is now versioned in-repo (removed
+  from `.gitignore`) instead of kept local-only, so the orientation stays in sync with the code.
 - Added the Helios cross-link button to the README family row.
+
+### Fixed
+
+- **Docs accuracy pass (post-v0.1.6)**: corrected stale status/tooling references across the
+  docs. Discovery + reconcile are described as implemented and validated end-to-end (no longer
+  "stubs"/"skeleton"/"not yet implemented"); the web drift panel and topology map are described
+  as shipped (not "stub"/"placeholder"); the new `evaluate_practices` MCP tool (+ `GET
+  /api/practices`) is listed in the README/`server/README.md` tool tables; the ROADMAP marks the
+  practices SPI (ADR-0009) done and splits per-vendor management into read-only data (ADR-0010,
+  done) vs NetBox write-back (pending); the root `docker-compose.yml` header now points at
+  `deploy/docker-compose.yml` for the bundled-NetBox stack; and the `#77`/`#79` TODO items are
+  marked done.
 
 ## [0.1.6] - 2026-06-24
 
