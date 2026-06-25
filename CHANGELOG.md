@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Track `CLAUDE.md`**: the coding-agent orientation file is now versioned in-repo (removed
   from `.gitignore`) instead of kept local-only, so the orientation stays in sync with the code.
+- Added the Helios cross-link button to the README family row.
 
 ### Fixed
 

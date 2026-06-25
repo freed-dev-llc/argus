@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 72" width="372" height="72" role="img" aria-label="Helios Watch — freed-dev-llc/helios">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2C39"/><stop offset="1" stop-color="#0F1C25"/></linearGradient>
+    <linearGradient id="cp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6A93C"/><stop offset="1" stop-color="#B9781E"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#E6A93C" stop-opacity="0.42"/><stop offset="1" stop-color="#E6A93C" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <rect x="1" y="1" width="370" height="70" rx="16" fill="url(#bg)" stroke="#2C4C61" stroke-width="1.5"/>
+
+  <!-- glyph: the watching sun -->
+  <g transform="translate(40,36) scale(0.34)">
+    <circle cx="0" cy="0" r="78" fill="url(#glow)"/>
+    <g stroke="#E6A93C" stroke-linecap="round" opacity="0.92">
+      <line x1="34" y1="0" x2="50" y2="0" stroke-width="4"/>
+      <line x1="29.4" y1="17" x2="38.1" y2="22" stroke-width="3"/>
+      <line x1="17" y1="29.4" x2="25" y2="43.3" stroke-width="4"/>
+      <line x1="0" y1="34" x2="0" y2="44" stroke-width="3"/>
+      <line x1="-17" y1="29.4" x2="-25" y2="43.3" stroke-width="4"/>
+      <line x1="-29.4" y1="17" x2="-38.1" y2="22" stroke-width="3"/>
+      <line x1="-34" y1="0" x2="-50" y2="0" stroke-width="4"/>
+      <line x1="-29.4" y1="-17" x2="-38.1" y2="-22" stroke-width="3"/>
+      <line x1="-17" y1="-29.4" x2="-25" y2="-43.3" stroke-width="4"/>
+      <line x1="0" y1="-34" x2="0" y2="-44" stroke-width="3"/>
+      <line x1="17" y1="-29.4" x2="25" y2="-43.3" stroke-width="4"/>
+      <line x1="29.4" y1="-17" x2="38.1" y2="-22" stroke-width="3"/>
+    </g>
+    <circle cx="0" cy="0" r="30" fill="url(#cp)" stroke="#EAF2F7" stroke-opacity="0.12" stroke-width="1"/>
+    <circle cx="9" cy="-9" r="7" fill="#FBEEE3" opacity="0.92"/>
+  </g>
+
+  <!-- label -->
+  <g font-family="'Segoe UI','SF Pro Display',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif">
+    <text x="92" y="31" font-size="18" font-weight="700" letter-spacing="0.3" fill="#EAF2F7">Helios <tspan fill="#E6A93C">Watch</tspan></text>
+    <text x="92" y="52" font-size="10.5" font-weight="500" letter-spacing="0.2" fill="#7FA6BC" font-family="'SF Mono',ui-monospace,Menlo,Consolas,monospace">freed-dev-llc/helios</text>
+  </g>
+</svg>
