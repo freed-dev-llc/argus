@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Re-gitignore `CLAUDE.md`**: the coding-agent orientation file is local/untracked again
+  (restored to `.gitignore`), reverting the v0.1.7 decision to version it in-repo. It is
+  per-session local context and is never `git add`ed, consistent with the other agent context
+  files (`SAGE.md`/`NOVA.md`/`VERA.md`).
+
 ## [0.1.7] - 2026-06-25
 
 ### Changed
