@@ -33,10 +33,13 @@ accent variant.
 | Warm white | `warm-white` | `#FBEEE3` | The catchlight on the pupil — a subtle warmth tie‑in. |
 
 **Accent variations.** Argus ships the **amber/brass** variant. Niagara + the dark ink stay
-constant across the family; only the warm accent varies between repos (all are warm
-complements of Niagara, so they harmonize): Terracotta `#C4683F → #974124`, Copper
-`#DB9560 → #BE6C3A`, Amber/brass `#CDA052 → #9C6F2E`. Keep any accent a **warm hue
-(≈ 20–45°)** — avoid greens and violets, where the "AI" cliché lives.
+constant across the family; the accent is what varies. The three sibling **agents** (Aria,
+Elara, Leeloo) all share the **terracotta** accent (`#C4683F → #974124`) and are told apart
+by glyph + tagword. The shared **tools** each take a distinct accent — some warm (Argus
+amber/brass `#CDA052 → #9C6F2E`, Helios solar gold `#E6A93C`), some cool (Reach blue
+`#4A93C9`, Sisyphus green `#6FB58C`, Mnemosyne violet `#A78BD0`). For a **warm** variant,
+keep the hue **≈ 20–45°** so it stays a warm complement of Niagara; the cool tool accents
+step outside that range on purpose.
 
 ---
 
@@ -109,17 +112,20 @@ an **eye**: an almond outline in Niagara, a faint iris ring, an **amber pupil** 
 
 ## 6. Family
 
-All repos share the system above; each gets its own glyph + warm accent. The private sibling
+All repos share the system above; each gets its own glyph + accent (warm for the agents, a distinct hue per tool). The private sibling
 repos carry sibling cross‑link buttons (`docs/assets/buttons/btn_<repo>.svg`, 372×72); this
 **public** repo omits them, since their targets aren't publicly reachable.
 
-| Repo | Role | Glyph | Accent |
-|------|------|-------|--------|
-| Aria | Voice assistant | voice waveform | Terracotta `#C4683F` |
-| [Argus](https://github.com/freed-dev-llc/argus) | Network source‑of‑truth tooling | all‑seeing eye | Amber `#C5953F` |
-| Leeloo | Kimi‑powered agent | fifth‑element spark | Copper `#D2814E` |
-| Elara | Hosted Hermes messenger (Telegram) | paper‑plane | Rose‑clay `#CC7A5C` |
-| [Helios](https://github.com/freed-dev-llc/helios) | Fleet observability server | watching sun | Solar gold `#E6A93C` |
+| Repo | Tagword | Role | Glyph | Accent |
+|------|---------|------|-------|--------|
+| [Aria](https://github.com/freed-dev-llc/aria) | Voice | Voice assistant | voice waveform | Terracotta `#C4683F` |
+| [Argus](https://github.com/freed-dev-llc/argus) | Net | Network source‑of‑truth tooling | all‑seeing eye | Amber `#C5953F` |
+| [Elara](https://github.com/freed-dev-llc/elara) | Agent | Hosted Hermes messenger (Telegram) | paper‑plane | Terracotta `#C4683F` |
+| [Leeloo](https://github.com/freed-dev-llc/leeloo) | Code | Kimi‑powered coding agent | fifth‑element spark | Terracotta `#C4683F` |
+| [Reach](https://github.com/freed-dev-llc/reach) | Remote | Remote‑access MCP (reverse SSH) | signal‑arc reach | Blue `#4A93C9` |
+| [Sisyphus](https://github.com/freed-dev-llc/sisyphus) | Forge | SL1 PowerPack workspace | boulder‑on‑incline | Green `#6FB58C` |
+| [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne) | Recall | RAG knowledge brain | retrieval constellation | Violet `#A78BD0` |
+| [Helios](https://github.com/freed-dev-llc/helios) | Watch | Fleet observability server | watching sun | Solar gold `#E6A93C` |
 
 Argus is the shared network source‑of‑truth tooling these agents run on.
 
