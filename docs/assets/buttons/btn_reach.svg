@@ -2,7 +2,7 @@
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2C39"/><stop offset="1" stop-color="#0F1C25"/></linearGradient>
     <linearGradient id="node" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E9DBA"/><stop offset="1" stop-color="#4E7C97"/></linearGradient>
-    <linearGradient id="cp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FA6BC"/><stop offset="1" stop-color="#5B89A6"/></linearGradient>
+    <linearGradient id="cp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A93C9"/><stop offset="1" stop-color="#2F6F9E"/></linearGradient>
   </defs>
 
   <rect x="1" y="1" width="370" height="70" rx="16" fill="url(#bg)" stroke="#2C4C61" stroke-width="1.5"/>
@@ -26,7 +26,7 @@
 
   <!-- label -->
   <g font-family="'Segoe UI','SF Pro Display',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif">
-    <text x="92" y="31" font-size="18" font-weight="700" letter-spacing="0.3" fill="#EAF2F7">Reach <tspan fill="#7FA6BC">Remote</tspan></text>
+    <text x="92" y="31" font-size="18" font-weight="700" letter-spacing="0.3" fill="#EAF2F7">Reach <tspan fill="#4A93C9">Remote</tspan></text>
     <text x="92" y="52" font-size="10.5" font-weight="500" letter-spacing="0.2" fill="#7FA6BC" font-family="'SF Mono',ui-monospace,Menlo,Consolas,monospace">freed-dev-llc/reach</text>
   </g>
 </svg>
