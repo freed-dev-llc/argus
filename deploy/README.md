@@ -70,7 +70,10 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
 
 ## Notes
 
-- `NETBOX_IMAGE` pins the NetBox version; bump it in `.env` as needed.
+- `NETBOX_IMAGE` pins the NetBox **base** version: the bundled NetBox is built locally
+  (`deploy/netbox/Dockerfile`) from that base plus the `netbox-plugin-prometheus-sd` plugin,
+  which serves Prometheus `http_sd` targets at `/api/plugins/prometheus-sd/`. Bump
+  `NETBOX_IMAGE` in `.env` as needed, and bring the stack up with `--build` so it rebuilds.
 - The NetBox API token is shared via `NETBOX_API_TOKEN`: the one-shot `netbox-init` service
   creates a v1 token with that value (NetBox's own provisioning only mints v2 tokens, which
   pynetbox can't present), and `argus-server` reads the same value as `NETBOX_TOKEN`.
