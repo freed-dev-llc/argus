@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NETBOX_WEBHOOK_SECRET`. A missing or mismatched signature is rejected with `401
   {"detail": "invalid signature"}` before the body is parsed. The check is additive to and
   independent of the optional `HTTP_TOKEN` bearer gate; leaving the secret unset disables
-  verification (back-compat). (#71)
+  verification (back-compat). The bundled `deploy/` compose stack and the Ansible
+  `argus_deploy` role now plumb `NETBOX_WEBHOOK_SECRET` through to `argus-server` only
+  (server-only — not exposed to the web/nginx service). (#71)
 
 ## [0.1.7] - 2026-06-25
 
