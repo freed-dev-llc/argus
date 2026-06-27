@@ -1,0 +1,10 @@
+# Terraform — never commit state (contains the service-token secret) or local cache.
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
