@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per-session local context and is never `git add`ed, consistent with the other agent context
   files (`SAGE.md`/`NOVA.md`/`VERA.md`).
 
+### Fixed
+
+- **Family-aware primary-IP assignment**: an IPv6 primary IP was silently mis-assigned to the
+  device's `primary_ip4` field and every address was forced to `/32`. Primary-IP and IP-address
+  writes are now family-aware (stdlib `ipaddress`): IPv6 routes to `primary_ip6` and defaults to
+  `/128`, IPv4 to `primary_ip4`/`/32`, and a mask already on the address is honored. The
+  management interface is now configurable via `RECONCILE_MGMT_INTERFACE` (default `mgmt`)
+  instead of being hardcoded. (#73)
+
 ### Security
 
 - **Verify NetBox webhook signatures**: `POST /webhooks/netbox` now verifies NetBox's
