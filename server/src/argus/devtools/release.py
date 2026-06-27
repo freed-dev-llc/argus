@@ -237,6 +237,35 @@ def run_verify(root: Path) -> int:
     return rc
 
 
+def _tail(text: str, lines: int = 40) -> str:
+    """Last ``lines`` lines of ``text`` (keep a structured result from getting unbounded)."""
+    return "\n".join(text.splitlines()[-lines:])
+
+
+def run_verify_captured(root: Path) -> list[dict[str, Any]]:
+    """Run each verify step *capturing* its output — the programmatic (MCP) variant.
+
+    Like :func:`run_verify`, but instead of streaming to stdout it captures each step and
+    returns a JSON-able per-step record (``name``/``cmd``/``cwd``/``returncode``/``ok`` plus
+    a tail of stdout/stderr). Read-only: it spawns the configured commands and mutates nothing.
+    """
+    results: list[dict[str, Any]] = []
+    for step in verify_steps(root):
+        proc = subprocess.run(step.cmd, cwd=step.cwd, capture_output=True, text=True)
+        results.append(
+            {
+                "name": step.name,
+                "cmd": step.cmd,
+                "cwd": step.cwd,
+                "returncode": proc.returncode,
+                "ok": proc.returncode == 0,
+                "stdout_tail": _tail(proc.stdout),
+                "stderr_tail": _tail(proc.stderr),
+            }
+        )
+    return results
+
+
 # ----------------------------------------------------------------------------- cli
 
 

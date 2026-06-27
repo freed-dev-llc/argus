@@ -92,6 +92,8 @@ export NETBOX_TOKEN="<a NetBox API token>"
 
 argus-http        # FastAPI on :8080  (used by the web app)
 argus-mcp         # MCP server over stdio (used by coding agents)
+
+argus-maint-mcp   # separate maintenance MCP surface — release preview/verify (devtools; read-only)
 ```
 
 If `NETBOX_URL` / `NETBOX_TOKEN` are unset, tools return a clear "NetBox not

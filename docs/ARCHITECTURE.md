@@ -42,7 +42,7 @@ are into NetBox, via the reconciliation engine.
 | Confirmations | `argus/confirmations.py` | Short-TTL store gating any state-changing action. |
 | Tools | `argus/tools/` | The agent-facing surface: read, discovery, reconcile. |
 | Transports | `argus/server.py`, `argus/http_server.py` | MCP over stdio; FastAPI for the web app + webhooks. |
-| Devtools | `argus/devtools/` | Manifest-driven repo maintenance (`argus-release`): version bump + CHANGELOG cut + verify. Not part of the product surface. |
+| Devtools | `argus/devtools/` | Manifest-driven repo maintenance (`argus-release`): version bump + CHANGELOG cut + verify. Not part of the product surface; also wrapped read/preview-only on a separate `argus-maint` MCP server ([ADR-0012](architecture/adr/0012-maintenance-mcp-surface.md)). |
 
 ## Discovery: vendor packs (host/plugin)
 
@@ -69,6 +69,13 @@ unchanged). Whatever the source or transport, every pack emits the same normaliz
   (`POST /webhooks/netbox`). CORS is open to the Vite dev server.
 
 Both call the same underlying tool functions, so behavior can't drift between them.
+
+> **Maintenance surface (separate).** The repo-maintenance devtools (the `argus-release` engine)
+> are wrapped read/preview-only on their own `FastMCP("argus-maint")` server (`argus-maint-mcp`) —
+> `release_current`, `release_verify`, and a dry-run-only `release_bump` preview. It is kept
+> deliberately *off* the product `argus` tool set so release/maintenance ops never mix with the
+> live-network tools, and is not auto-registered in `.mcp.json`. See
+> [ADR-0012](architecture/adr/0012-maintenance-mcp-surface.md).
 
 ## Safety model
 

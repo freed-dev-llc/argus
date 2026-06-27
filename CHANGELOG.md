@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Maintenance MCP surface** (`argus-maint-mcp`, [ADR-0012](docs/architecture/adr/0012-maintenance-mcp-surface.md)):
+  a new, *separate* `FastMCP("argus-maint")` server (entrypoint `argus-maint-mcp`) that wraps the
+  deterministic `argus-release` engine as MCP tools, so an MCP control environment can invoke
+  repo-maintenance ops without polluting the product `argus` network-automation tool set. First cut
+  is read/preview-only: `release_current` (canonical version), `release_verify` (lint/type/test/web
+  build, output captured), and `release_bump` (a **dry-run-only** preview of every version-site +
+  CHANGELOG edit — it never writes; a write-capable bump and its confirmation gate are a deferred
+  follow-up). The product server (`server.py`) is unchanged. (#78)
 - **NetBox prometheus-sd plugin (bundled)**: the bundled NetBox is now a small local build
   (`deploy/netbox/Dockerfile`) that installs `netbox-plugin-prometheus-sd` and enables it
   (`PLUGINS = ["netbox_prometheus_sd"]`), exposing Prometheus `http_sd` targets under
