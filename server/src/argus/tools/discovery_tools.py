@@ -6,11 +6,27 @@ from dataclasses import asdict
 from typing import Any
 
 from ..discovery.collectors import COLLECTORS
+from ..discovery.vendors import VENDOR_PACKS
+
+
+def _collector_entry(name: str) -> dict[str, Any]:
+    """Describe one collector: bare name, plus vendor-pack metadata when pack-backed."""
+    pack = VENDOR_PACKS.get(name)
+    if pack is None:
+        return {"name": name, "vendor_pack": False}
+    return {
+        "name": name,
+        "vendor_pack": True,
+        "manufacturer": pack.manufacturer,
+        "transport": pack.transport.value,
+        "capabilities": sorted(pack.capabilities),
+        "config_vars": list(pack.config_vars),
+    }
 
 
 async def list_collectors() -> dict[str, Any]:
-    """List the available discovery collector names."""
-    return {"collectors": sorted(COLLECTORS)}
+    """List the available discovery collectors with vendor-pack metadata."""
+    return {"collectors": [_collector_entry(name) for name in sorted(COLLECTORS)]}
 
 
 async def discovery_scan(collector: str) -> dict[str, Any]:
