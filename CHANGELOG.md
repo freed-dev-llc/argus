@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`health` MCP tool now reports the running `version`**: responses include a `version` field
+  sourced from the installed package metadata (`argus-netbox`), falling back to
+  `argus.__version__` when running from a source checkout.
+
 ### Changed
 
 - **Re-gitignore `CLAUDE.md`**: the coding-agent orientation file is local/untracked again
