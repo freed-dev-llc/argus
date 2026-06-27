@@ -2,16 +2,44 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from typing import Any
 
 import pynetbox
+
+from ..config import get_settings
 
 
 def _slugify(value: str) -> str:
     """NetBox-style slug: lowercase, non-alphanumeric runs collapsed to hyphens."""
     slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
     return slug or "unknown"
+
+
+def _with_default_mask(ip: str) -> tuple[str, int]:
+    """Normalize an IP string to ``address/mask`` and return its address family.
+
+    A mask already present in ``ip`` is honored; otherwise a family default is applied —
+    ``/32`` for IPv4, ``/128`` for IPv6. Parsing uses the stdlib :mod:`ipaddress` module.
+
+    Args:
+        ip: An IP address, optionally with a prefix length (e.g. ``"10.0.0.1"`` or
+            ``"2001:db8::1/64"``).
+
+    Returns:
+        A ``(address, version)`` tuple: the normalized ``address/mask`` string and the IP
+        version (``4`` or ``6``).
+
+    Raises:
+        ValueError: If ``ip`` is not a valid IP address (with or without a mask).
+    """
+    if "/" in ip:
+        interface = ipaddress.ip_interface(ip)
+        return str(interface), interface.version
+    address = ipaddress.ip_address(ip)
+    mask = 32 if address.version == 4 else 128
+    return f"{address}/{mask}", address.version
 
 
 def _record(record: Any) -> dict[str, Any]:
@@ -161,8 +189,12 @@ class NetBoxClient:
         return int(created.id)
 
     def ensure_ip_address(self, address: str, description: str = "") -> int:
-        """Return the id of the IPAM IP (find-or-create). Assumes /32 when no mask given."""
-        addr = address if "/" in address else f"{address}/32"
+        """Return the id of the IPAM IP (find-or-create).
+
+        The address family is detected via the stdlib ``ipaddress`` module: a mask in the
+        string is honored, otherwise ``/32`` (IPv4) or ``/128`` (IPv6) is applied.
+        """
+        addr, _ = _with_default_mask(address)
         existing = self.api.ipam.ip_addresses.get(address=addr)
         if existing is not None:
             return int(existing.id)
@@ -171,24 +203,31 @@ class NetBoxClient:
             data["description"] = description
         return int(self.api.ipam.ip_addresses.create(data).id)
 
-    def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
-        """Ensure ``device`` has ``ip`` as its primary IPv4.
+    def assign_primary_ip(
+        self, device_name: str, ip: str, interface_name: str | None = None
+    ) -> None:
+        """Ensure ``device`` has ``ip`` as its primary IP (family-aware).
 
-        Creates a management interface and the IPAM IP object (assigned to that interface)
-        if they don't exist, then sets the device's ``primary_ip4``. Assumes /32 when no
-        mask is given. Best-effort, IPv4 only.
+        Creates the management interface and the IPAM IP object (assigned to that interface)
+        if they don't exist, then sets the device's ``primary_ip6`` for an IPv6 address or
+        ``primary_ip4`` for IPv4. The family and mask are detected via the stdlib
+        ``ipaddress`` module: a mask in the string is honored, otherwise ``/32`` (IPv4) or
+        ``/128`` (IPv6) is applied. ``interface_name`` defaults to the configured
+        ``RECONCILE_MGMT_INTERFACE`` (``mgmt``). Best-effort.
         """
+        resolved_interface = interface_name or get_settings().reconcile_mgmt_interface
+
         device = self.api.dcim.devices.get(name=device_name)
         if device is None:
             raise ValueError(f"Device '{device_name}' not found in NetBox")
 
-        interface = self.api.dcim.interfaces.get(device_id=device.id, name=interface_name)
+        interface = self.api.dcim.interfaces.get(device_id=device.id, name=resolved_interface)
         if interface is None:
             interface = self.api.dcim.interfaces.create(
-                {"device": device.id, "name": interface_name, "type": "virtual"}
+                {"device": device.id, "name": resolved_interface, "type": "virtual"}
             )
 
-        address = ip if "/" in ip else f"{ip}/32"
+        address, version = _with_default_mask(ip)
         ip_obj = self.api.ipam.ip_addresses.get(address=address)
         if ip_obj is None:
             ip_obj = self.api.ipam.ip_addresses.create(
@@ -199,4 +238,5 @@ class NetBoxClient:
                     "assigned_object_id": interface.id,
                 }
             )
-        device.update({"primary_ip4": ip_obj.id})
+        primary_field = "primary_ip6" if version == 6 else "primary_ip4"
+        device.update({primary_field: ip_obj.id})

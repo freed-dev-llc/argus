@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+from argus.config import get_settings
 from argus.netbox.client import NetBoxClient
 
 
@@ -89,3 +90,103 @@ def test_ensure_device_type_creates_with_manufacturer():
         api.dcim.device_types.create.assert_called_once_with(
             {"model": "USW-24-PoE", "slug": "usw-24-poe", "manufacturer": 3}
         )
+
+
+# --- family-aware primary-IP assignment (#73) -----------------------------------
+
+
+def _assign_primary_ip(ip: str) -> tuple[MagicMock, MagicMock]:
+    """Run ``assign_primary_ip`` against a fully-mocked NetBox; return ``(api, device)``.
+
+    The device, interface, and IP objects are all absent so the create paths run; the
+    recorded mock calls survive the ``patch`` context for post-hoc assertions.
+    """
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        device = MagicMock(id=10)
+        api.dcim.devices.get.return_value = device
+        api.dcim.interfaces.get.return_value = None
+        api.dcim.interfaces.create.return_value = MagicMock(id=20)
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=30)
+        NetBoxClient("https://nb", "tok").assign_primary_ip("sw1", ip)
+        return api, device
+
+
+def test_assign_primary_ipv4_maskless_defaults_32_and_v4_field(monkeypatch):
+    """A maskless IPv4 defaults to /32 and lands in ``primary_ip4``."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    api, device = _assign_primary_ip("10.0.0.5")
+    assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "10.0.0.5/32"
+    device.update.assert_called_once_with({"primary_ip4": 30})
+
+
+def test_assign_primary_ipv6_maskless_defaults_128_and_v6_field(monkeypatch):
+    """A maskless IPv6 defaults to /128 and lands in ``primary_ip6`` (the actual bug fix)."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    api, device = _assign_primary_ip("2001:db8::1")
+    assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "2001:db8::1/128"
+    device.update.assert_called_once_with({"primary_ip6": 30})
+
+
+def test_assign_primary_ipv4_honors_provided_mask(monkeypatch):
+    """A provided IPv4 mask is honored (not overwritten with /32)."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    api, device = _assign_primary_ip("10.0.0.5/24")
+    assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "10.0.0.5/24"
+    device.update.assert_called_once_with({"primary_ip4": 30})
+
+
+def test_assign_primary_ipv6_honors_provided_mask(monkeypatch):
+    """A provided IPv6 mask is honored and still routes to ``primary_ip6``."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    api, device = _assign_primary_ip("2001:db8::1/64")
+    assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "2001:db8::1/64"
+    device.update.assert_called_once_with({"primary_ip6": 30})
+
+
+def test_assign_primary_ip_uses_default_mgmt_interface(monkeypatch):
+    """With no env override, the interface defaults to ``mgmt``."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    api, _ = _assign_primary_ip("10.0.0.5")
+    api.dcim.interfaces.get.assert_called_once_with(device_id=10, name="mgmt")
+    assert api.dcim.interfaces.create.call_args[0][0]["name"] == "mgmt"
+
+
+def test_assign_primary_ip_honors_configured_interface(monkeypatch):
+    """``RECONCILE_MGMT_INTERFACE`` overrides the management interface name."""
+    monkeypatch.setenv("RECONCILE_MGMT_INTERFACE", "eth0")
+    get_settings.cache_clear()
+    api, _ = _assign_primary_ip("10.0.0.5")
+    api.dcim.interfaces.get.assert_called_once_with(device_id=10, name="eth0")
+    assert api.dcim.interfaces.create.call_args[0][0]["name"] == "eth0"
+
+
+def test_ensure_ip_address_ipv6_defaults_128():
+    """``ensure_ip_address`` defaults an IPv6 to /128 (no longer forces /32)."""
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=42)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_ip_address("2001:db8::5") == 42
+        assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "2001:db8::5/128"
+
+
+def test_ensure_ip_address_ipv4_defaults_32():
+    """``ensure_ip_address`` still defaults a maskless IPv4 to /32 (via the family helper)."""
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=43)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_ip_address("10.0.0.9") == 43
+        assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "10.0.0.9/32"

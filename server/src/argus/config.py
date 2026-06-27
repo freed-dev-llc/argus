@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     webhook_reactions_enabled: bool = False
     webhook_reaction_models: str = "dcim.device,ipam.ipaddress"  # comma-separated allow-list
 
+    # Reconcile (NetBox write path): management interface a primary IP is assigned to.
+    reconcile_mgmt_interface: str = "mgmt"
+
     # Mnemosyne knowledge brain (RAG): base URL of a mnemosyne-http service. Powers the
     # dashboard "Ask the Brain" feature — Argus discovers the network, Mnemosyne explains it.
     # Empty disables the feature.
