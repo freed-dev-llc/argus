@@ -2,8 +2,9 @@
 
 NetBox 4.x POSTs a JSON change event to ``/webhooks/netbox`` whenever a configured object
 is created, updated, or deleted. This module turns that payload into a small, structured
-:class:`NetBoxEvent` for logging and acking. It is **observability only** — it never
-triggers discovery, reconcile, or any NetBox write (reactions are a later phase).
+:class:`NetBoxEvent` for logging and acking. Classification itself is **observability only**
+and never writes NetBox; opt-in webhook *reactions* (see :mod:`argus.reactions`) may trigger a
+**read-only** drift cycle on an authenticated, allow-listed event — still never an apply/write.
 
 Parsing is total and defensive: a non-``Mapping`` payload, or any missing/null/oddly-typed
 field, yields ``None`` for that field and never raises, so a malformed webhook cannot crash

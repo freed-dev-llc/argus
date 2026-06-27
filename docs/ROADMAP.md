@@ -42,7 +42,10 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - NetBox webhooks (`/webhooks/netbox`):
   - ✅ **classify + structured-log** change events (event / model / object / actor), defensive
     parsing into a `NetBoxEvent`. Observability half of P4.
-  - reacting/automating on events (discovery trigger / reconcile) — deferred.
+  - ✅ **reacting on events (read-only)**: opt-in (`WEBHOOK_REACTIONS_ENABLED`, off by default)
+    event-triggered drift cycle on an *authenticated*, allow-listed change — discovery + diff,
+    never an apply/write ([ADR-0011](architecture/adr/0011-webhook-reactions-read-side-only.md)).
+    Event-driven reconcile/write stays deferred to a future ADR.
 - ✅ **Scheduled discovery + drift alerting**: opt-in, dependency-free in-process asyncio
   scheduler (`SCHEDULE_INTERVAL`, off by default) runs discovery + diff on an interval, records
   the latest drift at `GET /api/drift/status`, structured-logs it, and fires an optional
