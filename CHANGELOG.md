@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`health` MCP tool now reports the running `version`**: responses include a `version` field
   sourced from the installed package metadata (`argus-netbox`), falling back to
   `argus.__version__` when running from a source checkout.
+- **`list_collectors` surfaces vendor-pack metadata**: each entry now carries a `vendor_pack`
+  flag, and for pack-backed collectors its `manufacturer`, `transport`, `capabilities`, and
+  `config_vars` (variable names only) — so agents and the dashboard can see what each pack
+  discovers and what config it needs. The `collectors` field changes from a list of names to a
+  list of objects (also via `GET /api/collectors`). (#76)
 - **Event-triggered drift reactions** (opt-in, read-only): when `WEBHOOK_REACTIONS_ENABLED` is
   set, an *authenticated* NetBox webhook for an allow-listed model (`WEBHOOK_REACTION_MODELS`,
   default `dcim.device,ipam.ipaddress`) triggers one run of the existing read-only drift cycle

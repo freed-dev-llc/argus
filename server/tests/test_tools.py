@@ -45,7 +45,18 @@ async def test_list_devices_unconfigured(monkeypatch):
 
 async def test_list_collectors():
     out = await discovery_tools.list_collectors()
-    assert "unifi" in out["collectors"]
+    by_name = {entry["name"]: entry for entry in out["collectors"]}
+
+    unifi = by_name["unifi"]
+    assert unifi["vendor_pack"] is True
+    assert unifi["manufacturer"] == "Ubiquiti"
+    assert unifi["transport"] == "controller_api"
+    assert {"devices", "clients", "topology"} <= set(unifi["capabilities"])
+    assert {"UNIFI_URL", "UNIFI_API_TOKEN"} <= set(unifi["config_vars"])
+
+    generic = by_name["snmp_lldp"]
+    assert generic["vendor_pack"] is False
+    assert "manufacturer" not in generic
 
 
 async def test_discovery_scan_known_collector():
