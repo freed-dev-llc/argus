@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`health` MCP tool now reports the running `version`**: responses include a `version` field
   sourced from the installed package metadata (`argus-netbox`), falling back to
   `argus.__version__` when running from a source checkout.
+- **Event-triggered drift reactions** (opt-in, read-only): when `WEBHOOK_REACTIONS_ENABLED` is
+  set, an *authenticated* NetBox webhook for an allow-listed model (`WEBHOOK_REACTION_MODELS`,
+  default `dcim.device,ipam.ipaddress`) triggers one run of the existing read-only drift cycle
+  (discovery + diff + optional alert) — never an apply/write (ADR-0011). Reactions fire only
+  when the request is authenticated (bearer `HTTP_TOKEN` or HMAC `NETBOX_WEBHOOK_SECRET`),
+  fire-and-forget so the ack is unchanged, and use single-flight + trailing-coalesce so a burst
+  collapses to one cycle now plus at most one trailing cycle. Default-off behavior is unchanged.
+  (#72)
 
 ### Changed
 

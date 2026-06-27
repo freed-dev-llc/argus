@@ -15,6 +15,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from . import reactions
 from .config import get_settings
 from .scheduler import get_drift_status, scheduler_loop
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
@@ -204,10 +205,12 @@ async def netbox_webhook(request: Request) -> Any:
     parsing. This is additive to the optional ``HTTP_TOKEN`` bearer gate; an unset secret leaves
     verification disabled (back-compat).
 
-    Observability only: the payload is parsed into a :class:`~argus.webhooks.NetBoxEvent`,
-    logged as a greppable summary with structured fields, and echoed back as the
-    classification. No discovery, reconcile, or NetBox write is triggered (reactions are a
-    later phase). Parsing is defensive — a malformed (but authentic) body never raises.
+    The payload is parsed into a :class:`~argus.webhooks.NetBoxEvent`, logged as a greppable
+    summary with structured fields, and echoed back as the classification. When opt-in
+    reactions are enabled and the event is authenticated + allow-listed, a **read-only** drift
+    cycle is scheduled fire-and-forget (never an apply/write; see :mod:`argus.reactions`) — it
+    never blocks or changes this ack. Parsing is defensive — a malformed (but authentic) body
+    never raises.
     """
     settings = get_settings()
     raw = await request.body()
@@ -221,6 +224,8 @@ async def netbox_webhook(request: Request) -> Any:
         payload = {}
     event = parse_netbox_event(payload if isinstance(payload, dict) else {})
     logger.info("NetBox webhook: %s", event.summary(), extra=event.log_fields())
+    if reactions.should_react(event, settings):
+        reactions.trigger_reaction(settings.schedule_collector)
     return {"received": True, **event.log_fields()}
 
 

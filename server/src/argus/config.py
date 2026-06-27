@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     schedule_collector: str = "unifi"  # collector the scheduled drift cycle observes
     alert_webhook_url: str = ""  # Slack-compatible webhook; alert fires only on drift when set
 
+    # Webhook reactions (opt-in): an authenticated NetBox webhook for an allow-listed model
+    # triggers one read-only drift cycle (discovery + diff; never a write). Off by default.
+    webhook_reactions_enabled: bool = False
+    webhook_reaction_models: str = "dcim.device,ipam.ipaddress"  # comma-separated allow-list
+
     # Mnemosyne knowledge brain (RAG): base URL of a mnemosyne-http service. Powers the
     # dashboard "Ask the Brain" feature — Argus discovers the network, Mnemosyne explains it.
     # Empty disables the feature.
@@ -61,6 +66,11 @@ class Settings(BaseSettings):
     def schedule_enabled(self) -> bool:
         """True when the scheduled drift loop is enabled (a positive interval is set)."""
         return self.schedule_interval > 0
+
+    @property
+    def reactions_enabled(self) -> bool:
+        """True when opt-in, event-triggered read-only drift reactions are enabled."""
+        return self.webhook_reactions_enabled
 
     @property
     def netbox_configured(self) -> bool:
