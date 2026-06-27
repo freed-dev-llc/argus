@@ -83,6 +83,12 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   dashboard keeps working against an auth-enabled API. For direct `curl` calls, add `-H
   "Authorization: Bearer $HTTP_TOKEN"`, and configure the NetBox webhook to send the same
   header.
+- **Webhook signature verification (optional):** set `NETBOX_WEBHOOK_SECRET` in `.env` to the
+  secret configured on the NetBox webhook; `argus-server` then verifies NetBox's
+  `X-Hook-Signature` HMAC on `/webhooks/netbox` and rejects unsigned/mismatched POSTs with
+  `401`, independent of `HTTP_TOKEN`. Blank = verification off (the default). Unlike
+  `HTTP_TOKEN`, this reaches **only** `argus-server` — the web/nginx service never receives it
+  (it doesn't serve the webhook route).
 - **Scheduled drift (optional):** set `SCHEDULE_INTERVAL` (seconds, e.g. `300` = 5 min) in
   `.env` to run an in-process drift cycle on that interval — it runs the collector
   (`SCHEDULE_COLLECTOR`, default `unifi`), diffs against NetBox, and records the latest

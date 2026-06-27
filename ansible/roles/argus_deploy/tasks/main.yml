@@ -35,6 +35,7 @@
       UNIFI_SITE: "{{ argus_unifi_site or (argus_existing.UNIFI_SITE | default('default')) }}"
       NETBOX_CSRF_TRUSTED_ORIGINS: "{{ argus_netbox_csrf_trusted_origins or (argus_existing.NETBOX_CSRF_TRUSTED_ORIGINS | default('')) }}"
       HTTP_TOKEN: "{{ argus_http_token or (argus_existing.HTTP_TOKEN | default('')) }}"
+      NETBOX_WEBHOOK_SECRET: "{{ argus_netbox_webhook_secret or (argus_existing.NETBOX_WEBHOOK_SECRET | default('')) }}"
       SCHEDULE_INTERVAL: "{{ argus_schedule_interval or (argus_existing.SCHEDULE_INTERVAL | default('0')) }}"
       SCHEDULE_COLLECTOR: "{{ argus_schedule_collector or (argus_existing.SCHEDULE_COLLECTOR | default('unifi')) }}"
       ALERT_WEBHOOK_URL: "{{ argus_alert_webhook_url or (argus_existing.ALERT_WEBHOOK_URL | default('')) }}"
