@@ -5,13 +5,24 @@ Auth on ``/webhooks/netbox`` is covered in ``test_http_server.py`` and is not re
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+
 from fastapi.testclient import TestClient
 
 from argus.config import get_settings
 from argus.http_server import app
-from argus.webhooks import NetBoxEvent, parse_netbox_event
+from argus.webhooks import NetBoxEvent, parse_netbox_event, verify_netbox_signature
 
 client = TestClient(app)
+
+_SECRET = "webhook-hmac-secret"
+_RAW_BODY = b'{"event": "created", "model": "device", "data": {"id": 5}}'
+
+
+def _sign(secret: str, body: bytes) -> str:
+    """Compute the NetBox X-Hook-Signature (HMAC-SHA512 hexdigest) for ``body``."""
+    return hmac.new(secret.encode("utf-8"), body, hashlib.sha512).hexdigest()
 
 
 def test_parse_created_device():
@@ -120,3 +131,44 @@ def test_webhook_endpoint_acks_classification(monkeypatch):
     assert body["model"] == "device"
     assert body["object_id"] == 5
     assert body["display"] == "edge-fw"
+
+
+def test_verify_signature_accepts_correct():
+    """A signature computed with the same secret over the same bytes verifies True."""
+    assert verify_netbox_signature(_SECRET, _RAW_BODY, _sign(_SECRET, _RAW_BODY)) is True
+
+
+def test_verify_signature_rejects_wrong():
+    """A signature computed with a different secret does not verify."""
+    assert verify_netbox_signature(_SECRET, _RAW_BODY, _sign("other-secret", _RAW_BODY)) is False
+
+
+def test_verify_signature_rejects_tampered_body():
+    """A valid signature over different bytes does not verify (byte-exact match required)."""
+    assert verify_netbox_signature(_SECRET, _RAW_BODY + b" ", _sign(_SECRET, _RAW_BODY)) is False
+
+
+def test_verify_signature_rejects_missing():
+    """A missing (``None``) or empty signature is rejected without raising."""
+    assert verify_netbox_signature(_SECRET, _RAW_BODY, None) is False
+    assert verify_netbox_signature(_SECRET, _RAW_BODY, "") is False
+
+
+def test_verify_signature_empty_secret_rejects():
+    """An empty secret never validates a real signature."""
+    assert verify_netbox_signature("", _RAW_BODY, _sign(_SECRET, _RAW_BODY)) is False
+
+
+def test_verify_signature_non_ascii_provided_returns_false():
+    """A non-ASCII signature (Starlette decodes headers latin-1) is rejected, not raised.
+
+    ``hmac.compare_digest`` raises ``TypeError`` on a non-ASCII ``str``; comparing on bytes
+    keeps the helper's "never raises" contract so the handler can still answer 401, not 500.
+    """
+    assert verify_netbox_signature(_SECRET, _RAW_BODY, "Ã©deadbeef") is False
+
+
+def test_verify_signature_empty_secret_rejects_empty_key_hmac():
+    """An empty secret rejects even the (public) empty-key HMAC, not just a real-secret sig."""
+    empty_key_sig = hmac.new(b"", _RAW_BODY, hashlib.sha512).hexdigest()
+    assert verify_netbox_signature("", _RAW_BODY, empty_key_sig) is False

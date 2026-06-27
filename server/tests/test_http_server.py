@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+
 import httpx
 import respx
 from fastapi.testclient import TestClient
@@ -13,6 +17,22 @@ client = TestClient(app)
 
 _TOKEN = "s3cret-token"
 _PROTECTED = "/api/devices"
+
+_WEBHOOK_SECRET = "webhook-hmac-secret"
+_WEBHOOK_PAYLOAD = {
+    "event": "created",
+    "model": "device",
+    "username": "admin",
+    "data": {"id": 5, "display": "edge-fw"},
+}
+# Byte-exact body the signature is computed over (mirrors what we POST to the server).
+_WEBHOOK_BODY = json.dumps(_WEBHOOK_PAYLOAD).encode("utf-8")
+_JSON_HEADERS = {"Content-Type": "application/json"}
+
+
+def _hook_signature(secret: str, body: bytes) -> str:
+    """Compute the NetBox X-Hook-Signature (HMAC-SHA512 hexdigest) for ``body``."""
+    return hmac.new(secret.encode("utf-8"), body, hashlib.sha512).hexdigest()
 
 
 def test_protected_route_open_when_token_unset(monkeypatch):
@@ -121,3 +141,97 @@ def test_api_ask_proxies_to_mnemosyne(monkeypatch):
     assert body["answer"] == "Adopt it over L3."
     assert body["sources"][0]["title"] == "Remote Adoption"
     assert route.called
+
+
+def test_webhook_open_when_secret_unset(monkeypatch):
+    """With no NETBOX_WEBHOOK_SECRET set, the webhook accepts unsigned posts (back-compat)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.delenv("NETBOX_WEBHOOK_SECRET", raising=False)
+    get_settings.cache_clear()
+    resp = client.post("/webhooks/netbox", json=_WEBHOOK_PAYLOAD)
+    assert resp.status_code == 200
+    assert resp.json()["received"] is True
+
+
+def test_webhook_rejects_missing_signature(monkeypatch):
+    """A configured secret rejects a post with no X-Hook-Signature header (401)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("NETBOX_WEBHOOK_SECRET", _WEBHOOK_SECRET)
+    get_settings.cache_clear()
+    resp = client.post("/webhooks/netbox", content=_WEBHOOK_BODY, headers=_JSON_HEADERS)
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "invalid signature"}
+
+
+def test_webhook_rejects_invalid_signature(monkeypatch):
+    """A configured secret rejects a post whose X-Hook-Signature does not match (401)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("NETBOX_WEBHOOK_SECRET", _WEBHOOK_SECRET)
+    get_settings.cache_clear()
+    resp = client.post(
+        "/webhooks/netbox",
+        content=_WEBHOOK_BODY,
+        headers={**_JSON_HEADERS, "X-Hook-Signature": "deadbeef"},
+    )
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "invalid signature"}
+
+
+def test_webhook_accepts_correct_signature(monkeypatch):
+    """A configured secret accepts a correctly-signed post and returns the classification."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("NETBOX_WEBHOOK_SECRET", _WEBHOOK_SECRET)
+    get_settings.cache_clear()
+    sig = _hook_signature(_WEBHOOK_SECRET, _WEBHOOK_BODY)
+    resp = client.post(
+        "/webhooks/netbox",
+        content=_WEBHOOK_BODY,
+        headers={**_JSON_HEADERS, "X-Hook-Signature": sig},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["received"] is True
+    assert body["event"] == "created"
+    assert body["model"] == "device"
+    assert body["object_id"] == 5
+    assert body["display"] == "edge-fw"
+
+
+def test_webhook_bearer_and_signature_both_apply(monkeypatch):
+    """When both HTTP_TOKEN and the secret are set, both checks gate the webhook.
+
+    Validates the additive layering: a correctly-signed post still needs the bearer token,
+    and a bearer-authenticated post still needs a valid signature.
+    """
+    monkeypatch.setenv("HTTP_TOKEN", _TOKEN)
+    monkeypatch.setenv("NETBOX_WEBHOOK_SECRET", _WEBHOOK_SECRET)
+    get_settings.cache_clear()
+    sig = _hook_signature(_WEBHOOK_SECRET, _WEBHOOK_BODY)
+    # Correct signature but no bearer token → blocked by the bearer middleware first.
+    no_bearer = client.post(
+        "/webhooks/netbox",
+        content=_WEBHOOK_BODY,
+        headers={**_JSON_HEADERS, "X-Hook-Signature": sig},
+    )
+    assert no_bearer.status_code == 401
+    assert no_bearer.json() == {"detail": "unauthorized"}
+    # Bearer token but missing signature → blocked by the HMAC check.
+    no_sig = client.post(
+        "/webhooks/netbox",
+        content=_WEBHOOK_BODY,
+        headers={**_JSON_HEADERS, "Authorization": f"Bearer {_TOKEN}"},
+    )
+    assert no_sig.status_code == 401
+    assert no_sig.json() == {"detail": "invalid signature"}
+    # Both present and valid → accepted.
+    ok = client.post(
+        "/webhooks/netbox",
+        content=_WEBHOOK_BODY,
+        headers={
+            **_JSON_HEADERS,
+            "Authorization": f"Bearer {_TOKEN}",
+            "X-Hook-Signature": sig,
+        },
+    )
+    assert ok.status_code == 200
+    assert ok.json()["received"] is True

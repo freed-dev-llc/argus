@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     http_host: str = "0.0.0.0"
     http_port: int = 8080
     http_token: str = ""  # optional static bearer token; unset disables auth
+    netbox_webhook_secret: str = ""  # HMAC secret for NetBox X-Hook-Signature; unset disables
 
     # Scheduled discovery + drift alerting (in-process asyncio loop; opt-in)
     schedule_interval: int = 0  # seconds between drift cycles; 0 disables (e.g. 300 = 5 min)
@@ -50,6 +51,11 @@ class Settings(BaseSettings):
     def http_auth_enabled(self) -> bool:
         """True when a static bearer token is configured for the HTTP API."""
         return bool(self.http_token)
+
+    @property
+    def webhook_verification_enabled(self) -> bool:
+        """True when a NetBox webhook HMAC secret is configured (X-Hook-Signature)."""
+        return bool(self.netbox_webhook_secret)
 
     @property
     def schedule_enabled(self) -> bool:
