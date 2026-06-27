@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import secrets
 from collections.abc import AsyncIterator
@@ -26,7 +27,7 @@ from .tools.read_tools import (
     search,
 )
 from .tools.reconcile_tools import drift_report, reconcile_apply
-from .webhooks import parse_netbox_event
+from .webhooks import parse_netbox_event, verify_netbox_signature
 
 logger = logging.getLogger(__name__)
 
@@ -195,16 +196,27 @@ async def api_ask(q: str, pack: str = "ubiquiti") -> dict[str, Any]:
 
 
 @app.post("/webhooks/netbox")
-async def netbox_webhook(request: Request) -> dict[str, Any]:
+async def netbox_webhook(request: Request) -> Any:
     """Classify and structured-log an inbound NetBox change event, then ack.
+
+    When ``NETBOX_WEBHOOK_SECRET`` is set, the request's ``X-Hook-Signature`` HMAC is verified
+    against the raw body first; a missing or mismatched signature is rejected with a 401 before
+    parsing. This is additive to the optional ``HTTP_TOKEN`` bearer gate; an unset secret leaves
+    verification disabled (back-compat).
 
     Observability only: the payload is parsed into a :class:`~argus.webhooks.NetBoxEvent`,
     logged as a greppable summary with structured fields, and echoed back as the
     classification. No discovery, reconcile, or NetBox write is triggered (reactions are a
-    later phase). Parsing is defensive — a malformed body never raises.
+    later phase). Parsing is defensive — a malformed (but authentic) body never raises.
     """
+    settings = get_settings()
+    raw = await request.body()
+    if settings.webhook_verification_enabled and not verify_netbox_signature(
+        settings.netbox_webhook_secret, raw, request.headers.get("X-Hook-Signature")
+    ):
+        return JSONResponse({"detail": "invalid signature"}, status_code=401)
     try:
-        payload = await request.json()
+        payload = json.loads(raw)
     except Exception:
         payload = {}
     event = parse_netbox_event(payload if isinstance(payload, dict) else {})

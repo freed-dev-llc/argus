@@ -147,6 +147,10 @@ services:
       # open; set HTTP_TOKEN in .env to enforce — argus-web sends the same value so the
       # dashboard keeps working, and NetBox webhooks must then send the matching header.
       HTTP_TOKEN: ${HTTP_TOKEN:-}
+      # Verify NetBox's X-Hook-Signature HMAC on /webhooks/netbox against this secret (set
+      # on the NetBox webhook). Empty (default) = off. Server-only — argus-web does not
+      # receive it (it doesn't serve the webhook route).
+      NETBOX_WEBHOOK_SECRET: ${NETBOX_WEBHOOK_SECRET:-}
       # Scheduled drift discovery (in-process). SCHEDULE_INTERVAL is seconds between
       # cycles; 0/unset disables it (default). When >0, Argus runs the collector, diffs
       # against NetBox, and exposes the result at GET /api/drift/status. Set

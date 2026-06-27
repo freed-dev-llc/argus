@@ -29,6 +29,7 @@ What it does:
 | `argus_unifi_url` / `argus_unifi_api_token` | `""` | Set via Vault; blank reuses the target's existing `.env`. |
 | `argus_netbox_csrf_trusted_origins` | `""` | Trusted https origin(s) for NetBox CSRF when served over HTTPS behind a proxy/tunnel; blank reuses existing `.env`. |
 | `argus_http_token` | `""` | Bearer token enforced on `/api` + `/webhooks`; blank = open. Blank reuses existing `.env`. |
+| `argus_netbox_webhook_secret` | `""` | NetBox webhook HMAC secret — verifies `X-Hook-Signature` on `/webhooks/netbox` (server-only); blank = off. Blank reuses existing `.env`. |
 | `argus_schedule_interval` / `argus_schedule_collector` | `""` | In-process drift schedule (seconds / collector). Blank reuses existing `.env` (compose defaults `0` / `unifi`). |
 | `argus_alert_webhook_url` | `""` | Slack-compatible webhook; POSTs on drift when set. Blank reuses existing `.env`. |
 | `argus_docker_path` | macOS OrbStack/Homebrew + system paths | PATH so the module finds `docker`. |

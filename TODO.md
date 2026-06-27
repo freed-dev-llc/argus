@@ -19,7 +19,7 @@ packs' own repos, not here.
 
 ## Fixes / hardening
 
-- [ ] Webhook: verify NetBox `X-Hook-Signature` (HMAC) — [#71](https://github.com/freed-dev-llc/argus/issues/71)
+- [x] Webhook: verify NetBox `X-Hook-Signature` (HMAC) — [#71](https://github.com/freed-dev-llc/argus/issues/71) (done in [#111](https://github.com/freed-dev-llc/argus/pull/111))
 - [ ] Reconcile: drop IPv4 / `/32` / hardcoded `mgmt`-interface assumptions in primary-IP assignment — [#73](https://github.com/freed-dev-llc/argus/issues/73)
 - [x] Fix stale `netbox/client.py` "reads-only" docstring — [#79](https://github.com/freed-dev-llc/argus/issues/79) (done in [#101](https://github.com/freed-dev-llc/argus/issues/101))
 

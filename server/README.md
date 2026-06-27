@@ -24,6 +24,7 @@ HTTP_PORT=8080
 
 # Optional — all default to off; see .env.example for the full list.
 HTTP_TOKEN=                  # bearer token for /api + /webhooks (unset = open)
+NETBOX_WEBHOOK_SECRET=       # verify NetBox X-Hook-Signature HMAC on /webhooks (unset = off)
 SCHEDULE_INTERVAL=0          # scheduled drift loop: seconds between cycles (0 = off)
 SCHEDULE_COLLECTOR=unifi     # collector the scheduled drift cycle runs
 ALERT_WEBHOOK_URL=           # Slack-compatible webhook; alerts on detected drift
@@ -41,7 +42,9 @@ argus-http    # FastAPI HTTP server on :8080 (for the web app + webhooks)
 The HTTP server also:
 
 - **receives NetBox webhooks** at `POST /webhooks/netbox` — it classifies and structured-logs
-  each change event (observability only; no discovery or reconcile is triggered yet).
+  each change event (observability only; no discovery or reconcile is triggered yet). Set
+  `NETBOX_WEBHOOK_SECRET` to verify NetBox's `X-Hook-Signature` HMAC (HMAC-SHA512 of the raw
+  body); a missing or mismatched signature is rejected `401` (unset leaves verification off).
 - **runs an optional scheduled drift loop** — set `SCHEDULE_INTERVAL` (seconds) and Argus
   discovers + diffs on that interval, read-only (never `apply`). The latest outcome is served at
   `GET /api/drift/status`, and setting `ALERT_WEBHOOK_URL` POSTs a Slack-compatible alert when

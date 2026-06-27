@@ -24,6 +24,7 @@ argus_netbox_csrf_trusted_origins: ""
 # deploy/.env (so a manual edit on the host survives re-runs); set here / via Vault to
 # manage them. SCHEDULE_INTERVAL/COLLECTOR fall back to the compose defaults (0 / unifi).
 argus_http_token: ""              # bearer token for /api + /webhooks; blank = open
+argus_netbox_webhook_secret: ""   # NetBox webhook HMAC secret (server-only); blank = off
 argus_schedule_interval: ""       # seconds between drift cycles; 0/blank disables
 argus_schedule_collector: ""      # collector the scheduled drift cycle observes
 argus_alert_webhook_url: ""       # Slack-compatible webhook; alerts on drift when set
