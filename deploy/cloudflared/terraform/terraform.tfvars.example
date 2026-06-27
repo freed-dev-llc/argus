@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values,
+# or export them as TF_VAR_cloudflare_account_id / TF_VAR_netbox_hostname.
+
+# Cloudflare account ID (required — no default, never committed).
+cloudflare_account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+
+# Real internal NetBox hostname fronted by Cloudflare Access.
+netbox_hostname = "netbox.example.com"
