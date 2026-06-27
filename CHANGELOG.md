@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per-session local context and is never `git add`ed, consistent with the other agent context
   files (`SAGE.md`/`NOVA.md`/`VERA.md`).
 
+### Security
+
+- **Verify NetBox webhook signatures**: `POST /webhooks/netbox` now verifies NetBox's
+  `X-Hook-Signature` HMAC (HMAC-SHA512 over the raw request body) against a configured
+  `NETBOX_WEBHOOK_SECRET`. A missing or mismatched signature is rejected with `401
+  {"detail": "invalid signature"}` before the body is parsed. The check is additive to and
+  independent of the optional `HTTP_TOKEN` bearer gate; leaving the secret unset disables
+  verification (back-compat). (#71)
+
 ## [0.1.7] - 2026-06-25
 
 ### Changed

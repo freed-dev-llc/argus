@@ -9,16 +9,45 @@ Parsing is total and defensive: a non-``Mapping`` payload, or any missing/null/o
 field, yields ``None`` for that field and never raises, so a malformed webhook cannot crash
 the handler.
 
-Known gap: this does not verify NetBox's ``X-Hook-Signature`` HMAC. Webhook authenticity
-currently relies on the HTTP bearer token (``HTTP_TOKEN``); signature verification is future
-hardening.
+Webhook authenticity is verified by :func:`verify_netbox_signature`, which checks NetBox's
+``X-Hook-Signature`` HMAC (HMAC-SHA512 over the raw request body) against ``NETBOX_WEBHOOK_SECRET``
+when that secret is configured. The check is additive to and independent of the HTTP bearer token
+(``HTTP_TOKEN``); leaving the secret unset disables verification (back-compat).
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
+
+
+def verify_netbox_signature(secret: str, body: bytes, provided: str | None) -> bool:
+    """Verify a NetBox ``X-Hook-Signature`` HMAC over the raw request body.
+
+    NetBox signs each webhook POST (when the webhook has a ``secret``) with
+    ``hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha512).hexdigest()`` and sends the
+    result in the ``X-Hook-Signature`` header. This recomputes that HMAC over the exact raw
+    body bytes and compares it to ``provided`` in constant time.
+
+    Args:
+        secret: The shared webhook secret (the NetBox webhook ``secret``).
+        body: The raw, byte-exact request body the signature was computed over.
+        provided: The ``X-Hook-Signature`` header value, or ``None`` when absent.
+
+    Returns:
+        ``True`` only when ``secret`` is non-empty, ``provided`` is present, and ``provided``
+        matches the expected HMAC-SHA512 hex digest; ``False`` for an empty secret, a
+        missing/empty signature, or any mismatch. Never raises — the comparison is done on
+        bytes, so a non-ASCII ``provided`` (Starlette decodes inbound headers as latin-1)
+        yields ``False`` rather than ``TypeError``.
+    """
+    if not secret or not provided:
+        return False
+    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha512).hexdigest()
+    return hmac.compare_digest(expected.encode("utf-8"), provided.encode("utf-8"))
 
 
 def _scalar(value: Any) -> str | int | None:
