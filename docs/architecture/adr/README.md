@@ -37,6 +37,7 @@ repos.
 | [0009](0009-vendor-pack-practices-spi.md) | Vendor-Pack Practices SPI — Advisory Best-Practice Rules | 2026-06-24 | Accepted |
 | [0010](0010-management-plane-contract.md) | Management-Plane → NetBox Contract for Vendor Packs | 2026-06-24 | Accepted |
 | [0011](0011-webhook-reactions-read-side-only.md) | Webhook Reactions — Read-Side Only (Event-Triggered Drift, Never Auto-Apply) | 2026-06-27 | Accepted |
+| [0012](0012-maintenance-mcp-surface.md) | Maintenance MCP Surface — a Separate `argus-maint` Server (Read/Preview-Only First) | 2026-06-27 | Accepted |
 
 ## Adding a new ADR
 

@@ -37,6 +37,8 @@ If unset, tools return a clear "NetBox not configured" message instead of errori
 ```bash
 argus-mcp     # MCP server over stdio (for Claude Code etc.)
 argus-http    # FastAPI HTTP server on :8080 (for the web app + webhooks)
+
+argus-maint-mcp  # separate maintenance MCP surface — release preview/verify (devtools; read-only)
 ```
 
 The HTTP server also:
