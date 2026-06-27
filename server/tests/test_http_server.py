@@ -10,6 +10,7 @@ import httpx
 import respx
 from fastapi.testclient import TestClient
 
+from argus import reactions
 from argus.config import get_settings
 from argus.http_server import app
 
@@ -17,6 +18,13 @@ client = TestClient(app)
 
 _TOKEN = "s3cret-token"
 _PROTECTED = "/api/devices"
+
+# A reaction-eligible event: model is in the default WEBHOOK_REACTION_MODELS allow-list.
+_REACTION_PAYLOAD = {
+    "event": "updated",
+    "model": "dcim.device",
+    "data": {"id": 7, "display": "core-sw"},
+}
 
 _WEBHOOK_SECRET = "webhook-hmac-secret"
 _WEBHOOK_PAYLOAD = {
@@ -235,3 +243,53 @@ def test_webhook_bearer_and_signature_both_apply(monkeypatch):
     )
     assert ok.status_code == 200
     assert ok.json()["received"] is True
+
+
+def test_webhook_reaction_invoked_when_enabled_and_authenticated(monkeypatch):
+    """Enabled + authenticated + allow-listed event → reaction fired; ack unchanged."""
+    monkeypatch.setenv("HTTP_TOKEN", _TOKEN)
+    monkeypatch.setenv("WEBHOOK_REACTIONS_ENABLED", "true")
+    get_settings.cache_clear()
+    calls: list[str] = []
+    monkeypatch.setattr(reactions, "trigger_reaction", lambda collector: calls.append(collector))
+    resp = client.post(
+        "/webhooks/netbox",
+        json=_REACTION_PAYLOAD,
+        headers={"Authorization": f"Bearer {_TOKEN}"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["received"] is True
+    assert body["model"] == "dcim.device"
+    assert calls == ["unifi"]  # settings.schedule_collector default
+
+
+def test_webhook_reaction_not_invoked_when_disabled(monkeypatch):
+    """Default-off: an authenticated, allow-listed event triggers no reaction."""
+    monkeypatch.setenv("HTTP_TOKEN", _TOKEN)
+    monkeypatch.delenv("WEBHOOK_REACTIONS_ENABLED", raising=False)
+    get_settings.cache_clear()
+    calls: list[str] = []
+    monkeypatch.setattr(reactions, "trigger_reaction", lambda collector: calls.append(collector))
+    resp = client.post(
+        "/webhooks/netbox",
+        json=_REACTION_PAYLOAD,
+        headers={"Authorization": f"Bearer {_TOKEN}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["received"] is True
+    assert calls == []
+
+
+def test_webhook_reaction_not_invoked_on_open_endpoint(monkeypatch):
+    """Reactions on but no auth configured (open endpoint) → never react (forgeable event)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.delenv("NETBOX_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setenv("WEBHOOK_REACTIONS_ENABLED", "true")
+    get_settings.cache_clear()
+    calls: list[str] = []
+    monkeypatch.setattr(reactions, "trigger_reaction", lambda collector: calls.append(collector))
+    resp = client.post("/webhooks/netbox", json=_REACTION_PAYLOAD)
+    assert resp.status_code == 200
+    assert resp.json()["received"] is True
+    assert calls == []
