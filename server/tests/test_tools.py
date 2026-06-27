@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from importlib.metadata import version
+
+from argus import server
 from argus.config import Settings
 from argus.discovery.base import DiscoveredDevice, DiscoveredLink, DiscoveryResult
 from argus.tools import discovery_tools, read_tools
@@ -77,3 +80,17 @@ async def test_network_topology(monkeypatch):
 async def test_network_topology_unknown_collector():
     out = await discovery_tools.network_topology("nope")
     assert "error" in out
+
+
+# --- health tool ----------------------------------------------------------------
+
+
+async def test_health_reports_version(monkeypatch):
+    monkeypatch.setattr(
+        server,
+        "get_settings",
+        lambda: Settings(netbox_url="", netbox_token="", _env_file=None),
+    )
+    out = await server.health()
+    assert out["status"] == "unconfigured"
+    assert out["version"] == version("argus-netbox")

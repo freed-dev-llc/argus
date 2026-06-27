@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from . import __version__
 from .config import get_settings
 from .tools.discovery_tools import discovery_scan, list_collectors, network_topology
 from .tools.practices_tools import evaluate_practices
@@ -21,13 +24,25 @@ from .tools.reconcile_tools import drift_report, reconcile_apply
 mcp = FastMCP("argus")
 
 
+def _argus_version() -> str:
+    """Installed distribution version; fall back to __version__ from a source tree."""
+    try:
+        return _pkg_version("argus-netbox")
+    except PackageNotFoundError:  # not pip-installed (running from a bare checkout)
+        return __version__
+
+
 @mcp.tool()
 async def health() -> dict[str, Any]:
     """Report Argus configuration and whether NetBox is reachable-by-config."""
     settings = get_settings()
     if not settings.netbox_configured:
-        return {"status": "unconfigured", "detail": "set NETBOX_URL and NETBOX_TOKEN"}
-    return {"status": "ok", "netbox_url": settings.netbox_url}
+        return {
+            "status": "unconfigured",
+            "detail": "set NETBOX_URL and NETBOX_TOKEN",
+            "version": _argus_version(),
+        }
+    return {"status": "ok", "netbox_url": settings.netbox_url, "version": _argus_version()}
 
 
 # Read tools (NetBox queries)
