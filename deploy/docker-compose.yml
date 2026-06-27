@@ -59,7 +59,11 @@ services:
     restart: unless-stopped
 
   netbox:
-    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
+    build:
+      context: ./netbox
+      args:
+        NETBOX_BASE_IMAGE: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
+    image: argus-netbox:local
     depends_on:
       netbox-postgres:
         condition: service_healthy
@@ -83,7 +87,7 @@ services:
     restart: unless-stopped
 
   netbox-worker:
-    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
+    image: argus-netbox:local
     depends_on:
       netbox:
         condition: service_healthy
@@ -98,7 +102,7 @@ services:
   # NetBox 4.6 matches as a v1 token; NetBox's own provisioning only mints v2 tokens
   # (Bearer <key>.<token>), which pynetbox can't present — so we create the v1 token here.
   netbox-init:
-    image: ${NETBOX_IMAGE:-netboxcommunity/netbox:v4.6-5.0.1}
+    image: argus-netbox:local
     depends_on:
       netbox:
         condition: service_healthy
