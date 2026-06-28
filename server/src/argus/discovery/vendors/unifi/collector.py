@@ -11,6 +11,7 @@ Endpoints used (base ``{UNIFI_URL}/proxy/network/integration/v1``):
 
 from __future__ import annotations
 
+import ipaddress
 from typing import Any
 
 import httpx
@@ -25,6 +26,26 @@ from ...base import (
     DiscoveryResult,
 )
 from .models import MANUFACTURER, role_from_model, status_from_state
+
+
+def _usable_primary_ip(raw_ip: str | None) -> str | None:
+    """Return ``raw_ip`` only if it's a private address usable as the device's primary IP.
+
+    UniFi reports a gateway's **WAN** IP in ``ipAddress`` and exposes no LAN/management IP via the
+    Integration API — a gateway's device detail carries only physical ``interfaces.ports`` (link
+    state/speed/PoE), no addresses (see #120). A public WAN address is not a management IP, so it
+    must not become the NetBox ``primary_ip4`` (which drives Ansible's ``ansible_host``). Switches
+    and APs report their private management IP in this same field, so they are unaffected.
+    """
+    if not raw_ip:
+        return None
+    try:
+        addr = ipaddress.ip_address(raw_ip.split("/")[0].strip())
+    except ValueError:
+        return None
+    if addr.is_private and not addr.is_loopback and not addr.is_link_local:
+        return raw_ip
+    return None
 
 
 def _management(device: dict[str, Any]) -> DeviceManagement | None:
@@ -115,12 +136,19 @@ async def _collect_site(
             uplinks[did] = remote
 
     for device in devices:
-        ip = device.get("ipAddress") or device.get("ip")
+        name = device.get("name") or device.get("mac") or "unknown"
+        raw_ip = device.get("ipAddress") or device.get("ip")
+        primary_ip = _usable_primary_ip(raw_ip)
+        if raw_ip and not primary_ip:
+            result.notes.append(
+                f"{name}: ignoring non-private ipAddress {raw_ip} as primary "
+                f"(UniFi reports the WAN IP; no management IP available — see #120)."
+            )
         result.devices.append(
             DiscoveredDevice(
-                name=device.get("name") or device.get("mac") or "unknown",
+                name=name,
                 mac=device.get("mac"),
-                primary_ip=ip,
+                primary_ip=primary_ip,
                 site=site_name,
                 role=role_from_model(device.get("model")),
                 model=device.get("model"),
@@ -129,8 +157,8 @@ async def _collect_site(
                 raw=device,
             )
         )
-        if ip:
-            result.ip_addresses.append(ip)
+        if primary_ip:
+            result.ip_addresses.append(primary_ip)
 
     for entry in clients:
         ip = entry.get("ipAddress") or entry.get("ip")

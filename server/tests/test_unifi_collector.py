@@ -141,6 +141,48 @@ async def test_collect_populates_management(monkeypatch):
 
 
 @respx.mock
+async def test_collect_drops_gateway_wan_ip(monkeypatch):
+    """A gateway's public WAN ipAddress must not become primary_ip (#120).
+
+    UniFi reports the UDM-SE's WAN IP in ``ipAddress`` and exposes no LAN/mgmt IP via the
+    Integration API, so a public address is dropped (with a note) while private switch/AP
+    mgmt IPs are kept. Shapes mirror a real ``/devices`` payload.
+    """
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"name": "ChezFreed-UDMSE", "mac": "f4:e2:c6:b7:d1:3b",
+                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "108.4.89.201",
+                     "state": "ONLINE"},
+                    {"name": "Switch", "model": "USW Pro 48 PoE", "ipAddress": "172.22.22.2"},
+                ]
+            },
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+
+    result = await UniFiCollector().collect()
+
+    gw, sw = result.devices
+    assert gw.role == "gateway"
+    assert gw.primary_ip is None  # public WAN IP rejected
+    assert sw.primary_ip == "172.22.22.2"  # private mgmt IP kept
+    assert "108.4.89.201" not in result.ip_addresses
+    assert result.ip_addresses == ["172.22.22.2"]
+    assert any("108.4.89.201" in note and "ChezFreed-UDMSE" in note for note in result.notes)
+
+
+@respx.mock
 async def test_collect_maps_clients(monkeypatch):
     monkeypatch.setattr(unifi, "get_settings", _configured)
     respx.get(f"{BASE}/sites").mock(
