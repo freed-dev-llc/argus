@@ -109,6 +109,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `argus_deploy` role now plumb `NETBOX_WEBHOOK_SECRET` through to `argus-server` only
   (server-only — not exposed to the web/nginx service). (#71)
 
+### Removed
+
+- `DOCTRINE.md` (the internal freed-dev-llc decision doctrine) is no longer tracked in
+  this public repo, and is added to `.gitignore` to prevent re-adding. The file stays in
+  local working trees and in git history. (#134, #135)
+
 ## [0.1.7] - 2026-06-25
 
 ### Changed
