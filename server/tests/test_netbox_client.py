@@ -4,8 +4,18 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from argus.config import get_settings
 from argus.netbox.client import NetBoxClient, _device_to_dict
+
+
+@pytest.fixture(autouse=True)
+def _isolate_settings_cache():
+    """Reset ``get_settings``'s lru_cache around each test so env-var changes never leak."""
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 def test_constructs_api_and_sets_verify():
@@ -247,3 +257,139 @@ def test_device_to_dict_handles_missing_device_type():
     out = _device_to_dict(record)
     assert out["device_type"] is None
     assert out["manufacturer"] is None
+
+
+# --- shared-instance tenant stamping (#86, ADR-0007 soft isolation) ---------------
+
+
+def test_ensure_tenant_returns_existing_id():
+    """``ensure_tenant`` returns an existing tenant's id without creating one."""
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=12)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_tenant("Acme") == 12
+        api.tenancy.tenants.get.assert_called_once_with(slug="acme")
+        api.tenancy.tenants.create.assert_not_called()
+
+
+def test_ensure_tenant_creates_when_missing():
+    """``ensure_tenant`` find-or-creates with a name + slug (mirrors ``ensure_manufacturer``)."""
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = None
+        api.tenancy.tenants.create.return_value = MagicMock(id=13)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_tenant("Acme Corp") == 13
+        api.tenancy.tenants.create.assert_called_once_with(
+            {"name": "Acme Corp", "slug": "acme-corp"}
+        )
+
+
+def test_create_device_stamps_tenant_when_configured(monkeypatch):
+    """With ``NETBOX_TENANT`` set, a created device carries the resolved tenant id."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        client = NetBoxClient("https://nb", "tok")
+        client.create_device(
+            {"name": "sw1", "device_type": 1, "role": 2, "site": 3, "status": "active"}
+        )
+        assert api.dcim.devices.create.call_args[0][0]["tenant"] == 77
+
+
+def test_create_device_omits_tenant_when_unconfigured(monkeypatch):
+    """Back-compat: with ``NETBOX_TENANT`` unset, the create payload has no ``tenant`` key."""
+    monkeypatch.delenv("NETBOX_TENANT", raising=False)
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        client = NetBoxClient("https://nb", "tok")
+        client.create_device(
+            {"name": "sw1", "device_type": 1, "role": 2, "site": 3, "status": "active"}
+        )
+        payload = api.dcim.devices.create.call_args[0][0]
+        assert "tenant" not in payload
+        api.tenancy.tenants.get.assert_not_called()  # unset → tenant never resolved
+
+
+def test_ensure_site_stamps_tenant_when_configured(monkeypatch):
+    """A newly-created supporting site carries the configured tenant."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        api.dcim.sites.get.return_value = None
+        api.dcim.sites.create.return_value = MagicMock(id=8)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_site("Main Office") == 8
+        api.dcim.sites.create.assert_called_once_with(
+            {"name": "Main Office", "slug": "main-office", "status": "active", "tenant": 77}
+        )
+
+
+def test_ensure_ip_address_stamps_tenant_when_configured(monkeypatch):
+    """A newly-created IPAM IP carries the configured tenant."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=42)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_ip_address("10.0.0.9") == 42
+        assert api.ipam.ip_addresses.create.call_args[0][0]["tenant"] == 77
+
+
+def test_assign_primary_ip_stamps_tenant_on_created_mgmt_ip(monkeypatch):
+    """The management IP created inside ``assign_primary_ip`` carries the configured tenant."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        device = MagicMock(id=10)
+        api.dcim.devices.get.return_value = device
+        api.dcim.interfaces.get.return_value = None
+        api.dcim.interfaces.create.return_value = MagicMock(id=20)
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=30)
+        NetBoxClient("https://nb", "tok").assign_primary_ip("sw1", "10.0.0.5")
+        assert api.ipam.ip_addresses.create.call_args[0][0]["tenant"] == 77
+
+
+def test_tenant_lookup_is_cached_across_creates(monkeypatch):
+    """A multi-object apply resolves the tenant once (cached on the instance)."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        api.dcim.sites.get.return_value = None
+        api.dcim.sites.create.return_value = MagicMock(id=8)
+        api.ipam.ip_addresses.get.return_value = None
+        api.ipam.ip_addresses.create.return_value = MagicMock(id=9)
+        client = NetBoxClient("https://nb", "tok")
+        client.ensure_site("Home")
+        client.ensure_ip_address("10.0.0.1")
+        api.tenancy.tenants.get.assert_called_once()
+
+
+def test_existing_object_skips_create_branch_and_tenant_lookup(monkeypatch):
+    """Create-only: an existing object hits no create branch, so the tenant is never resolved."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.dcim.sites.get.return_value = MagicMock(id=5)  # site already exists
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_site("Home") == 5
+        api.dcim.sites.create.assert_not_called()
+        api.tenancy.tenants.get.assert_not_called()

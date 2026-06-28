@@ -93,6 +93,11 @@ class NetBoxClient:
     def __init__(self, url: str, token: str, *, verify_ssl: bool = True) -> None:
         self.api = pynetbox.api(url, token=token)
         self.api.http_session.verify = verify_ssl
+        # Resolved once per instance via ``_tenant_id`` (the flag caches a ``None`` result too), so
+        # a multi-object apply does a single tenant find-or-create. The client is rebuilt fresh per
+        # tool call, so per-instance caching is safe.
+        self._tenant_resolved = False
+        self._tenant_id_cache: int | None = None
 
     def list_devices(
         self, site: str | None = None, role: str | None = None
@@ -143,7 +148,7 @@ class NetBoxClient:
         ``data`` must satisfy NetBox's required fields (notably ``device_type``,
         ``role``, and ``site``). Raises whatever pynetbox raises on validation failure.
         """
-        record = self.api.dcim.devices.create(data)
+        record = self.api.dcim.devices.create(self._stamp_tenant(data))
         return _record(record)
 
     def update_device(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -162,7 +167,11 @@ class NetBoxClient:
         existing = self.api.dcim.sites.get(slug=slug)
         if existing is not None:
             return int(existing.id)
-        return int(self.api.dcim.sites.create({"name": name, "slug": slug, "status": "active"}).id)
+        return int(
+            self.api.dcim.sites.create(
+                self._stamp_tenant({"name": name, "slug": slug, "status": "active"})
+            ).id
+        )
 
     def ensure_role(self, name: str) -> int:
         """Return the id of the device role with this name, creating it if absent."""
@@ -194,6 +203,45 @@ class NetBoxClient:
         )
         return int(created.id)
 
+    # --- shared-instance tenant stamping (find-or-create, create-only; ADR-0007 / #86) ---------
+
+    def ensure_tenant(self, name: str) -> int:
+        """Return the id of the tenant with this name, creating it if absent (ADR-0007)."""
+        slug = _slugify(name)
+        existing = self.api.tenancy.tenants.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(self.api.tenancy.tenants.create({"name": name, "slug": slug}).id)
+
+    def _tenant_id(self) -> int | None:
+        """Resolve ``NETBOX_TENANT`` to a tenant id (find-or-create), or ``None`` when unset.
+
+        Reads ``NETBOX_TENANT`` directly (mirroring how ``assign_primary_ip`` reads
+        ``reconcile_mgmt_interface``); empty/unset → ``None``. The result is resolved once and
+        cached on the instance (a ``None`` result is cached too), so a multi-object apply triggers
+        a single tenant find-or-create. Invoked *only* from the create branches via
+        ``_stamp_tenant`` — never from a read or ``diff`` — so a read-only drift report creates no
+        tenant.
+        """
+        if not self._tenant_resolved:
+            name = get_settings().netbox_tenant
+            self._tenant_id_cache = self.ensure_tenant(name) if name else None
+            self._tenant_resolved = True
+        return self._tenant_id_cache
+
+    def _stamp_tenant(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Stamp the configured tenant onto a create payload (no-op when ``NETBOX_TENANT`` unset).
+
+        Create-only soft isolation (ADR-0007): applied solely on the ``ensure_*`` / ``create_*``
+        create branches, never on reads or updates, so an existing object's tenant is left
+        untouched. ``setdefault`` means an explicitly-provided ``tenant`` always wins, and when no
+        tenant is configured the payload is returned byte-for-byte unchanged (back-compat).
+        """
+        tenant_id = self._tenant_id()
+        if tenant_id is not None:
+            data.setdefault("tenant", tenant_id)
+        return data
+
     def ensure_ip_address(self, address: str, description: str = "") -> int:
         """Return the id of the IPAM IP (find-or-create).
 
@@ -207,7 +255,7 @@ class NetBoxClient:
         data: dict[str, Any] = {"address": addr, "status": "active"}
         if description:
             data["description"] = description
-        return int(self.api.ipam.ip_addresses.create(data).id)
+        return int(self.api.ipam.ip_addresses.create(self._stamp_tenant(data)).id)
 
     def assign_primary_ip(
         self, device_name: str, ip: str, interface_name: str | None = None
@@ -237,12 +285,14 @@ class NetBoxClient:
         ip_obj = self.api.ipam.ip_addresses.get(address=address)
         if ip_obj is None:
             ip_obj = self.api.ipam.ip_addresses.create(
-                {
-                    "address": address,
-                    "status": "active",
-                    "assigned_object_type": "dcim.interface",
-                    "assigned_object_id": interface.id,
-                }
+                self._stamp_tenant(
+                    {
+                        "address": address,
+                        "status": "active",
+                        "assigned_object_type": "dcim.interface",
+                        "assigned_object_id": interface.id,
+                    }
+                )
             )
         primary_field = "primary_ip6" if version == 6 else "primary_ip4"
         device.update({primary_field: ip_obj.id})

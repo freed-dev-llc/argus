@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     # Reconcile (NetBox write path): management interface a primary IP is assigned to.
     reconcile_mgmt_interface: str = "mgmt"
 
+    # Shared-instance soft isolation (ADR-0007): find-or-create this NetBox tenant and stamp it on
+    # the objects the confirmation-gated reconcile *creates* (devices, IP addresses, and the sites
+    # it auto-creates). Create-only — an existing object's tenant is never touched. Unset (default)
+    # = single-tenant, byte-for-byte unchanged. Soft only: shared catalog objects, components, and
+    # cables carry no tenant, so this is a label, not true isolation (#86).
+    netbox_tenant: str = ""
+
     # Mnemosyne knowledge brain (RAG): base URL of a mnemosyne-http service. Powers the
     # dashboard "Ask the Brain" feature — Argus discovers the network, Mnemosyne explains it.
     # Empty disables the feature.
@@ -79,6 +86,11 @@ class Settings(BaseSettings):
     def netbox_configured(self) -> bool:
         """True when both a NetBox URL and token are set."""
         return bool(self.netbox_url and self.netbox_token)
+
+    @property
+    def tenant_stamping_enabled(self) -> bool:
+        """True when a NetBox tenant is configured for shared-instance create-stamping (#86)."""
+        return bool(self.netbox_tenant)
 
     @property
     def mnemosyne_configured(self) -> bool:

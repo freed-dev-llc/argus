@@ -28,6 +28,7 @@ NETBOX_WEBHOOK_SECRET=       # verify NetBox X-Hook-Signature HMAC on /webhooks 
 SCHEDULE_INTERVAL=0          # scheduled drift loop: seconds between cycles (0 = off)
 SCHEDULE_COLLECTOR=unifi     # collector the scheduled drift cycle runs
 ALERT_WEBHOOK_URL=           # Slack-compatible webhook; alerts on detected drift
+NETBOX_TENANT=               # shared-instance: stamp this tenant on objects reconcile creates (unset = single-tenant)
 ```
 
 If unset, tools return a clear "NetBox not configured" message instead of erroring.

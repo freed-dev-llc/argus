@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Shared-instance tenant stamping** ([ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md)):
+  an optional `NETBOX_TENANT` makes the confirmation-gated reconcile **find-or-create** that NetBox
+  tenant and stamp it on the objects Argus *newly creates* — devices, IP addresses (including the
+  management IP behind a primary-IP assignment), and the sites it auto-creates. **Create-only**: an
+  existing object's tenant is never read or rewritten (the reconcile engine and `COMPARE_FIELDS`
+  are untouched, so `tenant` is never drift-compared). Unset (default) is today's single-tenant
+  behavior, byte-for-byte. Soft isolation only (ADR-0007): shared catalog objects (manufacturers,
+  device types, device roles), interfaces/components, and cables carry no tenant, and prefixes are
+  deferred (Argus has no prefix-create path) — a label, not true isolation. (#86)
 - **UniFi multi-site discovery**: the UniFi collector can now discover across **all** sites on a
   controller, not just one. Opt in via `UNIFI_SITE` — empty / `*` / `all` (case-insensitive)
   discovers every site; any specific value keeps today's single-site behavior (back-compat,
