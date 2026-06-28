@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # UniFi Network controller (discovery collector — Integration API, X-API-KEY)
     unifi_url: str = ""
     unifi_api_token: str = ""
-    unifi_site: str = "default"
+    unifi_site: str = "default"  # site internalReference; empty / "*" / "all" → discover all sites
     unifi_verify_ssl: bool = False  # UniFi controllers use self-signed certs
 
     # SNMP/LLDP collector (generic, for non-UniFi gear). Comma-separated host[:community].
