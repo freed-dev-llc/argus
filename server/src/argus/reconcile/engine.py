@@ -20,12 +20,28 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from ..discovery.base import DiscoveredDevice, DiscoveryResult
-from ..netbox.client import NetBoxClient
+from ..netbox.client import NetBoxClient, _slugify
 
 Action = Literal["create", "update", "delete"]
 
-# Fields compared for update-drift. Resolved to NetBox foreign keys on apply.
-COMPARE_FIELDS: tuple[str, ...] = ("primary_ip", "site", "role")
+# Fields compared for update-drift. Resolved to NetBox foreign keys on apply. ``device_type``
+# and ``manufacturer`` jointly resolve to the NetBox device_type FK (see ``_update_device``).
+COMPARE_FIELDS: tuple[str, ...] = ("primary_ip", "site", "role", "device_type", "manufacturer")
+
+# Fields whose observed (free-text) value is compared slug-normalized against NetBox's slug.
+_SLUG_COMPARE_FIELDS: frozenset[str] = frozenset({"device_type", "manufacturer"})
+
+
+@dataclass(frozen=True)
+class DeviceTypeIntent:
+    """Apply-only data to resolve a device_type FK from the observed (model, manufacturer).
+
+    Carried on a :class:`ReconcileChange` separately from ``details`` so the drift report shows
+    only genuinely-drifted fields — never the non-drifted half of the model/manufacturer pair.
+    """
+
+    model: str
+    manufacturer: str | None = None
 
 
 @dataclass
@@ -36,6 +52,10 @@ class ReconcileChange:
     object_type: str
     identifier: str
     details: dict[str, Any] = field(default_factory=dict)
+    # Apply-only: the observed (model, manufacturer) to resolve into the device_type FK. Not
+    # surfaced by the drift report (``_change_dict`` serializes only ``details``), so reported
+    # deltas stay limited to real drift while apply still resolves under the real manufacturer.
+    device_type_resolution: DeviceTypeIntent | None = None
 
 
 @dataclass
@@ -89,11 +109,47 @@ def _observed_value(device: DiscoveredDevice, field_name: str) -> str | None:
         "primary_ip": device.primary_ip,
         "site": device.site,
         "role": device.role,
+        "device_type": device.model,
+        "manufacturer": device.manufacturer,
     }.get(field_name)
 
 
 def _norm(value: str | None) -> str:
     return (value or "").strip().lower()
+
+
+def _compare_key(field_name: str, value: str | None) -> str:
+    """Normalize a field value for drift comparison.
+
+    ``device_type``/``manufacturer`` compare slug-normalized: observed values are free-text but
+    NetBox stores slugs, so slugifying both sides keeps an argus-created device (whose
+    device_type slug came from ``ensure_device_type(model)``) from showing phantom drift. Other
+    fields keep the existing case-insensitive ``_norm`` comparison.
+    """
+    if field_name in _SLUG_COMPARE_FIELDS:
+        return _slugify(value) if value else ""
+    return _norm(value)
+
+
+def _device_type_intent(
+    device: DiscoveredDevice, deltas: dict[str, Any]
+) -> DeviceTypeIntent | None:
+    """Return the apply-only device_type resolution when device_type/manufacturer drifts.
+
+    ``device_type`` and ``manufacturer`` jointly resolve to a single NetBox device_type FK on
+    apply (``ensure_device_type(model, ensure_manufacturer(mfr))``), which needs *both* observed
+    values — but a per-field diff only reports the field(s) that actually drifted. So when either
+    drifts, return the full observed pair for apply, kept off the reported ``deltas`` so the drift
+    report never shows the non-drifted (e.g. case-only / no-op) half as drift.
+
+    Returns ``None`` when neither field drifted, or when there is no observed ``model`` — a
+    manufacturer has no standalone NetBox field, so without a model the drift is unresolvable.
+    """
+    if "device_type" not in deltas and "manufacturer" not in deltas:
+        return None
+    if device.model is None:
+        return None
+    return DeviceTypeIntent(model=device.model, manufacturer=device.manufacturer)
 
 
 def _desired_device(device: DiscoveredDevice) -> dict[str, Any]:
@@ -141,7 +197,7 @@ class ReconcileEngine:
                 )
                 continue
             matched.add(key)
-            deltas = self._device_deltas(device, current)
+            deltas, dt_intent = self._device_deltas(device, current)
             if deltas:
                 plan.changes.append(
                     ReconcileChange(
@@ -149,6 +205,7 @@ class ReconcileEngine:
                         object_type="device",
                         identifier=device.name,
                         details=deltas,
+                        device_type_resolution=dt_intent,
                     )
                 )
 
@@ -185,16 +242,19 @@ class ReconcileEngine:
         return plan
 
     @staticmethod
-    def _device_deltas(device: DiscoveredDevice, current: dict[str, Any]) -> dict[str, Any]:
+    def _device_deltas(
+        device: DiscoveredDevice, current: dict[str, Any]
+    ) -> tuple[dict[str, Any], DeviceTypeIntent | None]:
+        """Return (reported deltas of genuinely-drifted fields, apply-only device_type intent)."""
         deltas: dict[str, Any] = {}
         for field_name in COMPARE_FIELDS:
             desired = _observed_value(device, field_name)
             if desired is None:
                 continue  # discovery doesn't know this field — leave NetBox alone
             existing = _netbox_scalar(current, field_name)
-            if _norm(existing) != _norm(desired):
+            if _compare_key(field_name, existing) != _compare_key(field_name, desired):
                 deltas[field_name] = {"current": existing, "desired": desired}
-        return deltas
+        return deltas, _device_type_intent(device, deltas)
 
     def apply(self, plan: ReconcilePlan, *, confirm: bool = False) -> dict[str, Any]:
         """Apply a plan to NetBox. No writes happen unless ``confirm`` is True."""
@@ -287,6 +347,21 @@ class ReconcileEngine:
                 fields["role"] = nb.ensure_role(desired)
             elif field_name == "primary_ip":
                 primary_ip = desired
+        # device_type + manufacturer drift jointly resolve to one device_type FK, carried as an
+        # apply-only intent (off the reported deltas) so it resolves under the real manufacturer.
+        intent = change.device_type_resolution
+        if intent is not None:
+            mfr_id = nb.ensure_manufacturer(intent.manufacturer or "Unknown")
+            fields["device_type"] = nb.ensure_device_type(intent.model, mfr_id)
+        if not fields and primary_ip is None:
+            # Nothing resolvable to write (e.g. manufacturer drift with no observed model —
+            # manufacturer has no standalone NetBox field). Report it honestly, not as a success.
+            return {
+                "action": "update",
+                "identifier": change.identifier,
+                "status": "skipped",
+                "detail": "no resolvable NetBox field to write for the observed drift",
+            }
         if fields:
             nb.update_device(change.identifier, fields)
         if primary_ip:

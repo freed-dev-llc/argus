@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from argus.config import get_settings
-from argus.netbox.client import NetBoxClient
+from argus.netbox.client import NetBoxClient, _device_to_dict
 
 
 def test_constructs_api_and_sets_verify():
@@ -190,3 +190,43 @@ def test_ensure_ip_address_ipv4_defaults_32():
         client = NetBoxClient("https://nb", "tok")
         assert client.ensure_ip_address("10.0.0.9") == 43
         assert api.ipam.ip_addresses.create.call_args[0][0]["address"] == "10.0.0.9/32"
+
+
+# --- _device_to_dict surfaces device_type + manufacturer (#74) -------------------
+
+
+def test_device_to_dict_surfaces_device_type_and_manufacturer():
+    """The comparable dict surfaces the device_type slug and its nested manufacturer slug."""
+    record = MagicMock()
+    record.id = 1
+    record.name = "sw1"
+    record.status = "active"
+    record.site = MagicMock(slug="hq")
+    record.role = MagicMock(slug="switch")
+    record.primary_ip = "10.0.0.2/24"
+    record.device_type = MagicMock(slug="usw-24-poe", manufacturer=MagicMock(slug="ubiquiti"))
+
+    out = _device_to_dict(record)
+    assert out["device_type"] == "usw-24-poe"
+    assert out["manufacturer"] == "ubiquiti"
+    # additive — existing keys are preserved for the HTTP API / dashboard consumers
+    assert out["name"] == "sw1"
+    assert out["site"] == "hq"
+    assert out["role"] == "switch"
+    assert out["primary_ip"] == "10.0.0.2/24"
+
+
+def test_device_to_dict_handles_missing_device_type():
+    """A device with no device_type surfaces ``None`` for both keys (never raises)."""
+    record = MagicMock()
+    record.id = 2
+    record.name = "sw2"
+    record.status = "active"
+    record.site = MagicMock(slug="hq")
+    record.role = MagicMock(slug="switch")
+    record.primary_ip = None
+    record.device_type = None
+
+    out = _device_to_dict(record)
+    assert out["device_type"] is None
+    assert out["manufacturer"] is None

@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from argus.discovery.base import DiscoveredClient, DiscoveredDevice, DiscoveryResult
-from argus.reconcile.engine import ReconcileChange, ReconcileEngine, ReconcilePlan
+from argus.reconcile.engine import (
+    DeviceTypeIntent,
+    ReconcileChange,
+    ReconcileEngine,
+    ReconcilePlan,
+)
 from argus.tools import reconcile_tools
 
 
@@ -215,6 +220,137 @@ def test_apply_captures_per_change_errors():
     result = ReconcileEngine(Boom([])).apply(plan, confirm=True)
     assert result["results"][0]["status"] == "error"
     assert "netbox said no" in result["results"][0]["detail"]
+
+
+# --- device_type / manufacturer drift (#74) -------------------------------------
+
+
+def test_diff_proposes_update_on_device_type_and_manufacturer_drift():
+    """A different observed model + manufacturer is detected as update-drift."""
+    nb = FakeNetBox([{"name": "sw1", "device_type": "usw-24-poe", "manufacturer": "ubiquiti"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", model="USW-48-PoE", manufacturer="MikroTik"))
+    )
+    assert len(plan.changes) == 1
+    change = plan.changes[0]
+    assert change.action == "update"
+    assert change.details["device_type"]["desired"] == "USW-48-PoE"
+    assert change.details["manufacturer"]["desired"] == "MikroTik"
+
+
+def test_diff_no_drift_when_model_and_manufacturer_match_slug_normalized():
+    """Free-text observed model/mfr matching the NetBox slugs is not phantom drift."""
+    nb = FakeNetBox([{"name": "sw1", "device_type": "usw-24-poe", "manufacturer": "ubiquiti"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", model="USW-24-PoE", manufacturer="Ubiquiti"))
+    )
+    assert plan.changes == []
+
+
+def test_diff_model_only_drift_reports_only_device_type():
+    """Model-only drift reports just device_type; the matching manufacturer is not phantom drift.
+
+    The full observed (model, manufacturer) pair rides on the apply-only resolution channel —
+    never the reported deltas — so the drift report shows no case-only/no-op manufacturer entry.
+    """
+    nb = FakeNetBox([{"name": "sw1", "device_type": "usw-24-poe", "manufacturer": "ubiquiti"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", model="USW-48-PoE", manufacturer="Ubiquiti"))
+    )
+    change = plan.changes[0]
+    assert set(change.details) == {"device_type"}  # manufacturer (slug-equal) is NOT reported
+    assert change.details["device_type"]["desired"] == "USW-48-PoE"
+    assert change.device_type_resolution == DeviceTypeIntent(model="USW-48-PoE", manufacturer="Ubiquiti")
+
+
+def test_diff_no_op_manufacturer_never_appears_in_reported_deltas():
+    """When observed manufacturer equals the stored slug, no manufacturer delta is reported."""
+    nb = FakeNetBox([{"name": "sw1", "device_type": "usw-24-poe", "manufacturer": "ubiquiti"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", model="USW-48-PoE", manufacturer="ubiquiti"))
+    )
+    change = plan.changes[0]
+    assert "manufacturer" not in change.details  # no `ubiquiti -> ubiquiti` no-op delta
+
+
+def test_apply_update_resolves_device_type_fk_jointly():
+    """Apply resolves the model + manufacturer intent into a single device_type FK write."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "update", "device", "sw1",
+                {
+                    "device_type": {"current": "usw-24-poe", "desired": "USW-48-PoE"},
+                    "manufacturer": {"current": "ubiquiti", "desired": "MikroTik"},
+                },
+                device_type_resolution=DeviceTypeIntent(model="USW-48-PoE", manufacturer="MikroTik"),
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "updated"
+    assert ("manufacturer", "MikroTik") in nb.ensured
+    assert ("device_type", "USW-48-PoE", 3) in nb.ensured
+    assert nb.updated == [("sw1", {"device_type": 4})]
+
+
+def test_apply_model_only_drift_resolves_under_real_manufacturer():
+    """On model-only drift, apply resolves the device_type under the real mfr — not 'Unknown'."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "update", "device", "sw1",
+                {"device_type": {"current": "usw-24-poe", "desired": "USW-48-PoE"}},
+                device_type_resolution=DeviceTypeIntent(model="USW-48-PoE", manufacturer="Ubiquiti"),
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "updated"
+    assert ("manufacturer", "Ubiquiti") in nb.ensured  # real manufacturer, not "Unknown"
+    assert nb.updated == [("sw1", {"device_type": 4})]
+
+
+def test_diff_manufacturer_only_no_model_reports_drift_with_no_resolution():
+    """Manufacturer drift with no observed model is reported but carries no apply intent."""
+    nb = FakeNetBox([{"name": "sw1", "device_type": "usw-24-poe", "manufacturer": "ubiquiti"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", manufacturer="MikroTik"))  # model is None
+    )
+    change = plan.changes[0]
+    assert set(change.details) == {"manufacturer"}
+    assert change.device_type_resolution is None
+
+
+def test_apply_manufacturer_only_no_model_is_skipped_not_updated():
+    """An unresolvable manufacturer-only drift returns honest 'skipped' and writes nothing."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "update", "device", "sw1",
+                {"manufacturer": {"current": "ubiquiti", "desired": "MikroTik"}},
+                device_type_resolution=None,  # no observed model → nothing resolvable
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "skipped"
+    assert nb.updated == []
+    assert nb.ensured == []
+
+
+def test_apply_update_site_only_does_not_resolve_device_type():
+    """A site-only drift updates site and never touches device_type (behavior unchanged)."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[ReconcileChange("update", "device", "sw1", {"site": {"current": "old", "desired": "Home"}})]
+    )
+    ReconcileEngine(nb).apply(plan, confirm=True)
+    assert nb.updated == [("sw1", {"site": 1})]
+    assert not any(entry[0] == "device_type" for entry in nb.ensured)
 
 
 # --- tools ----------------------------------------------------------------------
