@@ -50,11 +50,112 @@ def _pick_site(sites: list[dict[str, Any]], reference: str) -> dict[str, Any] | 
     return sites[0] if sites else None
 
 
+# UNIFI_SITE values (case-insensitive, stripped) that mean "discover every site".
+_ALL_SITES = ("", "*", "all")
+
+
+def _target_sites(sites: list[dict[str, Any]], reference: str) -> list[dict[str, Any]]:
+    """Resolve which sites to discover from the ``UNIFI_SITE`` reference.
+
+    Empty / ``*`` / ``all`` (case-insensitive, stripped) → every site the controller returned
+    (opt-in multi-site). Any other value → the single matching site via :func:`_pick_site`
+    (exact ``internalReference`` match, first-site fallback), preserving today's single-site
+    behavior. Returns ``[]`` when the controller returned no sites.
+    """
+    if not sites:
+        return []
+    if reference.strip().lower() in _ALL_SITES:
+        return list(sites)
+    site = _pick_site(sites, reference)
+    return [site] if site is not None else []
+
+
 async def _get(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
     response = await client.get(url)
     response.raise_for_status()
     data: dict[str, Any] = response.json()
     return data
+
+
+async def _collect_site(
+    client: httpx.AsyncClient, base: str, site: dict[str, Any], result: DiscoveryResult
+) -> None:
+    """Discover one UniFi site's devices, clients, and (per-site) topology into ``result``.
+
+    Topology is resolved **strictly within this site**: a UniFi ``uplink.deviceId`` references a
+    device in the same site, so the id→name map is built from this site's devices only — a
+    cross-site map could mis-link on id collisions. Clients and per-device topology are
+    best-effort (logged, never fatal); only a failed ``/devices`` fetch raises ``httpx.HTTPError``,
+    which the caller isolates per site.
+    """
+    site_name = site.get("name") or site.get("internalReference")
+    site_id = site["id"]
+
+    devices = (await _get(client, f"{base}/sites/{site_id}/devices")).get("data", [])
+
+    # Clients are best-effort: a controller without the endpoint still yields devices.
+    try:
+        clients = (await _get(client, f"{base}/sites/{site_id}/clients?limit=200")).get("data", [])
+    except httpx.HTTPError as exc:
+        clients = []
+        result.notes.append(f"UniFi clients endpoint unavailable for site '{site_name}': {exc}")
+
+    # Topology (best-effort): each device's detail carries its uplink device id (same site).
+    uplinks: dict[str, str] = {}
+    for device in devices:
+        did = device.get("id")
+        if not did:
+            continue
+        try:
+            detail = await _get(client, f"{base}/sites/{site_id}/devices/{did}")
+        except httpx.HTTPError:
+            continue
+        remote = (detail.get("uplink") or {}).get("deviceId")
+        if remote:
+            uplinks[did] = remote
+
+    for device in devices:
+        ip = device.get("ipAddress") or device.get("ip")
+        result.devices.append(
+            DiscoveredDevice(
+                name=device.get("name") or device.get("mac") or "unknown",
+                mac=device.get("mac"),
+                primary_ip=ip,
+                site=site_name,
+                role=role_from_model(device.get("model")),
+                model=device.get("model"),
+                manufacturer=MANUFACTURER,
+                management=_management(device),
+                raw=device,
+            )
+        )
+        if ip:
+            result.ip_addresses.append(ip)
+
+    for entry in clients:
+        ip = entry.get("ipAddress") or entry.get("ip")
+        result.clients.append(
+            DiscoveredClient(
+                mac=entry.get("macAddress") or entry.get("mac"),
+                ip=ip,
+                hostname=entry.get("name") or entry.get("hostname"),
+                raw=entry,
+            )
+        )
+        if ip:
+            result.ip_addresses.append(ip)
+
+    # Resolve uplinks to names using THIS site's id map only (never cross-site).
+    id_to_name = {
+        d.get("id"): (d.get("name") or d.get("macAddress") or d.get("id"))
+        for d in devices
+        if d.get("id")
+    }
+    for local_id, remote_id in uplinks.items():
+        local = id_to_name.get(local_id)
+        remote = id_to_name.get(remote_id)
+        if local and remote:
+            result.links.append(DiscoveredLink(local_device=local, remote_device=remote))
 
 
 class UniFiCollector(Collector):
@@ -76,83 +177,23 @@ class UniFiCollector(Collector):
                 headers=headers, verify=settings.unifi_verify_ssl, timeout=30.0
             ) as client:
                 sites = (await _get(client, f"{base}/sites")).get("data", [])
-                site = _pick_site(sites, settings.unifi_site)
-                if site is None:
+                targets = _target_sites(sites, settings.unifi_site)
+                if not targets:
                     result.notes.append("No UniFi sites returned by the controller.")
                     return result
-                devices = (await _get(client, f"{base}/sites/{site['id']}/devices")).get(
-                    "data", []
-                )
-                # Clients are best-effort: a controller without the endpoint still yields devices.
-                try:
-                    clients = (
-                        await _get(client, f"{base}/sites/{site['id']}/clients?limit=200")
-                    ).get("data", [])
-                except httpx.HTTPError as exc:
-                    clients = []
-                    result.notes.append(f"UniFi clients endpoint unavailable: {exc}")
-                # Topology (best-effort): each device's detail carries its uplink device id.
-                uplinks: dict[str, str] = {}
-                for device in devices:
-                    did = device.get("id")
-                    if not did:
-                        continue
+                # Best-effort per site: one site's failed fetch is noted, the rest still run.
+                for site in targets:
                     try:
-                        detail = await _get(client, f"{base}/sites/{site['id']}/devices/{did}")
-                    except httpx.HTTPError:
-                        continue
-                    remote = (detail.get("uplink") or {}).get("deviceId")
-                    if remote:
-                        uplinks[did] = remote
+                        await _collect_site(client, base, site, result)
+                    except httpx.HTTPError as exc:
+                        name = site.get("name") or site.get("internalReference")
+                        result.notes.append(f"UniFi site '{name}' discovery failed: {exc}")
+                result.notes.append(
+                    f"Discovered {len(result.devices)} device(s), {len(result.clients)} "
+                    f"client(s), {len(result.links)} link(s) across {len(targets)} UniFi site(s)."
+                )
         except httpx.HTTPError as exc:
             result.notes.append(f"UniFi API request failed: {exc}")
             return result
 
-        site_name = site.get("name") or site.get("internalReference")
-        for device in devices:
-            ip = device.get("ipAddress") or device.get("ip")
-            result.devices.append(
-                DiscoveredDevice(
-                    name=device.get("name") or device.get("mac") or "unknown",
-                    mac=device.get("mac"),
-                    primary_ip=ip,
-                    site=site_name,
-                    role=role_from_model(device.get("model")),
-                    model=device.get("model"),
-                    manufacturer=MANUFACTURER,
-                    management=_management(device),
-                    raw=device,
-                )
-            )
-            if ip:
-                result.ip_addresses.append(ip)
-
-        for entry in clients:
-            ip = entry.get("ipAddress") or entry.get("ip")
-            result.clients.append(
-                DiscoveredClient(
-                    mac=entry.get("macAddress") or entry.get("mac"),
-                    ip=ip,
-                    hostname=entry.get("name") or entry.get("hostname"),
-                    raw=entry,
-                )
-            )
-            if ip:
-                result.ip_addresses.append(ip)
-
-        id_to_name = {
-            d.get("id"): (d.get("name") or d.get("macAddress") or d.get("id"))
-            for d in devices
-            if d.get("id")
-        }
-        for local_id, remote_id in uplinks.items():
-            local = id_to_name.get(local_id)
-            remote = id_to_name.get(remote_id)
-            if local and remote:
-                result.links.append(DiscoveredLink(local_device=local, remote_device=remote))
-
-        result.notes.append(
-            f"Discovered {len(result.devices)} device(s), {len(result.clients)} client(s), "
-            f"{len(result.links)} link(s) from UniFi site '{site_name}'."
-        )
         return result

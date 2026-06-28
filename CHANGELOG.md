@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UniFi multi-site discovery**: the UniFi collector can now discover across **all** sites on a
+  controller, not just one. Opt in via `UNIFI_SITE` — empty / `*` / `all` (case-insensitive)
+  discovers every site; any specific value keeps today's single-site behavior (back-compat,
+  default `default` unchanged). Devices are tagged with their own site, per-site failures are
+  isolated (one site's error is noted and the rest still run), and topology stays strictly
+  per-site so same-id devices across sites never mis-link. (#82)
 - **UniFi best-practices ruleset** ([ADR-0009](docs/architecture/adr/0009-vendor-pack-practices-spi.md)):
   grows the UniFi pack's practices from the two example rules into six read-only, advisory checks
   surfaced via `evaluate_practices` / `GET /api/practices`. The four new observed-only rules flag
