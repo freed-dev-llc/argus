@@ -7,7 +7,7 @@ packs' own repos, not here.
 ## Features
 
 - [x] Webhook reactions — read-side only: event-triggered drift, never auto-apply ([ADR-0011](docs/architecture/adr/0011-webhook-reactions-read-side-only.md)) — [#72](https://github.com/freed-dev-llc/argus/issues/72)
-- [ ] Reconcile: broaden drift comparison beyond `primary_ip`/`site`/`role` — [#74](https://github.com/freed-dev-llc/argus/issues/74)
+- [x] Reconcile: broaden drift comparison to `device_type`/`manufacturer` (slug-normalized; status/serial/platform → discovery-first [#119](https://github.com/freed-dev-llc/argus/issues/119)) — [#74](https://github.com/freed-dev-llc/argus/issues/74)
 - [ ] Validate the generic SNMP/LLDP collector against live non-UniFi gear — [#75](https://github.com/freed-dev-llc/argus/issues/75)
 - [x] Scope & implement the vendor-pack `practices` extension point — [#77](https://github.com/freed-dev-llc/argus/issues/77) (shipped in v0.1.6, [ADR-0009](docs/architecture/adr/0009-vendor-pack-practices-spi.md))
 - [ ] Multi-tenant (shared NetBox): stamp `tenant` on reconciled objects (`NETBOX_TENANT`) — [ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md), [#86](https://github.com/freed-dev-llc/argus/issues/86)

@@ -65,6 +65,8 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
     role = getattr(record, "role", None) or getattr(record, "device_role", None)
     primary_ip = getattr(record, "primary_ip", None)
     status = getattr(record, "status", None)
+    device_type = getattr(record, "device_type", None)
+    manufacturer = getattr(device_type, "manufacturer", None) if device_type is not None else None
     return {
         "id": getattr(record, "id", None),
         "name": getattr(record, "name", None),
@@ -72,6 +74,8 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
         "site": _fk_name(getattr(record, "site", None)),
         "role": _fk_name(role),
         "primary_ip": str(primary_ip) if primary_ip else None,
+        "device_type": _fk_name(device_type),
+        "manufacturer": _fk_name(manufacturer),
     }
 
 

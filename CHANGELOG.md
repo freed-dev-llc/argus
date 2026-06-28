@@ -42,6 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Drift comparison now covers `device_type` + `manufacturer`**: reconcile detects (and, on
+  confirmation, fixes) hardware-model drift, not just `primary_ip`/`site`/`role`. The two fields
+  are surfaced in the comparable device dict, compared slug-normalized (so a free-text observed
+  model doesn't show phantom drift against NetBox's slug), and resolved jointly into the NetBox
+  `device_type` foreign key on apply. `status`/`serial`/`platform` are deferred (discovery doesn't
+  observe them yet). (#74)
 - **Re-gitignore `CLAUDE.md`**: the coding-agent orientation file is local/untracked again
   (restored to `.gitignore`), reverting the v0.1.7 decision to version it in-repo. It is
   per-session local context and is never `git add`ed, consistent with the other agent context
