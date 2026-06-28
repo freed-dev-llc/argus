@@ -434,6 +434,52 @@ def test_apply_update_serial_with_site_writes_both():
     assert nb.updated == [("sw1", {"site": 1, "serial": "NEW"})]
 
 
+# --- status drift (#119, ADR-0010 management-plane write-back) -------------------
+
+
+def test_diff_proposes_update_on_status_drift():
+    """A differing observed (mapped) management.status is detected as update-drift."""
+    nb = FakeNetBox([{"name": "sw1", "status": "active"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", management=DeviceManagement(status="offline")))
+    )
+    assert len(plan.changes) == 1
+    change = plan.changes[0]
+    assert change.action == "update"
+    assert change.details["status"] == {"current": "active", "desired": "offline"}
+
+
+def test_diff_no_status_drift_when_equal_case_insensitive():
+    """A status equal to NetBox's (case-insensitively) is not phantom drift."""
+    nb = FakeNetBox([{"name": "sw1", "status": "Active"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", management=DeviceManagement(status="active")))
+    )
+    assert plan.changes == []
+
+
+def test_diff_no_status_drift_when_management_absent():
+    """Safety: no management sub-object → observed status is None → NetBox status left untouched."""
+    nb = FakeNetBox([{"name": "sw1", "status": "active"}])
+    plan = ReconcileEngine(nb).diff(_observed(DiscoveredDevice(name="sw1")))
+    assert plan.changes == []
+
+
+def test_diff_no_status_drift_when_status_unmapped():
+    """Safety: management present but status unmapped (None) → NetBox status left untouched.
+
+    Exercises the engine's ``desired is None → continue`` skip even when ``management`` exists, so
+    a transient/unknown UniFi state (which the pack maps to ``None``) never churns NetBox.
+    """
+    nb = FakeNetBox([{"name": "sw1", "status": "active"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(
+            DiscoveredDevice(name="sw1", management=DeviceManagement(status=None, firmware="6.6.55"))
+        )
+    )
+    assert plan.changes == []
+
+
 # --- tools ----------------------------------------------------------------------
 
 

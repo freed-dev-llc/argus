@@ -9,6 +9,7 @@ from argus.config import Settings
 from argus.discovery.vendors.unifi import collector as unifi
 from argus.discovery.vendors.unifi.collector import UniFiCollector
 from argus.discovery.vendors.unifi.models import role_from_model as _role_from_model
+from argus.discovery.vendors.unifi.models import status_from_state as _status_from_state
 
 UNIFI = "https://unifi.test"
 BASE = f"{UNIFI}/proxy/network/integration/v1"
@@ -23,6 +24,24 @@ def test_role_inference_handles_full_model_names():
     assert _role_from_model("U7 Pro") == "ap"
     assert _role_from_model("Some Random Thing") is None
     assert _role_from_model(None) is None
+
+
+def test_status_from_state_maps_only_known_states():
+    """Conservative UniFi-state → NetBox-status mapping; everything else returns None to skip."""
+    assert _status_from_state("ONLINE") == "active"
+    assert _status_from_state("OFFLINE") == "offline"
+    assert _status_from_state("PENDING_ADOPTION") == "staged"
+    assert _status_from_state("ADOPTING") == "staged"
+    # Case-insensitive on input.
+    assert _status_from_state("online") == "active"
+    assert _status_from_state("Pending_Adoption") == "staged"
+    # Unknown / transient / missing states are never mapped — they skip (leave NetBox alone).
+    assert _status_from_state("UPDATING") is None
+    assert _status_from_state("PROVISIONING") is None
+    assert _status_from_state("GETTING_READY") is None
+    assert _status_from_state("WHATEVER") is None
+    assert _status_from_state("") is None
+    assert _status_from_state(None) is None
 
 
 def _configured() -> Settings:
@@ -102,7 +121,8 @@ async def test_collect_populates_management(monkeypatch):
 
     sw, ap = result.devices
     assert sw.management is not None
-    assert sw.management.status == "ONLINE"
+    # Raw UniFi "ONLINE" is normalized to the NetBox status token at observe time.
+    assert sw.management.status == "active"
     assert sw.management.firmware == "6.6.55"
     assert sw.management.serial == "ABC123"
     # A device with no management-plane fields stays None (nothing learned).
