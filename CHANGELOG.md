@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **UniFi best-practices ruleset** ([ADR-0009](docs/architecture/adr/0009-vendor-pack-practices-spi.md)):
+  grows the UniFi pack's practices from the two example rules into six read-only, advisory checks
+  surfaced via `evaluate_practices` / `GET /api/practices`. The four new observed-only rules flag
+  devices with no primary IP (warning), no reported serial (info), duplicate names that would
+  collide under reconcile's lowercased-name keying (error), and fallback `MAC`/`unknown` names
+  (warning). Advisory only — practices never write; reconcile remains the sole writer. (#83)
 - **Maintenance MCP surface** (`argus-maint-mcp`, [ADR-0012](docs/architecture/adr/0012-maintenance-mcp-surface.md)):
   a new, *separate* `FastMCP("argus-maint")` server (entrypoint `argus-maint-mcp`) that wraps the
   deterministic `argus-release` engine as MCP tools, so an MCP control environment can invoke
