@@ -25,8 +25,16 @@ from ..netbox.client import NetBoxClient, _slugify
 Action = Literal["create", "update", "delete"]
 
 # Fields compared for update-drift. Resolved to NetBox foreign keys on apply. ``device_type``
-# and ``manufacturer`` jointly resolve to the NetBox device_type FK (see ``_update_device``).
-COMPARE_FIELDS: tuple[str, ...] = ("primary_ip", "site", "role", "device_type", "manufacturer")
+# and ``manufacturer`` jointly resolve to the NetBox device_type FK (see ``_update_device``);
+# ``serial`` is a plain device field (ADR-0010 management-plane write-back).
+COMPARE_FIELDS: tuple[str, ...] = (
+    "primary_ip",
+    "site",
+    "role",
+    "device_type",
+    "manufacturer",
+    "serial",
+)
 
 # Fields whose observed (free-text) value is compared slug-normalized against NetBox's slug.
 _SLUG_COMPARE_FIELDS: frozenset[str] = frozenset({"device_type", "manufacturer"})
@@ -111,6 +119,8 @@ def _observed_value(device: DiscoveredDevice, field_name: str) -> str | None:
         "role": device.role,
         "device_type": device.model,
         "manufacturer": device.manufacturer,
+        # Management-plane facts live under device.management (ADR-0010), not top-level.
+        "serial": device.management.serial if device.management else None,
     }.get(field_name)
 
 
@@ -347,6 +357,8 @@ class ReconcileEngine:
                 fields["role"] = nb.ensure_role(desired)
             elif field_name == "primary_ip":
                 primary_ip = desired
+            elif field_name == "serial":
+                fields["serial"] = desired  # plain device field (ADR-0010 write-back)
         # device_type + manufacturer drift jointly resolve to one device_type FK, carried as an
         # apply-only intent (off the reported deltas) so it resolves under the real manufacturer.
         intent = change.device_type_resolution

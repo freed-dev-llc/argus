@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from argus.discovery.base import DiscoveredClient, DiscoveredDevice, DiscoveryResult
+from argus.discovery.base import (
+    DeviceManagement,
+    DiscoveredClient,
+    DiscoveredDevice,
+    DiscoveryResult,
+)
 from argus.reconcile.engine import (
     DeviceTypeIntent,
     ReconcileChange,
@@ -351,6 +356,82 @@ def test_apply_update_site_only_does_not_resolve_device_type():
     ReconcileEngine(nb).apply(plan, confirm=True)
     assert nb.updated == [("sw1", {"site": 1})]
     assert not any(entry[0] == "device_type" for entry in nb.ensured)
+
+
+# --- serial drift (#119, ADR-0010 management-plane write-back) -------------------
+
+
+def test_diff_proposes_update_on_serial_drift():
+    """A differing observed management.serial is detected as update-drift."""
+    nb = FakeNetBox([{"name": "sw1", "serial": "OLD999"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", management=DeviceManagement(serial="NEW123")))
+    )
+    assert len(plan.changes) == 1
+    change = plan.changes[0]
+    assert change.action == "update"
+    assert change.details["serial"] == {"current": "OLD999", "desired": "NEW123"}
+
+
+def test_diff_no_serial_drift_when_equal():
+    """An equal observed serial is not drift."""
+    nb = FakeNetBox([{"name": "sw1", "serial": "ABC123"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", management=DeviceManagement(serial="ABC123")))
+    )
+    assert plan.changes == []
+
+
+def test_diff_no_serial_drift_when_management_absent():
+    """No management sub-object → observed serial is None → no drift (NetBox left alone)."""
+    nb = FakeNetBox([{"name": "sw1", "serial": "ABC123"}])
+    plan = ReconcileEngine(nb).diff(_observed(DiscoveredDevice(name="sw1")))
+    assert plan.changes == []
+
+
+def test_diff_no_serial_drift_when_observed_serial_none():
+    """management present but serial None → observed serial None → no drift."""
+    nb = FakeNetBox([{"name": "sw1", "serial": "ABC123"}])
+    plan = ReconcileEngine(nb).diff(
+        _observed(DiscoveredDevice(name="sw1", management=DeviceManagement(serial=None)))
+    )
+    assert plan.changes == []
+
+
+def test_apply_update_writes_serial_as_plain_field():
+    """Apply writes serial directly via update_device — no FK resolution."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "update", "device", "sw1",
+                {"serial": {"current": "OLD999", "desired": "NEW123"}},
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "updated"
+    assert nb.updated == [("sw1", {"serial": "NEW123"})]
+    assert nb.ensured == []  # plain field — no ensure_* FK resolution
+
+
+def test_apply_update_serial_with_site_writes_both():
+    """Serial coexists with an existing-field drift; both land in one update_device call."""
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "update", "device", "sw1",
+                {
+                    "site": {"current": "old", "desired": "Home"},
+                    "serial": {"current": "OLD", "desired": "NEW"},
+                },
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "updated"
+    assert nb.updated == [("sw1", {"site": 1, "serial": "NEW"})]
 
 
 # --- tools ----------------------------------------------------------------------

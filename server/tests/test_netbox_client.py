@@ -216,6 +216,23 @@ def test_device_to_dict_surfaces_device_type_and_manufacturer():
     assert out["primary_ip"] == "10.0.0.2/24"
 
 
+def test_device_to_dict_surfaces_serial():
+    """The comparable dict surfaces the device serial (ADR-0010 write-back); None when absent."""
+    record = MagicMock()
+    record.id = 3
+    record.name = "sw3"
+    record.status = "active"
+    record.site = MagicMock(slug="hq")
+    record.role = MagicMock(slug="switch")
+    record.primary_ip = None
+    record.device_type = None
+    record.serial = "ABC123XYZ"
+    assert _device_to_dict(record)["serial"] == "ABC123XYZ"
+
+    record.serial = None
+    assert _device_to_dict(record)["serial"] is None
+
+
 def test_device_to_dict_handles_missing_device_type():
     """A device with no device_type surfaces ``None`` for both keys (never raises)."""
     record = MagicMock()
