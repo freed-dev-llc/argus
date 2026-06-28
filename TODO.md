@@ -22,6 +22,7 @@ packs' own repos, not here.
 
 - [x] Webhook: verify NetBox `X-Hook-Signature` (HMAC) — [#71](https://github.com/freed-dev-llc/argus/issues/71) (done in [#111](https://github.com/freed-dev-llc/argus/pull/111))
 - [x] Reconcile: family-aware primary-IP assignment (IPv6 → `primary_ip6`/`/128`, configurable `RECONCILE_MGMT_INTERFACE`; prefix-derivation deferred) — [#73](https://github.com/freed-dev-llc/argus/issues/73)
+- [ ] Discovery/reconcile: select management IP (not WAN) as device `primary_ip` — gateways get their public WAN IP — [#120](https://github.com/freed-dev-llc/argus/issues/120)
 - [x] Fix stale `netbox/client.py` "reads-only" docstring — [#79](https://github.com/freed-dev-llc/argus/issues/79) (done in [#101](https://github.com/freed-dev-llc/argus/issues/101))
 
 ## Notes (deliberate — not bugs)
