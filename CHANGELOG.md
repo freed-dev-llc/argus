@@ -42,12 +42,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Reconcile device `serial` drift** ([ADR-0010](docs/architecture/adr/0010-management-plane-contract.md)
+  write-back): the management-plane `serial` discovery already observes is now drift-compared and,
+  on confirmation, written back to NetBox's device `serial` (a plain device field — no FK
+  resolution), so the source of truth tracks the real hardware across swaps/RMAs. The observed
+  value is read from `device.management.serial`; a device with no observed serial is left
+  untouched. `status` (lifecycle-vs-liveness semantics) and `platform` (no clean NetBox target)
+  remain deferred. (#119)
 - **Drift comparison now covers `device_type` + `manufacturer`**: reconcile detects (and, on
   confirmation, fixes) hardware-model drift, not just `primary_ip`/`site`/`role`. The two fields
   are surfaced in the comparable device dict, compared slug-normalized (so a free-text observed
   model doesn't show phantom drift against NetBox's slug), and resolved jointly into the NetBox
-  `device_type` foreign key on apply. `status`/`serial`/`platform` are deferred (discovery doesn't
-  observe them yet). (#74)
+  `device_type` foreign key on apply. `status`/`platform` are deferred. (#74)
 - **Re-gitignore `CLAUDE.md`**: the coding-agent orientation file is local/untracked again
   (restored to `.gitignore`), reverting the v0.1.7 decision to version it in-repo. It is
   per-session local context and is never `git add`ed, consistent with the other agent context
