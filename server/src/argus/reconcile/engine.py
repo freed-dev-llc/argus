@@ -26,13 +26,14 @@ Action = Literal["create", "update", "delete"]
 
 # Fields compared for update-drift. Resolved to NetBox foreign keys on apply. ``device_type``
 # and ``manufacturer`` jointly resolve to the NetBox device_type FK (see ``_update_device``);
-# ``serial`` is a plain device field (ADR-0010 management-plane write-back).
+# ``status`` and ``serial`` are plain device fields (ADR-0010 management-plane write-back).
 COMPARE_FIELDS: tuple[str, ...] = (
     "primary_ip",
     "site",
     "role",
     "device_type",
     "manufacturer",
+    "status",
     "serial",
 )
 
@@ -119,7 +120,10 @@ def _observed_value(device: DiscoveredDevice, field_name: str) -> str | None:
         "role": device.role,
         "device_type": device.model,
         "manufacturer": device.manufacturer,
-        # Management-plane facts live under device.management (ADR-0010), not top-level.
+        # Management-plane facts live under device.management (ADR-0010), not top-level. An absent
+        # management object (or an unmapped/unknown status, or no serial) yields None, so the diff
+        # loop skips the field and leaves NetBox's value untouched.
+        "status": device.management.status if device.management else None,
         "serial": device.management.serial if device.management else None,
     }.get(field_name)
 
@@ -175,6 +179,9 @@ def _desired_device(device: DiscoveredDevice) -> dict[str, Any]:
         desired["model"] = device.model
     if device.manufacturer:
         desired["manufacturer"] = device.manufacturer
+    # Management-plane status (ADR-0010), only when discovery mapped one to a NetBox token.
+    if device.management and device.management.status:
+        desired["status"] = device.management.status
     return desired
 
 
@@ -324,7 +331,8 @@ class ReconcileEngine:
                 "device_type": nb.ensure_device_type(details["model"], manufacturer_id),
                 "role": nb.ensure_role(details["role"]),
                 "site": nb.ensure_site(details["site"]),
-                "status": "active",
+                # Observed status when discovery mapped one (a valid NetBox token), else the default.
+                "status": details.get("status") or "active",
             }
         )
         if details.get("primary_ip"):
@@ -357,6 +365,10 @@ class ReconcileEngine:
                 fields["role"] = nb.ensure_role(desired)
             elif field_name == "primary_ip":
                 primary_ip = desired
+            elif field_name == "status":
+                # Plain writable CharField — no FK to resolve. The observed value is already a
+                # valid lowercase NetBox status token (mapped in the pack; see ADR-0010).
+                fields["status"] = desired
             elif field_name == "serial":
                 fields["serial"] = desired  # plain device field (ADR-0010 write-back)
         # device_type + manufacturer drift jointly resolve to one device_type FK, carried as an

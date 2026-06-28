@@ -65,6 +65,32 @@ diffs on `COMPARE_FIELDS = (primary_ip, site, role)`; apply is confirmation-gate
   firmware), all behind the existing confirmation flow — tracked as the management write-back
   task.
 
+## Update — UniFi state→status mapping (#119, 2026-06-27)
+
+`status` joins `serial` (#124) in the management-plane write-back (firmware/platform still
+deferred): it is now in `COMPARE_FIELDS`, sourced from the nested `management` object via
+`_observed_value`, and written directly (a plain CharField, no FK resolution) through the existing
+confirmation-gated apply.
+
+The UniFi pack maps its raw device `state` to a NetBox status with a **deliberately conservative
+table**, kept as the single source of truth in `discovery/vendors/unifi/models.py`
+(`_UNIFI_STATE_TO_NETBOX_STATUS` / `status_from_state`):
+
+| UniFi `state` | NetBox status |
+|---|---|
+| `ONLINE` | `active` |
+| `OFFLINE` | `offline` |
+| `PENDING_ADOPTION` | `staged` |
+| `ADOPTING` | `staged` |
+| anything else / unknown / transient (`UPDATING`, `PROVISIONING`, `GETTING_READY`, …) / `None` / missing | *(unmapped)* → `None` |
+
+**Safety rule — unknown → skip.** Input is matched case-insensitively (`.upper()`); any state not
+in the table returns `None`. A `None` observed `status` (no `management`, or an unmapped/transient
+state) hits the diff loop's `desired is None → continue` skip, so a sparse or transient discovery
+run never blanks out or churns the status NetBox already holds. Transient states are intentionally
+left out of the table (kept in the skip bucket) rather than mapped to `active`. Writes use the
+lowercase NetBox token (`active`/`offline`/`staged`).
+
 ## Alternatives Considered
 
 - **Flat fields on `DiscoveredDevice`** (`status`, `firmware`, …). Viable and simplest for

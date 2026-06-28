@@ -24,13 +24,17 @@ from ...base import (
     DiscoveredLink,
     DiscoveryResult,
 )
-from .models import MANUFACTURER, role_from_model
+from .models import MANUFACTURER, role_from_model, status_from_state
 
 
 def _management(device: dict[str, Any]) -> DeviceManagement | None:
-    """Pull management-plane facts (ADR-0010) out of a UniFi device payload, or None."""
+    """Pull management-plane facts (ADR-0010) out of a UniFi device payload, or None.
+
+    The raw device ``state`` is normalized to a NetBox status token at observe time
+    (``status_from_state``); the unmapped raw value stays available under ``device.raw``.
+    """
     mgmt = DeviceManagement(
-        status=device.get("state"),
+        status=status_from_state(device.get("state")),
         serial=device.get("serial"),
         firmware=device.get("version") or device.get("firmwareVersion"),
     )
