@@ -53,6 +53,28 @@ at all). True single-instance multi-tenancy is **not on the NetBox roadmap** (ve
 - Operationally heavier (N instances) for the isolated mode — accepted as the cost of real
   isolation given NetBox's limits.
 
+## Implementation note (#86)
+
+`NETBOX_TENANT` landed as **create-only** stamping in the NetBox client (`netbox/client.py`):
+when set, the confirmation-gated reconcile find-or-creates the tenant (`ensure_tenant`) and
+`setdefault`s it onto the create payloads for **devices** (`create_device`), **IP addresses**
+(`ensure_ip_address`, plus the management IP created inside `assign_primary_ip`), and the **sites**
+Argus auto-creates (`ensure_site`). Stamping lives entirely in the client (a `_stamp_tenant` /
+`_tenant_id` helper pair, resolved once per client instance); the reconcile engine and
+`COMPARE_FIELDS` are untouched, so `tenant` is never drift-compared and an existing object's tenant
+is never read or rewritten. Unset (default) is byte-for-byte the prior single-tenant behavior.
+
+Deferred / out of scope — the known leakiness this ADR's Context warns about:
+
+- **Update-stamping** — Argus never back-fills or changes the tenant on objects it did not just
+  create; reconciling pre-existing untenanted objects leaves them untenanted.
+- **Prefixes** — Argus only *reads* prefixes (no `create_prefix`/`ensure_prefix` path, and the
+  engine never proposes a prefix change), so they cannot be stamped without building prefix
+  creation. Deferred.
+- **Shared / indirect objects** — manufacturers, device types, and device roles are a shared
+  catalog (no tenant); interfaces and other components, and cables, carry no tenant. These gaps
+  mean shared mode stays a label, not true isolation.
+
 ## Alternatives Considered
 
 - **One Argus/NetBox instance with internal namespacing across customers.** Rejected — community
