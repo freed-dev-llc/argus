@@ -21,6 +21,7 @@ def test_unifi_is_a_builtin_pack() -> None:
     assert pack.transport is Transport.CONTROLLER_API
     assert {DEVICES, CLIENTS, TOPOLOGY} <= pack.capabilities
     assert pack.collector is UniFiCollector
+    assert pack.knowledge_pack == "ubiquiti"  # paired Mnemosyne knowledge pack (ADR-0013)
     assert pack in BUILTIN_PACKS
 
 

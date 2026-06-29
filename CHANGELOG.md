@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Paired vendor + knowledge packs** ([ADR-0013](docs/architecture/adr/0013-paired-vendor-knowledge-packs.md)):
+  a vendor pack can now declare the Mnemosyne knowledge pack that *explains* it via an optional
+  `VendorPack.knowledge_pack` field (UniFi → `ubiquiti`), surfaced in `list_collectors` /
+  `GET /api/collectors`. The dashboard's "Ask the Brain" panel derives its query pack from the
+  discovered vendors instead of a hardcoded `ubiquiti` (a pack selector appears once more than one
+  vendor has a knowledge face), falling back to the previous default when none is declared. The
+  field is additive and optional, so existing in-tree and external packs are unaffected.
+- **Ask the Brain deployment wiring** ([ADR-0008](docs/architecture/adr/0008-ask-the-brain-mnemosyne.md)):
+  `MNEMOSYNE_URL` now flows through the full deploy path — the compose `argus-server` service passes
+  it through (`${MNEMOSYNE_URL:-}`), `.env.example` documents it, and the Ansible role threads it
+  with the same reuse-existing fallback as the other optional features (so a re-run never clobbers a
+  value set on the host). Blank stays the default (feature disabled). `deploy/README.md` gains an
+  "Ask the Brain (Mnemosyne)" section documenting the production topology: Argus on Docker Desktop
+  reaches an independently-deployed `mnemosyne-http` over a NetBird mesh IP (a container on Docker
+  Desktop can't reach LAN peers directly, so a mesh/overlay address is the portable choice).
+
 - **Shared-instance tenant stamping** ([ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md)):
   an optional `NETBOX_TENANT` makes the confirmation-gated reconcile **find-or-create** that NetBox
   tenant and stamp it on the objects Argus *newly creates* — devices, IP addresses (including the

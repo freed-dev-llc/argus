@@ -99,6 +99,46 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   by default (`0`/unset). Set `ALERT_WEBHOOK_URL` to also POST a Slack-compatible
   `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
   set).
+- **Ask the Brain (Mnemosyne, optional):** the dashboard's "Ask the Brain" panel proxies
+  questions to [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne), a local RAG knowledge
+  brain (Argus *discovers* the network; Mnemosyne *explains* it). It is a **separate, independently
+  deployed service** — `argus-server` only needs a reachable `mnemosyne-http` base URL in
+  `MNEMOSYNE_URL` (blank = feature disabled; `POST /api/ask` then returns a clear "not configured"
+  error and the panel degrades gracefully — see
+  [ADR-0008](../docs/architecture/adr/0008-ask-the-brain-mnemosyne.md)).
+
+  **Reachability matters:** `argus-server` calls `${MNEMOSYNE_URL}/ask` *from inside its
+  container*. On **Docker Desktop (macOS/Windows)** a container **cannot** reach arbitrary LAN
+  peers — only the internet and the host. Use an address the container can actually route to.
+  An **overlay/mesh IP is the most portable choice** because it works identically on Docker
+  Desktop and native Linux. The chezfreed deployment uses [NetBird](https://netbird.io):
+
+  | Host | Role | Mnemosyne reachability |
+  | --- | --- | --- |
+  | `cerebrum` (this Mac) | Argus stack (Docker Desktop) + NetBird peer | reaches `spark` over the mesh |
+  | `spark` | Mnemosyne + Ollama (`bge-m3`, `qwen2.5`) + NetBird peer | serves `mnemosyne-http` |
+
+  ```bash
+  # On the Mnemosyne host (spark): build the pack index and run the HTTP service on the mesh.
+  mnemosyne ingest ubiquiti                         # embed corpus -> FAISS (needs Ollama up)
+  # systemd unit (binds 0.0.0.0 so it's reachable on the NetBird interface; survives reboot):
+  #   /etc/systemd/system/mnemosyne-http.service
+  #   Environment=MNEMOSYNE_HTTP_HOST=0.0.0.0
+  #   Environment=MNEMOSYNE_HTTP_PORT=8088
+  #   ExecStart=.../bin/mnemosyne-http   WorkingDirectory=.../mnemosyne
+  sudo systemctl enable --now mnemosyne-http        # then: curl http://<netbird-ip>:8088/health
+
+  # On the Argus host (cerebrum): point Argus at the Mnemosyne host's NetBird IP, then recreate.
+  echo 'MNEMOSYNE_URL=http://100.119.158.32:8088' >> deploy/.env   # spark's NetBird IP
+  docker compose up -d argus-server
+  curl -s -X POST 'localhost:8094/api/ask?q=How%20do%20I%20update%20UniFi%20firmware%3F&pack=ubiquiti' | jq
+  ```
+
+  A plain **LAN IP** (e.g. `http://10.10.88.120:8088`) also works, but **only** when the
+  container can route to it — fine on native Linux Docker, *not* on Docker Desktop. **Security:**
+  `mnemosyne-http` has no auth, so prefer the mesh interface over the open LAN, and never expose
+  it publicly. The `MNEMOSYNE_URL` value reaches only `argus-server` (the proxy is
+  server-to-server); `argus-web` never receives it.
 - **Expose NetBox on a public hostname (Cloudflare Tunnel):** to reach the NetBox UI at a
   subdomain like `https://netbox.example.com` — cleaner than a sub-path, since NetBox is a
   root-served Django app — point a tunnel ingress rule at NetBox's published port and set the

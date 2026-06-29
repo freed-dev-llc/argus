@@ -162,6 +162,12 @@ services:
       SCHEDULE_INTERVAL: ${SCHEDULE_INTERVAL:-0}      # e.g. 300 = every 5 minutes
       SCHEDULE_COLLECTOR: ${SCHEDULE_COLLECTOR:-unifi}
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      # Mnemosyne knowledge brain (RAG) backing the dashboard "Ask the Brain" panel.
+      # Base URL of a reachable mnemosyne-http service; empty (default) disables the
+      # feature and /api/ask returns a clear "not configured" error. Server-only — argus
+      # proxies server-to-server, so argus-web never receives it. See docs/architecture/
+      # adr/0008-ask-the-brain-mnemosyne.md and deploy/README.md (Mnemosyne section).
+      MNEMOSYNE_URL: ${MNEMOSYNE_URL:-}
     ports:
       - "127.0.0.1:8094:8080"
     healthcheck:

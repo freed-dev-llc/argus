@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { askBrain, type AskResponse, type AskSource } from '../api/client'
+import { useEffect, useState } from 'react'
+import { askBrain, getCollectors, type AskResponse, type AskSource } from '../api/client'
 
 function dedupeSources(sources: AskSource[]): AskSource[] {
   const seen = new Set<string>()
@@ -34,6 +34,29 @@ export function AskBrainPanel() {
   const [resp, setResp] = useState<AskResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [packs, setPacks] = useState<string[]>([])
+  const [pack, setPack] = useState('')
+
+  // Discover which Mnemosyne knowledge pack(s) the discovered vendors map to, so the panel
+  // asks the right pack instead of a hardcoded one (ADR-0013). On any failure it leaves the
+  // list empty and ask() falls back to the askBrain default.
+  useEffect(() => {
+    getCollectors()
+      .then((res) => {
+        const found = Array.from(
+          new Set(
+            (res.collectors ?? [])
+              .map((c) => c.knowledge_pack)
+              .filter((p): p is string => Boolean(p)),
+          ),
+        )
+        setPacks(found)
+        if (found.length > 0) setPack(found[0])
+      })
+      .catch(() => {
+        /* no collectors / unreachable — ask() uses the askBrain default */
+      })
+  }, [])
 
   const ask = () => {
     const q = question.trim()
@@ -41,7 +64,7 @@ export function AskBrainPanel() {
     setBusy(true)
     setError(null)
     setResp(null)
-    askBrain(q)
+    ;(pack ? askBrain(q, pack) : askBrain(q))
       .then(setResp)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setBusy(false))
@@ -63,6 +86,20 @@ export function AskBrainPanel() {
           ask()
         }}
       >
+        {packs.length > 1 && (
+          <select
+            value={pack}
+            onChange={(e) => setPack(e.target.value)}
+            disabled={busy}
+            aria-label="Knowledge pack"
+          >
+            {packs.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           type="text"
           value={question}

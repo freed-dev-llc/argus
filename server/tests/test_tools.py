@@ -53,6 +53,7 @@ async def test_list_collectors():
     assert unifi["transport"] == "controller_api"
     assert {"devices", "clients", "topology"} <= set(unifi["capabilities"])
     assert {"UNIFI_URL", "UNIFI_API_TOKEN"} <= set(unifi["config_vars"])
+    assert unifi["knowledge_pack"] == "ubiquiti"  # paired Mnemosyne pack (ADR-0013)
 
     generic = by_name["snmp_lldp"]
     assert generic["vendor_pack"] is False

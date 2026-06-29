@@ -144,6 +144,26 @@ export function getHealth(): Promise<HealthResponse> {
   return getJSON<HealthResponse>('/health/deep')
 }
 
+export interface Collector {
+  name: string
+  vendor_pack: boolean
+  manufacturer?: string
+  transport?: string
+  capabilities?: string[]
+  config_vars?: string[]
+  // Paired Mnemosyne knowledge pack that explains this vendor (ADR-0013); null/absent = none.
+  knowledge_pack?: string | null
+}
+
+export interface CollectorsResponse {
+  collectors?: Collector[]
+  error?: string
+}
+
+export function getCollectors(): Promise<CollectorsResponse> {
+  return getJSON<CollectorsResponse>('/api/collectors')
+}
+
 export interface AskSource {
   n?: number
   title?: string

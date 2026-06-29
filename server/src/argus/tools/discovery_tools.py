@@ -21,6 +21,9 @@ def _collector_entry(name: str) -> dict[str, Any]:
         "transport": pack.transport.value,
         "capabilities": sorted(pack.capabilities),
         "config_vars": list(pack.config_vars),
+        # Paired Mnemosyne knowledge pack (ADR-0013); None = no knowledge face yet. The
+        # dashboard's "Ask the Brain" panel uses this to query the right pack.
+        "knowledge_pack": pack.knowledge_pack,
     }
 
 

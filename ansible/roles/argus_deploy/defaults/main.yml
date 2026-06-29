@@ -28,6 +28,7 @@ argus_netbox_webhook_secret: ""   # NetBox webhook HMAC secret (server-only); bl
 argus_schedule_interval: ""       # seconds between drift cycles; 0/blank disables
 argus_schedule_collector: ""      # collector the scheduled drift cycle observes
 argus_alert_webhook_url: ""       # Slack-compatible webhook; alerts on drift when set
+argus_mnemosyne_url: ""           # mnemosyne-http base URL for "Ask the Brain"; blank = disabled
 
 # PATH for the docker CLI on the target (OrbStack/Docker Desktop on macOS aren't on the
 # default non-login PATH). Adjust for Linux hosts if needed.
