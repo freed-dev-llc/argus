@@ -107,6 +107,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **NetBox status badge stuck at "…"**: the dashboard polls `/health/deep` for the header's
+  NetBox badge, but the bundled nginx only proxied an exact `= /health`, so `/health/deep` fell
+  through to the SPA fallback and returned `index.html` — the JSON parse failed and the badge
+  never resolved (dev was unaffected because Vite proxies the `/health` prefix). nginx now
+  proxies the `/health` prefix with a path-less `proxy_pass`, forwarding both `/health` and
+  `/health/deep` to the server (still public, no auth header).
 - **Family-aware primary-IP assignment**: an IPv6 primary IP was silently mis-assigned to the
   device's `primary_ip4` field and every address was forced to `/32`. Primary-IP and IP-address
   writes are now family-aware (stdlib `ipaddress`): IPv6 routes to `primary_ip6` and defaults to

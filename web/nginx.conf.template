@@ -14,8 +14,12 @@ server {
         # API; when empty it forwards an empty bearer the server ignores.
         proxy_set_header Authorization "Bearer ${HTTP_TOKEN}";
     }
-    location = /health {
-        proxy_pass http://argus-server:8080/health;
+    # Both /health and /health/deep (the dashboard's NetBox status badge polls the
+    # latter). Prefix match + path-less proxy_pass forwards the full URI unchanged, so
+    # both reach the server; these stay public (no Authorization header).
+    location /health {
+        proxy_pass http://argus-server:8080;
+        proxy_set_header Host $host;
     }
 
     # SPA fallback.
