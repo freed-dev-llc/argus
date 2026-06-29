@@ -112,7 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through to the SPA fallback and returned `index.html` — the JSON parse failed and the badge
   never resolved (dev was unaffected because Vite proxies the `/health` prefix). nginx now
   proxies the `/health` prefix with a path-less `proxy_pass`, forwarding both `/health` and
-  `/health/deep` to the server (still public, no auth header).
+  `/health/deep` to the server (still public, no auth header). The `/health` proxy now also
+  sends `Cache-Control: no-store`, so a browser can't serve a stale cached health response back
+  to the badge (which is how the pre-fix HTML response lingered after the proxy was corrected).
 - **Family-aware primary-IP assignment**: an IPv6 primary IP was silently mis-assigned to the
   device's `primary_ip4` field and every address was forced to `/32`. Primary-IP and IP-address
   writes are now family-aware (stdlib `ipaddress`): IPv6 routes to `primary_ip6` and defaults to
