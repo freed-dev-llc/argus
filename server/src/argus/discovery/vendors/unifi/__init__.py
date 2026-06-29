@@ -15,6 +15,7 @@ UNIFI_PACK = VendorPack(
     config_vars=("UNIFI_URL", "UNIFI_API_TOKEN", "UNIFI_SITE", "UNIFI_VERIFY_SSL"),
     collector=UniFiCollector,
     practices=UNIFI_PRACTICES,
+    knowledge_pack="ubiquiti",  # Mnemosyne pack that explains UniFi (ADR-0013)
 )
 
 __all__ = ["UNIFI_PACK", "UniFiCollector"]

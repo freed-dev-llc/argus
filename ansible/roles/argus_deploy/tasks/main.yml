@@ -39,6 +39,7 @@
       SCHEDULE_INTERVAL: "{{ argus_schedule_interval or (argus_existing.SCHEDULE_INTERVAL | default('0')) }}"
       SCHEDULE_COLLECTOR: "{{ argus_schedule_collector or (argus_existing.SCHEDULE_COLLECTOR | default('unifi')) }}"
       ALERT_WEBHOOK_URL: "{{ argus_alert_webhook_url or (argus_existing.ALERT_WEBHOOK_URL | default('')) }}"
+      MNEMOSYNE_URL: "{{ argus_mnemosyne_url or (argus_existing.MNEMOSYNE_URL | default('')) }}"
 
 - name: Render deploy/.env
   ansible.builtin.template:

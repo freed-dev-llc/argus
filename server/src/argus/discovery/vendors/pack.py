@@ -52,3 +52,9 @@ class VendorPack:
     collector: type[Collector]
     #: Best-practice / validation rules this pack ships (ADR-0009); empty by default.
     practices: tuple[Practice, ...] = field(default_factory=tuple)
+    #: Name of the Mnemosyne knowledge pack that *explains* this vendor. The discovery face
+    #: (this pack) and the knowledge face share a vendor but not necessarily a name (e.g.
+    #: discovery "unifi" ↔ knowledge "ubiquiti"). Surfaced in collector metadata so the
+    #: dashboard's "Ask the Brain" panel queries the right pack instead of a hardcoded
+    #: default. ``None`` (default) = this vendor has no paired knowledge pack yet. ADR-0013.
+    knowledge_pack: str | None = None

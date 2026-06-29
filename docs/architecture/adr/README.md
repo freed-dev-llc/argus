@@ -38,6 +38,7 @@ repos.
 | [0010](0010-management-plane-contract.md) | Management-Plane → NetBox Contract for Vendor Packs | 2026-06-24 | Accepted |
 | [0011](0011-webhook-reactions-read-side-only.md) | Webhook Reactions — Read-Side Only (Event-Triggered Drift, Never Auto-Apply) | 2026-06-27 | Accepted |
 | [0012](0012-maintenance-mcp-surface.md) | Maintenance MCP Surface — a Separate `argus-maint` Server (Read/Preview-Only First) | 2026-06-27 | Accepted |
+| [0013](0013-paired-vendor-knowledge-packs.md) | Paired Vendor + Knowledge Packs (Argus ↔ Mnemosyne) | 2026-06-29 | Accepted |
 
 ## Adding a new ADR
 
