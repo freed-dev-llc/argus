@@ -10,7 +10,7 @@ Accepted
 
 Argus answers *"what is on the network"* via **vendor packs** (ADR-0005): an
 `argus.vendor_packs` entry point resolving to a `VendorPack` (collector + manufacturer +
-transport + capabilities + practices). [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne)
+transport + capabilities + practices). Mnemosyne
 answers *"how does this work / what should I do"* via **knowledge packs**: a
 `mnemosyne.knowledge_packs` entry point resolving to a `KnowledgePack` (manifest + curated
 sources + eval set). The two were designed in parallel — same plugin mechanism, same

@@ -79,6 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Remove private sibling-repo references from the public repo**: dropped the seven agent-family
+  buttons and their SVG assets from `README.md`, rewrote the "agent family" blurb to stop naming/
+  linking the private sibling repos, de-linked **Mnemosyne** (kept by name where the Ask-the-Brain
+  feature docs need it — `README.md`, `deploy/README.md`, ADR-0008/0013, CHANGELOG — but no longer
+  hyperlinked to its private repo), and untracked the internal `docs/BRAND.md` (gitignored, mirroring
+  the `DOCTRINE.md` treatment). Public links (CI/PyPI/License badges, `argus-vendor-pack-template`)
+  are unchanged. Private repos no longer 404 from, or are advertised by, the public README.
 - **Scrub real IP addresses from the public repo**: genericized the example `MNEMOSYNE_URL`
   addresses in `deploy/.env.example` + `deploy/README.md` to placeholders, and replaced the
   real fixture IPs in `server/tests/test_unifi_collector.py` with documentation/standard
@@ -180,7 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `discovery_scan` surfaces — read-only first; NetBox write-back is a defined,
   confirmation-gated follow-up, so the reconcile engine is untouched for now. UniFi populates it
   from device state/version/serial. (#100)
-- **Ask the Brain** — a dashboard panel to ask the [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne)
+- **Ask the Brain** — a dashboard panel to ask the Mnemosyne
   knowledge brain about your network and get grounded, cited answers (Argus discovers, Mnemosyne
   explains). A new `POST /api/ask` proxies server-to-server to a `mnemosyne-http` service set via
   `MNEMOSYNE_URL` (opt-in; empty disables it). See ADR-0008.

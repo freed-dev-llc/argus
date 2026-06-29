@@ -100,7 +100,7 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   `{"text": ...}` alert whenever drift is detected (fired only on drift + when the URL is
   set).
 - **Ask the Brain (Mnemosyne, optional):** the dashboard's "Ask the Brain" panel proxies
-  questions to [Mnemosyne](https://github.com/freed-dev-llc/mnemosyne), a local RAG knowledge
+  questions to Mnemosyne, a local RAG knowledge
   brain (Argus *discovers* the network; Mnemosyne *explains* it). It is a **separate, independently
   deployed service** — `argus-server` only needs a reachable `mnemosyne-http` base URL in
   `MNEMOSYNE_URL` (blank = feature disabled; `POST /api/ask` then returns a clear "not configured"
