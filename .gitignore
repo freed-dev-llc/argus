@@ -69,3 +69,6 @@ yarn-error.log*
 
 # Family doctrine doc: internal; keep out of this public repo going forward
 DOCTRINE.md
+
+# Family brand doc: internal (lists private sibling repos); keep out of this public repo
+docs/BRAND.md

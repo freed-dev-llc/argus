@@ -11,7 +11,7 @@ Accepted
 Argus answers *"what is on the network"* — it keeps NetBox reflecting reality. It does not
 answer *"how does this technology work, and what should I do about it?"* That second question
 needs an **expert**, and the family already has one:
-[Mnemosyne](https://github.com/freed-dev-llc/mnemosyne), a local RAG knowledge brain whose
+Mnemosyne, a local RAG knowledge brain whose
 first pack (`ubiquiti`) covers the same vendor Argus discovers. Argus *discovers*; Mnemosyne
 *explains*. Surfacing that in the dashboard makes the React app a place to both see drift and
 ask what to do about it.
