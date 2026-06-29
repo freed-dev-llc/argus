@@ -128,13 +128,13 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   #   ExecStart=.../bin/mnemosyne-http   WorkingDirectory=.../mnemosyne
   sudo systemctl enable --now mnemosyne-http        # then: curl http://<netbird-ip>:8088/health
 
-  # On the Argus host (cerebrum): point Argus at the Mnemosyne host's NetBird IP, then recreate.
-  echo 'MNEMOSYNE_URL=http://100.119.158.32:8088' >> deploy/.env   # spark's NetBird IP
+  # On the Argus host: point Argus at the Mnemosyne host's NetBird IP, then recreate.
+  echo 'MNEMOSYNE_URL=http://<mnemosyne-host-netbird-ip>:8088' >> deploy/.env
   docker compose up -d argus-server
   curl -s -X POST 'localhost:8094/api/ask?q=How%20do%20I%20update%20UniFi%20firmware%3F&pack=ubiquiti' | jq
   ```
 
-  A plain **LAN IP** (e.g. `http://10.10.88.120:8088`) also works, but **only** when the
+  A plain **LAN IP** (e.g. `http://<mnemosyne-host-lan-ip>:8088`) also works, but **only** when the
   container can route to it — fine on native Linux Docker, *not* on Docker Desktop. **Security:**
   `mnemosyne-http` has no auth, so prefer the mesh interface over the open LAN, and never expose
   it publicly. The `MNEMOSYNE_URL` value reaches only `argus-server` (the proxy is

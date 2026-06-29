@@ -160,9 +160,9 @@ async def test_collect_drops_gateway_wan_ip(monkeypatch):
             json={
                 "data": [
                     {"name": "ChezFreed-UDMSE", "mac": "f4:e2:c6:b7:d1:3b",
-                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "108.4.89.201",
+                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "8.8.8.8",
                      "state": "ONLINE"},
-                    {"name": "Switch", "model": "USW Pro 48 PoE", "ipAddress": "172.22.22.2"},
+                    {"name": "Switch", "model": "USW Pro 48 PoE", "ipAddress": "10.0.0.2"},
                 ]
             },
         )
@@ -176,10 +176,10 @@ async def test_collect_drops_gateway_wan_ip(monkeypatch):
     gw, sw = result.devices
     assert gw.role == "gateway"
     assert gw.primary_ip is None  # public WAN IP rejected
-    assert sw.primary_ip == "172.22.22.2"  # private mgmt IP kept
-    assert "108.4.89.201" not in result.ip_addresses
-    assert result.ip_addresses == ["172.22.22.2"]
-    assert any("108.4.89.201" in note and "ChezFreed-UDMSE" in note for note in result.notes)
+    assert sw.primary_ip == "10.0.0.2"  # private mgmt IP kept
+    assert "8.8.8.8" not in result.ip_addresses
+    assert result.ip_addresses == ["10.0.0.2"]
+    assert any("8.8.8.8" in note and "ChezFreed-UDMSE" in note for note in result.notes)
 
 
 @respx.mock

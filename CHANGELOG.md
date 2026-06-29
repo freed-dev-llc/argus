@@ -79,6 +79,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scrub real IP addresses from the public repo**: genericized the example `MNEMOSYNE_URL`
+  addresses in `deploy/.env.example` + `deploy/README.md` to placeholders, and replaced the
+  real fixture IPs in `server/tests/test_unifi_collector.py` with documentation/standard
+  addresses (`8.8.8.8` for the rejected public WAN, `10.0.0.2` for the kept private mgmt IP) —
+  the test's public-vs-private semantics are unchanged.
 - **Reconcile device `status` drift** ([ADR-0010](docs/architecture/adr/0010-management-plane-contract.md)
   write-back): building on the `serial` write-back below, the management-plane `status` is now
   drift-compared and, on confirmation, written back to NetBox's device `status` (a plain device
