@@ -39,6 +39,7 @@ repos.
 | [0011](0011-webhook-reactions-read-side-only.md) | Webhook Reactions — Read-Side Only (Event-Triggered Drift, Never Auto-Apply) | 2026-06-27 | Accepted |
 | [0012](0012-maintenance-mcp-surface.md) | Maintenance MCP Surface — a Separate `argus-maint` Server (Read/Preview-Only First) | 2026-06-27 | Accepted |
 | [0013](0013-paired-vendor-knowledge-packs.md) | Paired Vendor + Knowledge Packs (Argus ↔ Mnemosyne) | 2026-06-29 | Accepted |
+| [0014](0014-unifi-gateway-mgmt-ip-legacy-api.md) | UniFi Gateway Management IP via the Legacy Network API | 2026-06-29 | Accepted |
 
 ## Adding a new ADR
 
