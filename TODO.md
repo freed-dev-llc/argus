@@ -17,8 +17,8 @@ packs' own repos, not here.
 
 ## Add-ons
 
-- [ ] Surface vendor-pack `capabilities`/`transport` in `list_collectors` — [#76](https://github.com/freed-dev-llc/argus/issues/76)
-- [ ] Expose maintenance devtools (`argus-release`, …) as MCP tools — [#78](https://github.com/freed-dev-llc/argus/issues/78)
+- [x] Surface vendor-pack `capabilities`/`transport` in `list_collectors` — [#76](https://github.com/freed-dev-llc/argus/issues/76) (done in [#118](https://github.com/freed-dev-llc/argus/pull/118))
+- [x] Expose maintenance devtools (`argus-release`, …) as MCP tools — separate `argus-maint` server ([ADR-0012](docs/architecture/adr/0012-maintenance-mcp-surface.md)) — [#78](https://github.com/freed-dev-llc/argus/issues/78) (done in [#121](https://github.com/freed-dev-llc/argus/pull/121))
 
 ## Fixes / hardening
 
