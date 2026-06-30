@@ -140,13 +140,22 @@ async def test_collect_populates_management(monkeypatch):
     assert ap.management is None
 
 
-@respx.mock
-async def test_collect_drops_gateway_wan_ip(monkeypatch):
-    """A gateway's public WAN ipAddress must not become primary_ip (#120).
+# Gateway addresses (#129): the rejected "WAN" fixture is CGNAT (100.64.0.0/10) so it is
+# deterministically refused as primary regardless of the running Python's is_private; the recovered
+# LAN/mgmt address is RFC1918 (10.0.0.0/8), which is is_private=True on every Python. No real
+# IPs/MACs are used (public repo). The Integration MAC lives in ``macAddress`` (uppercase here) and
+# the legacy row's ``mac`` is lowercase — exercising the normalized (.strip().lower()) match.
+_LEGACY = f"{UNIFI}/proxy/network/api/s/default/stat/device"
 
-    UniFi reports the UDM-SE's WAN IP in ``ipAddress`` and exposes no LAN/mgmt IP via the
-    Integration API, so a public address is dropped (with a note) while private switch/AP
-    mgmt IPs are kept. Shapes mirror a real ``/devices`` payload.
+
+@respx.mock
+async def test_collect_recovers_gateway_lan_ip(monkeypatch):
+    """A gateway whose only Integration IP is its WAN recovers its LAN IP via the legacy API (#129).
+
+    The CGNAT WAN ``ipAddress`` is refused as primary (it is not a management IP); the legacy
+    ``stat/device`` endpoint supplies the gateway's ``lan_ip``, which becomes both ``primary_ip``
+    and ``management.mgmt_ip``. Private switch/AP mgmt IPs are untouched. Shapes mirror a real
+    ``/devices`` payload (the gateway MAC is in ``macAddress``).
     """
     monkeypatch.setattr(unifi, "get_settings", _configured)
     respx.get(f"{BASE}/sites").mock(
@@ -159,8 +168,8 @@ async def test_collect_drops_gateway_wan_ip(monkeypatch):
             200,
             json={
                 "data": [
-                    {"name": "ChezFreed-UDMSE", "mac": "f4:e2:c6:b7:d1:3b",
-                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "8.8.8.8",
+                    {"name": "Gateway", "macAddress": "AA:BB:CC:00:00:01",
+                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "100.64.0.10",
                      "state": "ONLINE"},
                     {"name": "Switch", "model": "USW Pro 48 PoE", "ipAddress": "10.0.0.2"},
                 ]
@@ -170,16 +179,71 @@ async def test_collect_drops_gateway_wan_ip(monkeypatch):
     respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
         return_value=httpx.Response(200, json={"data": []})
     )
+    legacy = respx.get(_LEGACY).mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"mac": "aa:bb:cc:00:00:01", "lan_ip": "10.0.0.1"}]}
+        )
+    )
+
+    result = await UniFiCollector().collect()
+
+    gw, sw = result.devices
+    assert legacy.called  # the conditional legacy fetch fired for the recovery-needing gateway
+    assert gw.role == "gateway"
+    assert gw.mac == "AA:BB:CC:00:00:01"  # the macAddress 1-liner populated the device MAC
+    assert gw.primary_ip == "10.0.0.1"  # recovered LAN IP, not the CGNAT WAN
+    assert gw.management is not None and gw.management.mgmt_ip == "10.0.0.1"
+    assert "10.0.0.1" in result.ip_addresses
+    assert "100.64.0.10" not in result.ip_addresses
+    assert sw.primary_ip == "10.0.0.2"  # private mgmt IP kept
+    # No "ignoring" note: we recovered a management IP for the gateway.
+    assert not any("ignoring non-private" in note for note in result.notes)
+
+
+@respx.mock
+async def test_collect_gateway_legacy_endpoint_missing_falls_back(monkeypatch):
+    """A gateway whose legacy stat/device 404s falls back to no primary, noted, run completes."""
+    monkeypatch.setattr(unifi, "get_settings", _configured)
+    respx.get(f"{BASE}/sites").mock(
+        return_value=httpx.Response(
+            200, json={"data": [{"id": "s1", "internalReference": "default", "name": "Home"}]}
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"name": "Gateway", "macAddress": "AA:BB:CC:00:00:01",
+                     "model": "UniFi Dream Machine PRO SE", "ipAddress": "100.64.0.10",
+                     "state": "ONLINE"},
+                    {"name": "Switch", "model": "USW Pro 48 PoE", "ipAddress": "10.0.0.2"},
+                ]
+            },
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+    respx.get(_LEGACY).mock(return_value=httpx.Response(404))
 
     result = await UniFiCollector().collect()
 
     gw, sw = result.devices
     assert gw.role == "gateway"
-    assert gw.primary_ip is None  # public WAN IP rejected
-    assert sw.primary_ip == "10.0.0.2"  # private mgmt IP kept
-    assert "8.8.8.8" not in result.ip_addresses
-    assert result.ip_addresses == ["10.0.0.2"]
-    assert any("8.8.8.8" in note and "ChezFreed-UDMSE" in note for note in result.notes)
+    assert gw.primary_ip is None  # legacy unavailable → no recovery
+    assert gw.management is None or gw.management.mgmt_ip is None
+    assert "100.64.0.10" not in result.ip_addresses
+    assert sw.primary_ip == "10.0.0.2"  # switch unaffected
+    assert any("legacy stat/device unavailable" in note for note in result.notes)
+
+
+def test_usable_primary_ip_rejects_cgnat():
+    """CGNAT (RFC 6598) is deterministically refused; RFC1918 management addresses are kept."""
+    assert unifi._usable_primary_ip("100.64.0.5") is None
+    assert unifi._usable_primary_ip("100.127.255.254") is None  # still inside the /10
+    assert unifi._usable_primary_ip("10.0.0.1") == "10.0.0.1"
+    assert unifi._usable_primary_ip("192.168.1.1") == "192.168.1.1"
 
 
 @respx.mock
@@ -437,3 +501,43 @@ async def test_collect_isolates_a_failing_site(monkeypatch):
 
     assert [d.name for d in result.devices] == ["sw-b"]  # Site B still discovered
     assert any("Site A" in note and "failed" in note.lower() for note in result.notes)
+
+
+@respx.mock
+async def test_collect_multi_site_gateway_recovery_is_per_site(monkeypatch):
+    """A gateway recovers via its own site's internalReference legacy path; a site with no
+    recovery-needing gateway makes no legacy call.
+
+    Site A has a gateway with a CGNAT WAN → its legacy ``stat/device`` (keyed by Site A's
+    internalReference ``site-a``) is queried and supplies the LAN IP. Site B has only a switch →
+    its legacy endpoint is intentionally NOT mocked, so any call would make respx raise.
+    """
+    monkeypatch.setattr(unifi, "get_settings", lambda: _settings(site="all"))
+    respx.get(f"{BASE}/sites").mock(return_value=_two_sites())
+    respx.get(f"{BASE}/sites/s1/devices").mock(
+        httpx.Response(
+            200,
+            json={"data": [
+                {"name": "Gw-A", "macAddress": "AA:BB:CC:00:00:0A",
+                 "model": "UniFi Dream Machine PRO SE", "ipAddress": "100.64.0.10"},
+            ]},
+        )
+    )
+    respx.get(f"{BASE}/sites/s1/clients?limit=200").mock(httpx.Response(200, json={"data": []}))
+    site_a_legacy = respx.get(f"{UNIFI}/proxy/network/api/s/site-a/stat/device").mock(
+        httpx.Response(200, json={"data": [{"mac": "aa:bb:cc:00:00:0a", "lan_ip": "10.0.0.1"}]})
+    )
+    respx.get(f"{BASE}/sites/s2/devices").mock(
+        httpx.Response(200, json={"data": [{"name": "Sw-B", "model": "USW-24", "ipAddress": "10.1.0.2"}]})
+    )
+    respx.get(f"{BASE}/sites/s2/clients?limit=200").mock(httpx.Response(200, json={"data": []}))
+    # s2's legacy stat/device is intentionally NOT mocked — must never be called (respx would raise).
+
+    result = await UniFiCollector().collect()
+
+    by_name = {d.name: d for d in result.devices}
+    assert site_a_legacy.called
+    assert by_name["Gw-A"].primary_ip == "10.0.0.1"  # recovered via Site A's legacy path
+    assert by_name["Gw-A"].management is not None
+    assert by_name["Gw-A"].management.mgmt_ip == "10.0.0.1"
+    assert by_name["Sw-B"].primary_ip == "10.1.0.2"  # Site B untouched, no legacy call

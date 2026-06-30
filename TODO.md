@@ -25,7 +25,7 @@ packs' own repos, not here.
 - [x] Webhook: verify NetBox `X-Hook-Signature` (HMAC) — [#71](https://github.com/freed-dev-llc/argus/issues/71) (done in [#111](https://github.com/freed-dev-llc/argus/pull/111))
 - [x] Reconcile: family-aware primary-IP assignment (IPv6 → `primary_ip6`/`/128`, configurable `RECONCILE_MGMT_INTERFACE`; prefix-derivation deferred) — [#73](https://github.com/freed-dev-llc/argus/issues/73)
 - [x] Discovery: don't record a gateway's public WAN IP as `primary_ip` — interim RFC1918 guard — [#120](https://github.com/freed-dev-llc/argus/issues/120) (done in [#128](https://github.com/freed-dev-llc/argus/pull/128))
-- [ ] UniFi: discover a gateway's LAN/mgmt IP and prefer it as `primary_ip` — the Integration API exposes no LAN IP, so this needs a data-source spike first — [#129](https://github.com/freed-dev-llc/argus/issues/129)
+- [x] UniFi: discover a gateway's LAN/mgmt IP and prefer it as `primary_ip` — recovered from the legacy UniFi Network API (`stat/device` `lan_ip`, matched by MAC; best-effort), [ADR-0014](docs/architecture/adr/0014-unifi-gateway-mgmt-ip-legacy-api.md) — [#129](https://github.com/freed-dev-llc/argus/issues/129)
 - [x] Fix stale `netbox/client.py` "reads-only" docstring — [#79](https://github.com/freed-dev-llc/argus/issues/79) (done in [#101](https://github.com/freed-dev-llc/argus/issues/101))
 
 ## Notes (deliberate — not bugs)

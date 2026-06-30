@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **UniFi gateway management IP** ([ADR-0014](docs/architecture/adr/0014-unifi-gateway-mgmt-ip-legacy-api.md)):
+  a UniFi gateway (UDM/UXG/UCG) reports only its WAN IP in the Integration API, so after the #120/#128
+  WAN guard a gateway was left with no primary IP. The collector now recovers the gateway's LAN/management
+  IP from the legacy UniFi Network API (`GET {UNIFI_URL}/proxy/network/api/s/{site}/stat/device`, field
+  `lan_ip`, matched to the Integration device by MAC) and prefers it as both `primary_ip` and
+  `DeviceManagement.mgmt_ip`. The legacy call reuses the same `X-API-KEY` client, is **conditional**
+  (only when a site has a gateway with no usable Integration primary), runs **at most once per site**,
+  and is **best-effort** (a missing/failing endpoint is noted and discovery falls back to the prior
+  no-primary behavior). No new config flag. CGNAT WAN space (`100.64.0.0/10`, RFC 6598) is now rejected
+  as a primary IP **deterministically**, independent of the running Python's version-sensitive
+  `is_private` classification. (#129)
+
 ## [0.2.0] - 2026-06-29
 
 ### Added
