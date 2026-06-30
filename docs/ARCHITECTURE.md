@@ -102,5 +102,5 @@ unvalidated against live SNMP.
 
 Discovery is now a vendor-pack host/plugin layer ([ADR-0005](architecture/adr/0005-vendor-packs.md));
 UniFi ships as the in-tree pack and external/private packs attach via an entry point. Releases
-are cut by the manifest-driven `argus-release` devtool. Latest release: **0.1.7** (PyPI
+are cut by the manifest-driven `argus-release` devtool. Latest release: **0.2.0** (PyPI
 `argus-netbox`, GHCR images). See [ROADMAP.md](ROADMAP.md), [TODO.md](../TODO.md), and the ADRs.

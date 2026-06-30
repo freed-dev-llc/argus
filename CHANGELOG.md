@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-29
+
 ### Added
 
 - **Paired vendor + knowledge packs** ([ADR-0013](docs/architecture/adr/0013-paired-vendor-knowledge-packs.md)):
@@ -465,7 +467,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/freed-dev-llc/argus/compare/v0.1.7...v0.2.0
 [0.1.7]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/freed-dev-llc/argus/compare/v0.1.4...v0.1.5
