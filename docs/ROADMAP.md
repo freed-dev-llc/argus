@@ -66,6 +66,13 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   CHANGELOG, and verifies the build — one command per release instead of a hand-done multi-file
   edit. Latest release: **0.2.1** (PyPI `argus-netbox` + GHCR images).
 - ✅ Docs pass + examples (this step).
+- ✅ **NetBox Prometheus service-discovery** ([#116](https://github.com/freed-dev-llc/argus/pull/116),
+  shipped 0.2.0): the bundled NetBox image installs `netbox-plugin-prometheus-sd`
+  (`deploy/netbox/Dockerfile`), exposing `GET /api/plugins/prometheus-sd/{devices,virtual-machines,
+  services,ip-addresses}/` as an `http_sd`-compatible endpoint — an external monitoring stack can
+  pull scrape targets straight from NetBox (status/tag-filterable), no hand-maintained target list.
+  The consuming monitoring stack itself lives outside this repo ([#103](https://github.com/freed-dev-llc/argus/issues/103),
+  closed — confirmed live in production).
 - The **public open-source flip** (repo visibility) — still pending, held for Jon.
 
 ## P6 — Multi-vendor extensibility (vendor packs)
