@@ -1,7 +1,7 @@
 name: Release
 
 # Tag a signed `vX.Y.Z` on main to publish a release.
-#   git tag -s v0.2.0 -m "Release v0.2.0" && git push origin v0.2.0
+#   git tag -s v0.2.1 -m "Release v0.2.1" && git push origin v0.2.1
 # A `v*` tag (a) cuts a GitHub Release, (b) builds + pushes GHCR images for
 # argus-server + argus-web, and (c) publishes the `argus-netbox` package to PyPI via
 # trusted publishing (OIDC — no token).

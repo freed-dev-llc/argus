@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-01
+
 ### Added
 
 - **Shared-instance tenant backfill on update** ([ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md)):
@@ -492,7 +494,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/freed-dev-llc/argus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/freed-dev-llc/argus/compare/v0.1.7...v0.2.0
 [0.1.7]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/freed-dev-llc/argus/compare/v0.1.5...v0.1.6
