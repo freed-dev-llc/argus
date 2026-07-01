@@ -393,3 +393,52 @@ def test_existing_object_skips_create_branch_and_tenant_lookup(monkeypatch):
         assert client.ensure_site("Home") == 5
         api.dcim.sites.create.assert_not_called()
         api.tenancy.tenants.get.assert_not_called()
+
+
+def test_update_device_backfills_tenant_when_unset_and_configured(monkeypatch):
+    """An update-triggering device with no tenant gets the configured tenant backfilled."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.tenancy.tenants.get.return_value = MagicMock(id=77)
+        record = MagicMock()
+        record.tenant = None
+        api.dcim.devices.get.return_value = record
+        client = NetBoxClient("https://nb", "tok")
+        client.update_device("sw1", {"status": "active"})
+        payload = record.update.call_args[0][0]
+        assert payload["tenant"] == 77
+        assert payload["status"] == "active"
+
+
+def test_update_device_does_not_clobber_existing_tenant(monkeypatch):
+    """A device that already carries a tenant is never modified on that field."""
+    monkeypatch.setenv("NETBOX_TENANT", "Acme")
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        record = MagicMock()
+        record.tenant = MagicMock(id=5)  # already tenanted (not necessarily the configured one)
+        api.dcim.devices.get.return_value = record
+        client = NetBoxClient("https://nb", "tok")
+        client.update_device("sw1", {"status": "active"})
+        payload = record.update.call_args[0][0]
+        assert "tenant" not in payload
+        api.tenancy.tenants.get.assert_not_called()
+
+
+def test_update_device_omits_tenant_when_unconfigured(monkeypatch):
+    """Back-compat: with ``NETBOX_TENANT`` unset, the update payload has no ``tenant`` key."""
+    monkeypatch.delenv("NETBOX_TENANT", raising=False)
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        record = MagicMock()
+        record.tenant = None
+        api.dcim.devices.get.return_value = record
+        client = NetBoxClient("https://nb", "tok")
+        client.update_device("sw1", {"status": "active"})
+        payload = record.update.call_args[0][0]
+        assert "tenant" not in payload
+        api.tenancy.tenants.get.assert_not_called()

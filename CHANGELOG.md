@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Shared-instance tenant backfill on update** ([ADR-0007](docs/architecture/adr/0007-multi-tenant-netbox.md)):
+  `update_device` now piggybacks a tenant backfill onto a reconcile update that's already writing
+  some other drifted field (`primary_ip`/`site`/`role`/`device_type`/`status`/`serial`) — if the
+  fetched device currently has no tenant and `NETBOX_TENANT` is configured, the resolved tenant id
+  is stamped alongside the drifted fields. Backfill-only-when-unset: an already-tenanted device
+  (any tenant) is never modified on that field, and tenant is never drift-compared, so this never
+  triggers a write purely to add a tenant. Completes #131's create-only cut for the update path;
+  prefix stamping and shared/indirect catalog objects remain deferred (ADR-0007). (#86)
+
 ### Fixed
 
 - **UniFi gateway management IP** ([ADR-0014](docs/architecture/adr/0014-unifi-gateway-mgmt-ip-legacy-api.md)):

@@ -152,10 +152,20 @@ class NetBoxClient:
         return _record(record)
 
     def update_device(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
-        """Update fields on an existing device, matched by name."""
+        """Update fields on an existing device, matched by name.
+
+        Piggybacks a tenant **backfill** onto the update (ADR-0007 / #86): if the record
+        currently has no tenant and ``NETBOX_TENANT`` is configured, the resolved tenant id is
+        stamped onto ``data`` alongside whatever drifted fields triggered this update. An
+        already-tenanted record (any tenant, not just the configured one) is left alone — this
+        never triggers a write purely to add a tenant, since ``tenant`` is not a drift-compared
+        field.
+        """
         record = self.api.dcim.devices.get(name=name)
         if record is None:
             raise ValueError(f"Device '{name}' not found in NetBox")
+        if not record.tenant:
+            self._stamp_tenant(data)
         record.update(data)
         return _record(record)
 
