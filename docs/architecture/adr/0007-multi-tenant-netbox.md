@@ -62,12 +62,18 @@ when set, the confirmation-gated reconcile find-or-creates the tenant (`ensure_t
 Argus auto-creates (`ensure_site`). Stamping lives entirely in the client (a `_stamp_tenant` /
 `_tenant_id` helper pair, resolved once per client instance); the reconcile engine and
 `COMPARE_FIELDS` are untouched, so `tenant` is never drift-compared and an existing object's tenant
-is never read or rewritten. Unset (default) is byte-for-byte the prior single-tenant behavior.
+is never read or rewritten by the diff. Unset (default) is byte-for-byte the prior single-tenant
+behavior.
+
+`update_device` additionally **backfills** the tenant onto a pre-existing, untenanted device: when
+a reconcile update is already writing some other drifted field (`primary_ip`/`site`/`role`/
+`device_type`/`status`/`serial`), and the fetched record's `tenant` is currently unset, the
+resolved tenant id is piggybacked onto that same write via `_stamp_tenant`. It never triggers a
+write purely to add a tenant (tenant stays outside `COMPARE_FIELDS`), and an already-tenanted
+device — any tenant, not just the configured one — is never modified on that field.
 
 Deferred / out of scope — the known leakiness this ADR's Context warns about:
 
-- **Update-stamping** — Argus never back-fills or changes the tenant on objects it did not just
-  create; reconciling pre-existing untenanted objects leaves them untenanted.
 - **Prefixes** — Argus only *reads* prefixes (no `create_prefix`/`ensure_prefix` path, and the
   engine never proposes a prefix change), so they cannot be stamped without building prefix
   creation. Deferred.
