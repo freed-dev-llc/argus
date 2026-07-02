@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 # Jobs `server` and `web` are the required status checks on main.
-# (Switch `runs-on` to [self-hosted, linux] to use the freed-dev-llc Spark/Thor fleet.)
+# (Switch `runs-on` to [self-hosted, linux] to use a self-hosted runner fleet.)
 jobs:
   server:
     runs-on: ubuntu-latest

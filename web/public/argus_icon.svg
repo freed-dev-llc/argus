@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Argus eye icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A2C39"/><stop offset="1" stop-color="#0F1C25"/>
+    </linearGradient>
+    <linearGradient id="node" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6E9DBA"/><stop offset="1" stop-color="#4E7C97"/>
+    </linearGradient>
+    <linearGradient id="cp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CDA052"/><stop offset="1" stop-color="#9C6F2E"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="236" height="236" rx="48" fill="url(#bg)" stroke="#2C4C61" stroke-width="2"/>
+
+  <!-- all-seeing eye -->
+  <g>
+    <g stroke="#4E7C97" fill="none" stroke-linecap="round" opacity="0.26" stroke-width="2.5">
+      <line x1="28"  y1="120" x2="80"  y2="120"/>
+      <line x1="212" y1="120" x2="160" y2="120"/>
+    </g>
+    <path d="M 28 120 Q 120 56 212 120 Q 120 184 28 120 Z" fill="none" stroke="#6E9DBA" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="120" cy="120" r="40" fill="none" stroke="#4E7C97" stroke-width="3.5" opacity="0.5"/>
+    <circle cx="120" cy="120" r="22" fill="url(#cp)" stroke="#EAF2F7" stroke-opacity="0.10" stroke-width="1"/>
+    <circle cx="128" cy="112" r="6.5" fill="#FBEEE3" opacity="0.92"/>
+    <circle cx="28"  cy="120" r="6.5" fill="#EAF2F7" opacity="0.85"/>
+    <circle cx="212" cy="120" r="6.5" fill="#EAF2F7" opacity="0.85"/>
+  </g>
+</svg>
