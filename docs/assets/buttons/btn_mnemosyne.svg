@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 72" width="372" height="72" role="img" aria-label="Mnemosyne Recall — freed-dev-llc/mnemosyne">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2C39"/><stop offset="1" stop-color="#0F1C25"/></linearGradient>
+    <linearGradient id="mem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A78BD0"/><stop offset="1" stop-color="#6A5A9E"/></linearGradient>
+    <linearGradient id="src" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E9DBA"/><stop offset="1" stop-color="#4E7C97"/></linearGradient>
+  </defs>
+
+  <rect x="1" y="1" width="370" height="70" rx="16" fill="url(#bg)" stroke="#2C4C61" stroke-width="1.5"/>
+
+  <!-- glyph: retrieval constellation -->
+  <g transform="translate(15,11) scale(0.30)">
+    <g stroke="#6A5A9E" fill="none" stroke-linecap="round" opacity="0.5" stroke-width="4">
+      <line x1="85" y1="72" x2="85"  y2="12"/>
+      <line x1="85" y1="72" x2="28"  y2="53.5"/>
+      <line x1="85" y1="72" x2="49.7" y2="120.5"/>
+      <line x1="85" y1="72" x2="120.3" y2="120.5"/>
+      <line x1="85" y1="72" x2="142"  y2="53.5"/>
+    </g>
+    <g fill="url(#src)">
+      <circle cx="85"   cy="12"    r="9"/>
+      <circle cx="28"   cy="53.5"  r="9"/>
+      <circle cx="49.7" cy="120.5" r="9"/>
+      <circle cx="120.3" cy="120.5" r="9"/>
+      <circle cx="142"  cy="53.5"  r="9"/>
+    </g>
+    <circle cx="85" cy="72" r="24" fill="url(#mem)" stroke="#EAF2F7" stroke-opacity="0.14" stroke-width="2"/>
+    <circle cx="92" cy="65" r="5.5" fill="#F3ECFB" opacity="0.92"/>
+  </g>
+
+  <!-- label -->
+  <g font-family="'Segoe UI','SF Pro Display',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif">
+    <text x="92" y="31" font-size="18" font-weight="700" letter-spacing="0.3" fill="#EAF2F7">Mnemosyne <tspan fill="#A78BD0">Recall</tspan></text>
+    <text x="92" y="52" font-size="10.5" font-weight="500" letter-spacing="0.2" fill="#7FA6BC" font-family="'SF Mono',ui-monospace,Menlo,Consolas,monospace">freed-dev-llc/mnemosyne</text>
+  </g>
+</svg>
