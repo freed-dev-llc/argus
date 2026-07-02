@@ -23,8 +23,8 @@ We must choose languages and a repository structure.
 
 - **Python for the server** is forced by the ecosystem: `pynetbox`, and the network
   discovery libraries (`napalm`, `netmiko`, `scrapli`, `pysnmp`) are all Python. The MCP
-  Python SDK is first-class. This mirrors the existing `aria-unifi-mcp` server, so
-  patterns (FastMCP, `tools/`, confirmation-gated writes, ruff/mypy/pytest) carry over.
+  Python SDK is first-class. It follows an earlier UniFi MCP integration, so patterns
+  (FastMCP, `tools/`, confirmation-gated writes, ruff/mypy/pytest) carry over.
 - **Two transports, one tool set** keeps agent and web behavior from diverging.
 - **Monorepo** keeps a cohesive product, one CHANGELOG, one set of ADRs, and atomic
   cross-cutting changes — at the cost of slightly more CI wiring (one job per app).
@@ -40,11 +40,11 @@ We must choose languages and a repository structure.
 ## Alternatives Considered
 
 - **TypeScript MCP server.** Rejected — would fight the Python-only NetBox/network
-  tooling and duplicate the `aria-unifi-mcp` patterns.
+  tooling and duplicate the earlier UniFi tooling's patterns.
 - **Separate repos for server and web.** Rejected for now — more overhead (two CHANGELOGs,
   cross-repo PRs) than a solo/small project warrants.
 
 ## References
 
 - MCP Python SDK: https://github.com/modelcontextprotocol/python-sdk
-- Sibling server for patterns: `aria-unifi-mcp`
+- Prior art for patterns: an earlier UniFi MCP server

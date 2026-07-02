@@ -1,7 +1,7 @@
 """UniFi discovery collector.
 
 Pulls devices from the UniFi Network **Integration API** (X-API-KEY auth, read-only),
-mirroring the approach in the sibling ``aria-unifi-mcp`` server, and normalizes them into
+mirroring the approach of an earlier UniFi integration, and normalizes them into
 a :class:`DiscoveryResult`. Requires ``UNIFI_URL`` + ``UNIFI_API_TOKEN`` (see config).
 
 Endpoints used (base ``{UNIFI_URL}/proxy/network/integration/v1``):
