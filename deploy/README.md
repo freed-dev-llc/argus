@@ -111,15 +111,15 @@ NetBox UI at `http://<host>:8096` (log in as `admin`).
   container*. On **Docker Desktop (macOS/Windows)** a container **cannot** reach arbitrary LAN
   peers — only the internet and the host. Use an address the container can actually route to.
   An **overlay/mesh IP is the most portable choice** because it works identically on Docker
-  Desktop and native Linux. The chezfreed deployment uses [NetBird](https://netbird.io):
+  Desktop and native Linux. A reference two-host deployment over [NetBird](https://netbird.io):
 
   | Host | Role | Mnemosyne reachability |
   | --- | --- | --- |
-  | `cerebrum` (this Mac) | Argus stack (Docker Desktop) + NetBird peer | reaches `spark` over the mesh |
-  | `spark` | Mnemosyne + Ollama (`bge-m3`, `qwen2.5`) + NetBird peer | serves `mnemosyne-http` |
+  | `argus-host` | Argus stack (Docker Desktop) + NetBird peer | reaches the Mnemosyne host over the mesh |
+  | `mnemosyne-host` | Mnemosyne + Ollama (`bge-m3`, `qwen2.5`) + NetBird peer | serves `mnemosyne-http` |
 
   ```bash
-  # On the Mnemosyne host (spark): build the pack index and run the HTTP service on the mesh.
+  # On the Mnemosyne host: build the pack index and run the HTTP service on the mesh.
   mnemosyne ingest ubiquiti                         # embed corpus -> FAISS (needs Ollama up)
   # systemd unit (binds 0.0.0.0 so it's reachable on the NetBird interface; survives reboot):
   #   /etc/systemd/system/mnemosyne-http.service

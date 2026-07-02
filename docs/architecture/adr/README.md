@@ -1,7 +1,7 @@
 # Architecture Decision Records (ADRs)
 
-Architecture decisions for Argus, recorded in the format established by the leeloo/aria
-repos.
+Architecture decisions for Argus, recorded in a lightweight ADR format (one file per
+decision).
 
 ## Format
 
