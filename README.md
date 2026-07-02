@@ -33,6 +33,8 @@ with **Mnemosyne**, the family's RAG knowledge brain, which *explains* the vendo
 *discovers* — see the optional [Ask the Brain](docs/architecture/adr/0008-ask-the-brain-mnemosyne.md)
 integration.
 
+[![Mnemosyne: freed-dev-llc/mnemosyne](docs/assets/buttons/btn_mnemosyne.svg)](https://github.com/freed-dev-llc/mnemosyne)
+
 ## How it fits together
 
 ```
