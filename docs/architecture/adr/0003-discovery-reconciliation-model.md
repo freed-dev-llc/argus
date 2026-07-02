@@ -37,8 +37,8 @@ silent, sweeping changes.
 - A narrow `Collector` contract lets us add sources incrementally without touching the
   engine, and lets each collector be tested in isolation.
 - Normalizing before diffing keeps the engine independent of any one protocol.
-- Dry-run + confirmation mirrors the safety model already proven in `aria-unifi-mcp`'s
-  admin tools, and protects the SoT from agent error.
+- Dry-run + confirmation mirrors a safety model already proven in earlier UniFi admin
+  tooling, and protects the SoT from agent error.
 
 ## Consequences
 
@@ -59,4 +59,4 @@ silent, sweeping changes.
 ## References
 
 - Reconciler pattern (observe → diff → converge).
-- `aria-unifi-mcp/confirmations.py` — confirmation-gating prior art.
+- Confirmation-gating prior art from earlier UniFi tooling.
