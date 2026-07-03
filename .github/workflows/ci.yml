@@ -27,7 +27,14 @@ jobs:
         run: mypy src
         continue-on-error: true
       - name: Pytest
-        run: pytest -v --cov=argus --cov-report=term-missing
+        run: pytest -v --cov=argus --cov-report=term-missing --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: freed-dev-llc/argus
+          files: ./server/coverage.xml
+          flags: server
 
   web:
     runs-on: ubuntu-latest
