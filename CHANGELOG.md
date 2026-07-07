@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-06
+
+### Added
+
+- **App favicon**: `argus_icon.svg` is now served as the web favicon, copied into `web/public/`
+  and linked from `index.html`, so it ships in the built `dist/` and the `argus-web` image. (#149)
+- **Codecov upload**: the `server` CI job now uploads `coverage.xml` to Codecov
+  (`codecov/codecov-action@v5`, `flags: server`), putting the previously-unused `CODECOV_TOKEN`
+  secret to work instead of only printing a `term-missing` report to the log. (#152)
+
+### Changed
+
+- **Docs**: scrubbed remaining private host names from `deploy/README.md`,
+  `.github/workflows/ci.yml`, and `docs/architecture/adr/README.md`, and genericized the six
+  remaining `aria-unifi-mcp` references in ADR-0002, ADR-0003, and the UniFi collector docstring
+  to "earlier UniFi tooling / integration". (#149, #150)
+- **Docs**: added a linked Mnemosyne cross-link button to the README's family section, mirroring
+  the Argus button in Mnemosyne's README now that Mnemosyne is public. (#151)
+- **Docs**: `docs/ROADMAP.md` now notes the NetBox `netbox-plugin-prometheus-sd` bundling shipped
+  in 0.2.0, closing #103. (#148)
+
 ## [0.2.1] - 2026-07-01
 
 ### Added
@@ -494,7 +515,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/freed-dev-llc/argus/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/freed-dev-llc/argus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/freed-dev-llc/argus/compare/v0.1.7...v0.2.0
 [0.1.7]: https://github.com/freed-dev-llc/argus/compare/v0.1.6...v0.1.7
