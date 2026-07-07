@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Deploy: pfSense/OPNsense collector env passthrough**: `deploy/docker-compose.yml` now
+  forwards `PFSENSE_HOST` / `PFSENSE_USERNAME` / `PFSENSE_PASSWORD` (plus optional
+  `PFSENSE_USE_SNMP` / `PFSENSE_SNMP_COMMUNITY`) to `argus-server`, so the `pfsense` collector
+  shipped in 0.2.3 can be configured from `deploy/.env` and used for drift/reconcile against a
+  live firewall. Documented in `deploy/.env.example`. All empty (default) leaves it unconfigured.
+
 ## [0.2.3] - 2026-07-07
 
 ### Added

@@ -168,6 +168,15 @@ services:
       # proxies server-to-server, so argus-web never receives it. See docs/architecture/
       # adr/0008-ask-the-brain-mnemosyne.md and deploy/README.md (Mnemosyne section).
       MNEMOSYNE_URL: ${MNEMOSYNE_URL:-}
+      # pfSense/OPNsense firewall discovery (device_ssh collector, ADR-0013). HOST/USERNAME/
+      # PASSWORD are required to run the `pfsense` collector; all empty (default) leaves it
+      # unconfigured (drift/reconcile with collector=pfsense reports a clear missing-config
+      # note). SSH is primary; set PFSENSE_USE_SNMP=true (with a community) to also query SNMP.
+      PFSENSE_HOST: ${PFSENSE_HOST:-}
+      PFSENSE_USERNAME: ${PFSENSE_USERNAME:-}
+      PFSENSE_PASSWORD: ${PFSENSE_PASSWORD:-}
+      PFSENSE_USE_SNMP: ${PFSENSE_USE_SNMP:-}
+      PFSENSE_SNMP_COMMUNITY: ${PFSENSE_SNMP_COMMUNITY:-public}
     ports:
       - "127.0.0.1:8094:8080"
     healthcheck:
