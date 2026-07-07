@@ -7,9 +7,23 @@ straightforward from vendor model strings and SNMP sysDescr.
 
 from __future__ import annotations
 
-#: NetBox manufacturer for pfSense/OPNsense devices (Netgate is the primary maintainer).
-#: OPNsense is a fork and typically runs on white-box or Netgate hardware.
+#: NetBox manufacturer for pfSense appliances (Netgate is the maintainer/vendor).
 MANUFACTURER = "Netgate"
+#: NetBox manufacturer for OPNsense (maintained by Deciso B.V.); the community fork runs on
+#: white-box / VM hardware, so Deciso is the closest vendor label.
+OPNSENSE_MANUFACTURER = "Deciso"
+
+
+def manufacturer_from_version(version: str | None) -> str:
+    """Pick the NetBox manufacturer from a firewall's version/model string.
+
+    OPNsense identifies itself as ``OPNsense ...`` in ``show version`` / sysDescr, so a match
+    on that keyword maps to Deciso; everything else (pfSense, Netgate appliances) defaults to
+    Netgate. Falls back to Netgate when no version string is available (the historical default).
+    """
+    if version and "opnsense" in version.lower():
+        return OPNSENSE_MANUFACTURER
+    return MANUFACTURER
 
 # Conservative device state → NetBox status mapping (the single source of truth).
 # pfSense/OPNsense report status via SNMP sysUptime or CLI inspection; these states

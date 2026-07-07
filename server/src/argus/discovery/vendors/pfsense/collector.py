@@ -25,7 +25,7 @@ from typing import Any
 
 from ...base import Collector, DeviceManagement, DiscoveredDevice, DiscoveryResult
 from .credentials import load_snmp_creds, load_ssh_creds
-from .models import MANUFACTURER, role_from_model, status_from_state
+from .models import manufacturer_from_version, role_from_model, status_from_state
 
 #: Environment variables this pack consumes.
 CONFIG_VARS = (
@@ -36,7 +36,43 @@ CONFIG_VARS = (
     # - PFSENSE_SITE: NetBox site the firewall is enrolled into (default "Default")
     # - PFSENSE_USE_SNMP: "true" to enable SNMP (requires pysnmp)
     # - PFSENSE_SNMP_COMMUNITY: SNMP v2c community (default "public")
+    # Additional firewalls: append a numeric suffix — PFSENSE_HOST_2 / PFSENSE_USERNAME_2 /
+    # PFSENSE_PASSWORD_2 / PFSENSE_SITE_2 (etc.) for a second target, _3 for a third, ...
 )
+
+#: Highest numbered firewall target the collector scans for (PFSENSE_HOST .. PFSENSE_HOST_16).
+_MAX_TARGETS = 16
+
+
+def _read_targets() -> list[dict[str, Any]]:
+    """Read one or more firewall targets from the environment.
+
+    Target 1 uses the unsuffixed vars (``PFSENSE_HOST`` / ``PFSENSE_USERNAME`` / ...); targets
+    2..N use a ``_<n>`` suffix (``PFSENSE_HOST_2``, ``PFSENSE_USERNAME_2``, ...). Any index whose
+    ``PFSENSE_HOST`` is set becomes a target, so gaps are tolerated. Backward compatible: a lone
+    ``PFSENSE_HOST`` yields exactly one target.
+    """
+    targets: list[dict[str, Any]] = []
+    for i in range(1, _MAX_TARGETS + 1):
+        suffix = "" if i == 1 else f"_{i}"
+        host = os.environ.get(f"PFSENSE_HOST{suffix}", "").strip()
+        if not host:
+            continue
+        targets.append(
+            {
+                "label": f"#{i}",
+                "host": host,
+                "username": os.environ.get(f"PFSENSE_USERNAME{suffix}", "").strip(),
+                "password": os.environ.get(f"PFSENSE_PASSWORD{suffix}", "").strip(),
+                "site": os.environ.get(f"PFSENSE_SITE{suffix}", "").strip() or "Default",
+                "use_snmp": os.environ.get(f"PFSENSE_USE_SNMP{suffix}", "").lower()
+                in ("true", "1", "yes"),
+                "community": os.environ.get(
+                    f"PFSENSE_SNMP_COMMUNITY{suffix}", "public"
+                ).strip(),
+            }
+        )
+    return targets
 
 
 class PfSenseCollector(Collector):
@@ -47,87 +83,16 @@ class PfSenseCollector(Collector):
     async def collect(self) -> DiscoveryResult:
         result = DiscoveryResult(collector=self.name)
 
-        # Check if configuration is present.
-        host = os.environ.get("PFSENSE_HOST", "").strip()
-        username = os.environ.get("PFSENSE_USERNAME", "").strip()
-        password = os.environ.get("PFSENSE_PASSWORD", "").strip()
-        # NetBox site the firewall is enrolled into. The reconcile engine needs a site to
-        # create a device, and SSH/SNMP can't infer one, so default to NetBox's "Default".
-        site = os.environ.get("PFSENSE_SITE", "").strip() or "Default"
-
-        if not all((host, username, password)):
-            missing = []
-            if not host:
-                missing.append("PFSENSE_HOST")
-            if not username:
-                missing.append("PFSENSE_USERNAME")
-            if not password:
-                missing.append("PFSENSE_PASSWORD")
-            result.notes.append(f"pfsense pack not configured: set {', '.join(missing)}.")
-            return result
-
-        # Resolve credentials from env vars or file paths.
-        try:
-            host, username, password = load_ssh_creds(host, username, password)
-        except FileNotFoundError as exc:
-            result.notes.append(f"pfsense credential file not found: {exc}")
-            return result
-        except Exception as exc:
-            result.notes.append(f"pfsense credential loading failed: {exc}")
-            return result
-
-        # --- SSH collection (primary) ---
-        try:
-            system_info = await self._collect_via_ssh(host, username, password)
-        except Exception as exc:
-            result.notes.append(f"SSH collection failed: {exc}")
-            system_info = None
-
-        # --- SNMP collection (secondary, if enabled) ---
-        snmp_info = None
-        use_snmp = os.environ.get("PFSENSE_USE_SNMP", "").lower() in ("true", "1", "yes")
-        if use_snmp:
-            try:
-                community = os.environ.get("PFSENSE_SNMP_COMMUNITY", "public").strip()
-                community = load_snmp_creds(community)
-                snmp_info = await self._collect_via_snmp(host, community)
-            except Exception as exc:
-                result.notes.append(f"SNMP collection failed: {exc}")
-
-        # --- Synthesize discovered device ---
-        # Merge SSH and SNMP results (SSH takes priority).
-        combined_info = {}
-        if snmp_info:
-            combined_info.update(snmp_info)
-        if system_info:
-            combined_info.update(system_info)
-
-        if combined_info:
-            mgmt = DeviceManagement(
-                status=status_from_state(combined_info.get("state")),
-                firmware=combined_info.get("firmware_version"),
-                mgmt_ip=combined_info.get("primary_ip"),
+        targets = _read_targets()
+        if not targets:
+            result.notes.append(
+                "pfsense pack not configured: set PFSENSE_HOST / PFSENSE_USERNAME / "
+                "PFSENSE_PASSWORD (append _2, _3, ... for additional firewalls)."
             )
-            # Infer role from model or firmware version
-            inferred_role = role_from_model(combined_info.get("model"))
-            if not inferred_role and combined_info.get("firmware_version"):
-                # Fallback: check firmware version for product keywords
-                inferred_role = role_from_model(combined_info.get("firmware_version"))
+            return result
 
-            result.devices.append(
-                DiscoveredDevice(
-                    name=combined_info.get("hostname") or host,
-                    primary_ip=combined_info.get("primary_ip"),
-                    site=site,
-                    manufacturer=MANUFACTURER,
-                    model=combined_info.get("model"),
-                    role=inferred_role,
-                    management=mgmt if any((mgmt.status, mgmt.firmware, mgmt.mgmt_ip)) else None,
-                    raw=combined_info,
-                )
-            )
-            if combined_info.get("primary_ip"):
-                result.ip_addresses.append(combined_info["primary_ip"])
+        for target in targets:
+            await self._collect_target(target, result)
 
         if not result.devices:
             result.notes.append(
@@ -136,6 +101,88 @@ class PfSenseCollector(Collector):
             )
 
         return result
+
+    async def _collect_target(self, target: dict[str, Any], result: DiscoveryResult) -> None:
+        """Discover one firewall target, appending its device / IPs / notes to ``result``.
+
+        A per-target failure (missing creds, SSH error) is recorded as a note and never aborts
+        the other targets — partial discovery beats none (ADR-0003).
+        """
+        host = target["host"]
+        label = target["label"]
+
+        # A configured host with no creds is a misconfiguration: note it and skip this target.
+        if not (target["username"] and target["password"]):
+            result.notes.append(
+                f"pfsense target {label} ({host}) missing username/password; skipped."
+            )
+            return
+
+        # Resolve credentials from env vars or file paths.
+        try:
+            host, username, password = load_ssh_creds(
+                host, target["username"], target["password"]
+            )
+        except FileNotFoundError as exc:
+            result.notes.append(f"pfsense target {label} credential file not found: {exc}")
+            return
+        except Exception as exc:
+            result.notes.append(f"pfsense target {label} credential loading failed: {exc}")
+            return
+
+        # --- SSH collection (primary) ---
+        try:
+            system_info = await self._collect_via_ssh(host, username, password)
+        except Exception as exc:
+            result.notes.append(f"SSH collection failed for {label} ({host}): {exc}")
+            system_info = None
+
+        # --- SNMP collection (secondary, if enabled) ---
+        snmp_info = None
+        if target["use_snmp"]:
+            try:
+                community = load_snmp_creds(target["community"])
+                snmp_info = await self._collect_via_snmp(host, community)
+            except Exception as exc:
+                result.notes.append(f"SNMP collection failed for {label} ({host}): {exc}")
+
+        # --- Synthesize discovered device (SSH takes priority over SNMP) ---
+        combined_info: dict[str, Any] = {}
+        if snmp_info:
+            combined_info.update(snmp_info)
+        if system_info:
+            combined_info.update(system_info)
+
+        if not combined_info:
+            return
+
+        mgmt = DeviceManagement(
+            status=status_from_state(combined_info.get("state")),
+            firmware=combined_info.get("firmware_version"),
+            mgmt_ip=combined_info.get("primary_ip"),
+        )
+        # Infer role from model, falling back to the firmware/version string.
+        inferred_role = role_from_model(combined_info.get("model"))
+        if not inferred_role and combined_info.get("firmware_version"):
+            inferred_role = role_from_model(combined_info.get("firmware_version"))
+
+        result.devices.append(
+            DiscoveredDevice(
+                name=combined_info.get("hostname") or host,
+                primary_ip=combined_info.get("primary_ip"),
+                site=target["site"],
+                # OPNsense → Deciso, pfSense/Netgate → Netgate, detected from the version string.
+                manufacturer=manufacturer_from_version(
+                    combined_info.get("firmware_version") or combined_info.get("model")
+                ),
+                model=combined_info.get("model"),
+                role=inferred_role,
+                management=mgmt if any((mgmt.status, mgmt.firmware, mgmt.mgmt_ip)) else None,
+                raw=combined_info,
+            )
+        )
+        if combined_info.get("primary_ip"):
+            result.ip_addresses.append(combined_info["primary_ip"])
 
     async def _collect_via_ssh(
         self, host: str, username: str, password: str

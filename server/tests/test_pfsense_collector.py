@@ -13,8 +13,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from argus.discovery.vendors.pfsense.collector import PfSenseCollector
-from argus.discovery.vendors.pfsense.models import role_from_model
+from argus.discovery.vendors.pfsense.collector import PfSenseCollector, _read_targets
+from argus.discovery.vendors.pfsense.models import manufacturer_from_version, role_from_model
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "pfsense"
 
@@ -49,6 +49,56 @@ def test_role_from_model_recognizes_gateway_models() -> None:
     assert role_from_model("OPNsense") == "gateway"
     assert role_from_model("generic") is None
     assert role_from_model(None) is None
+
+
+def test_manufacturer_from_version_distinguishes_opnsense() -> None:
+    """OPNsense maps to Deciso; pfSense/Netgate and unknown/None default to Netgate."""
+    assert manufacturer_from_version("OPNsense 26.1.11_6 (amd64)") == "Deciso"
+    assert manufacturer_from_version("opnsense") == "Deciso"
+    assert manufacturer_from_version("pfSense 2.8.1-RELEASE (SG-5100)") == "Netgate"
+    assert manufacturer_from_version("SG-5100") == "Netgate"
+    assert manufacturer_from_version(None) == "Netgate"
+
+
+def test_read_targets_single_unsuffixed(monkeypatch) -> None:
+    """A lone PFSENSE_HOST yields exactly one target (backward compatible)."""
+    for var in ("PFSENSE_HOST", "PFSENSE_HOST_2", "PFSENSE_HOST_3"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("PFSENSE_HOST", "192.168.1.93")
+    monkeypatch.setenv("PFSENSE_USERNAME", "admin")
+    monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
+    targets = _read_targets()
+    assert len(targets) == 1
+    assert targets[0]["host"] == "192.168.1.93"
+    assert targets[0]["site"] == "Default"  # unset → default
+
+
+def test_read_targets_multiple_with_suffix(monkeypatch) -> None:
+    """A suffixed second target is read alongside the first, with per-target creds/site."""
+    monkeypatch.setenv("PFSENSE_HOST", "192.168.1.93")
+    monkeypatch.setenv("PFSENSE_USERNAME", "admin")
+    monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
+    monkeypatch.setenv("PFSENSE_HOST_2", "192.168.1.92")
+    monkeypatch.setenv("PFSENSE_USERNAME_2", "root")
+    monkeypatch.setenv("PFSENSE_PASSWORD_2", "pw2")
+    monkeypatch.setenv("PFSENSE_SITE_2", "Lab")
+    targets = _read_targets()
+    assert [t["host"] for t in targets] == ["192.168.1.93", "192.168.1.92"]
+    assert targets[1]["username"] == "root"
+    assert targets[1]["site"] == "Lab"
+
+
+def test_read_targets_tolerates_gaps(monkeypatch) -> None:
+    """A gap (HOST + HOST_3, no HOST_2) still surfaces both configured targets."""
+    for var in ("PFSENSE_HOST_2", "PFSENSE_USERNAME_2", "PFSENSE_PASSWORD_2"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("PFSENSE_HOST", "10.0.0.1")
+    monkeypatch.setenv("PFSENSE_USERNAME", "admin")
+    monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
+    monkeypatch.setenv("PFSENSE_HOST_3", "10.0.0.3")
+    monkeypatch.setenv("PFSENSE_USERNAME_3", "admin")
+    monkeypatch.setenv("PFSENSE_PASSWORD_3", "pw3")
+    assert [t["host"] for t in _read_targets()] == ["10.0.0.1", "10.0.0.3"]
 
 
 def test_extract_primary_ip_finds_first_private_ip() -> None:
