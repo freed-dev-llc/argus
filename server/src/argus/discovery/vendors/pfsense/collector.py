@@ -33,6 +33,7 @@ CONFIG_VARS = (
     "PFSENSE_USERNAME",
     "PFSENSE_PASSWORD",
     # Optional:
+    # - PFSENSE_SITE: NetBox site the firewall is enrolled into (default "Default")
     # - PFSENSE_USE_SNMP: "true" to enable SNMP (requires pysnmp)
     # - PFSENSE_SNMP_COMMUNITY: SNMP v2c community (default "public")
 )
@@ -50,6 +51,9 @@ class PfSenseCollector(Collector):
         host = os.environ.get("PFSENSE_HOST", "").strip()
         username = os.environ.get("PFSENSE_USERNAME", "").strip()
         password = os.environ.get("PFSENSE_PASSWORD", "").strip()
+        # NetBox site the firewall is enrolled into. The reconcile engine needs a site to
+        # create a device, and SSH/SNMP can't infer one, so default to NetBox's "Default".
+        site = os.environ.get("PFSENSE_SITE", "").strip() or "Default"
 
         if not all((host, username, password)):
             missing = []
@@ -114,6 +118,7 @@ class PfSenseCollector(Collector):
                 DiscoveredDevice(
                     name=combined_info.get("hostname") or host,
                     primary_ip=combined_info.get("primary_ip"),
+                    site=site,
                     manufacturer=MANUFACTURER,
                     model=combined_info.get("model"),
                     role=inferred_role,

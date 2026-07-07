@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Primary-IP assignment when the IP already exists but is unassigned**: `assign_primary_ip`
+  only attached an IP to the device's mgmt interface on the create path, so when the address
+  already existed as a bare IPAM entry (e.g. UniFi client discovery had recorded it as a
+  client that is really this device), setting it as the device's primary IP failed with
+  NetBox 400 `The specified IP address is not assigned to this device`. It now attaches an
+  existing *unassigned* IP to the mgmt interface first; an IP already assigned elsewhere is
+  left alone (a genuine conflict still surfaces honestly). This is what let the pfSense
+  firewall enroll with `192.168.1.93` (previously created by UniFi discovery) as its primary IP.
+- **Docker image was missing discovery runtime deps**: `server/Dockerfile` now installs
+  `asyncssh` and `pysnmp` alongside Argus, so the pfSense/OPNsense (`pfsense`) and SNMP/LLDP
+  (`snmp_lldp`) collectors can actually run in the built image. Previously `pip install .`
+  omitted them (they live in the `[discovery]` extra), so both collectors failed at runtime
+  with `asyncssh not installed` — in every deployment built from the local Dockerfile **and**
+  the published `ghcr.io/freed-dev-llc/argus-server` image (CI builds from the same Dockerfile).
+  `napalm`/`netmiko` (also in the extra, imported by no collector yet) are intentionally left
+  out to keep the image lean.
+
+### Added
+
+- **pfSense collector assigns a NetBox site**: the `pfsense` collector now sets `site` on the
+  discovered device (from a new optional `PFSENSE_SITE`, default `"Default"`). Reconcile
+  requires a site to create a device, and SSH/SNMP can't infer one, so without this the
+  firewall was discovered but its create was skipped ("needs site, role, and model").
+- **Deploy: pfSense/OPNsense collector env passthrough**: `deploy/docker-compose.yml` now
+  forwards `PFSENSE_HOST` / `PFSENSE_USERNAME` / `PFSENSE_PASSWORD` / `PFSENSE_SITE` (plus
+  optional `PFSENSE_USE_SNMP` / `PFSENSE_SNMP_COMMUNITY`) to `argus-server`, so the `pfsense`
+  collector shipped in 0.2.3 can be configured from `deploy/.env` and used for drift/reconcile
+  against a live firewall. Documented in `deploy/.env.example`. All empty (default) leaves it
+  unconfigured.
+
 ## [0.2.3] - 2026-07-07
 
 ### Added
