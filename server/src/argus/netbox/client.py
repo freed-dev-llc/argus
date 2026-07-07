@@ -304,5 +304,18 @@ class NetBoxClient:
                     }
                 )
             )
+        elif getattr(ip_obj, "assigned_object_id", None) is None:
+            # The IP already exists but is assigned to nothing — e.g. client discovery created
+            # it as a bare IPAM entry (a UniFi client that is really this device). NetBox
+            # rejects primary_ip4/6 unless the IP is assigned to an interface on this device,
+            # so attach it to the mgmt interface first. (If it is already assigned — to this
+            # device or another — we leave the assignment alone: same-device is fine for the
+            # primary set, and a foreign assignment surfaces as an honest NetBox conflict.)
+            ip_obj.update(
+                {
+                    "assigned_object_type": "dcim.interface",
+                    "assigned_object_id": interface.id,
+                }
+            )
         primary_field = "primary_ip6" if version == 6 else "primary_ip4"
         device.update({primary_field: ip_obj.id})

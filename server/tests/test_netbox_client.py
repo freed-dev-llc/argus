@@ -178,6 +178,51 @@ def test_assign_primary_ip_honors_configured_interface(monkeypatch):
     assert api.dcim.interfaces.create.call_args[0][0]["name"] == "eth0"
 
 
+def test_assign_primary_ip_attaches_existing_unassigned_ip(monkeypatch):
+    """An existing IP with no interface assignment (e.g. a bare IPAM entry created by client
+    discovery for a UniFi client that is really this device) is attached to the mgmt interface
+    before it can become the primary IP — otherwise NetBox rejects the primary_ip4 set."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        device = MagicMock(id=10)
+        api.dcim.devices.get.return_value = device
+        api.dcim.interfaces.get.return_value = None
+        api.dcim.interfaces.create.return_value = MagicMock(id=20)
+        existing_ip = MagicMock(id=30, assigned_object_id=None)
+        api.ipam.ip_addresses.get.return_value = existing_ip
+        NetBoxClient("https://nb", "tok").assign_primary_ip("fw1", "192.168.1.93")
+    # The existing IP is attached to the freshly-created mgmt interface (id 20)...
+    existing_ip.update.assert_called_once_with(
+        {"assigned_object_type": "dcim.interface", "assigned_object_id": 20}
+    )
+    # ...no duplicate IP is created...
+    api.ipam.ip_addresses.create.assert_not_called()
+    # ...and it becomes the device's primary_ip4.
+    device.update.assert_called_once_with({"primary_ip4": 30})
+
+
+def test_assign_primary_ip_leaves_already_assigned_ip(monkeypatch):
+    """An existing IP already assigned to an interface is not reassigned (avoid stealing it
+    from another device); only the primary_ip field is set."""
+    monkeypatch.delenv("RECONCILE_MGMT_INTERFACE", raising=False)
+    get_settings.cache_clear()
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        device = MagicMock(id=10)
+        api.dcim.devices.get.return_value = device
+        api.dcim.interfaces.get.return_value = MagicMock(id=20)
+        existing_ip = MagicMock(id=30, assigned_object_id=99)  # already on some interface
+        api.ipam.ip_addresses.get.return_value = existing_ip
+        NetBoxClient("https://nb", "tok").assign_primary_ip("fw1", "192.168.1.93")
+    existing_ip.update.assert_not_called()
+    api.ipam.ip_addresses.create.assert_not_called()
+    device.update.assert_called_once_with({"primary_ip4": 30})
+
+
 def test_ensure_ip_address_ipv6_defaults_128():
     """``ensure_ip_address`` defaults an IPv6 to /128 (no longer forces /32)."""
     with patch("argus.netbox.client.pynetbox") as pnb:
