@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     # SNMP/LLDP collector (generic, for non-UniFi gear). Comma-separated host[:community].
     snmp_targets: str = ""
     snmp_community: str = "public"
+    snmp_port: int = 161
+    snmp_timeout: float = 1.0  # per-request seconds (pysnmp default)
+    snmp_retries: int = 5  # pysnmp default
+    # SNMPv3 (global; setting SNMP_V3_USER switches every target to v3).
+    snmp_v3_user: str = ""
+    snmp_v3_auth_key: str = ""
+    snmp_v3_auth_protocol: str = "sha"  # md5|sha|sha224|sha256|sha384|sha512
+    snmp_v3_priv_key: str = ""
+    snmp_v3_priv_protocol: str = "aes128"  # des|aes128|aes192|aes256
 
     # FastAPI HTTP server
     http_host: str = "0.0.0.0"
@@ -101,6 +110,11 @@ class Settings(BaseSettings):
     def unifi_configured(self) -> bool:
         """True when both a UniFi URL and API token are set."""
         return bool(self.unifi_url and self.unifi_api_token)
+
+    @property
+    def snmp_v3_enabled(self) -> bool:
+        """True when an SNMPv3 user is set (every SNMP target then uses v3 USM)."""
+        return bool(self.snmp_v3_user)
 
 
 @lru_cache

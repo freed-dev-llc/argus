@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **SNMPv3 for the SNMP/LLDP collector**: set `SNMP_V3_USER` (plus `SNMP_V3_AUTH_KEY` /
+  `SNMP_V3_AUTH_PROTOCOL` and `SNMP_V3_PRIV_KEY` / `SNMP_V3_PRIV_PROTOCOL`) to query every target
+  with USM instead of a v2c community. The security level (noAuthNoPriv / authNoPriv / authPriv)
+  follows from which keys are set. (#75)
+- **LLDP link ports**: the collector now walks the LLDP-MIB remote and local-port tables and
+  populates `local_port` / `remote_port` on each `DiscoveredLink`, with a chassis-ID fallback so
+  a neighbor with a blank `sysName` still yields a link (named by its colon-hex chassis MAC). (#75)
+- **SNMP transport tuning**: `SNMP_PORT`, `SNMP_TIMEOUT`, and `SNMP_RETRIES` configure the pysnmp
+  UDP transport (defaults 161 / 1.0s / 5, matching pysnmp). (#75)
+
+### Changed
+
+- **Parallel SNMP targets**: SNMP/LLDP targets are queried concurrently via `asyncio.gather`
+  instead of one at a time; one failing target no longer blocks the others. (#75)
+- **Validated SNMP/LLDP collector**: the collector is now exercised end to end against
+  snmpsim-style `.snmprec` fixtures through the real pysnmp code path (`test_snmp_query.py`), and
+  its docstring drops the earlier "unvalidated" note. `pysnmp` moved into the `dev` extra so the
+  glue runs in CI. (#75)
+
 ## [0.2.2] - 2026-07-06
 
 ### Added

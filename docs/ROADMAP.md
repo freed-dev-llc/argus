@@ -93,8 +93,12 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
   evaluates a `PracticeContext` (observed `DiscoveryResult` + read-only NetBox snapshot) and
   returns `Finding`s; surfaced advisory/read-only via `evaluate_practices` (MCP) + `GET
   /api/practices`. UniFi ships the reference rules.
-- Validate the generic non-UniFi SNMP/LLDP collector against live gear; per-device (SNMP/SSH)
-  transport packs.
+- ✅ **Validated SNMP/LLDP collector** (#75): the generic non-UniFi collector is validated via
+  snmpsim `.snmprec` fixture replay plus pysnmp-layer tests (`test_snmp_query.py`). Links carry
+  local/remote port ids, LLDP neighbors survive a blank `sysName` via a chassis-ID fallback,
+  targets are queried in parallel with configurable `SNMP_PORT`/`SNMP_TIMEOUT`/`SNMP_RETRIES`,
+  and SNMPv3 (`SNMP_V3_*`) works alongside v2c.
+- Per-device (SNMP/SSH) transport packs.
 - Additional vendor packs ship in their own repos (public or private) via the entry point.
 - ✅ **Management-plane read** ([ADR-0010](architecture/adr/0010-management-plane-contract.md)):
   per-vendor `management` work starts with read-only management-plane data — a typed
