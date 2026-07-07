@@ -14,12 +14,13 @@ from importlib.metadata import entry_points
 
 from ..base import Collector
 from .pack import ENTRY_POINT_GROUP, Transport, VendorPack
+from .pfsense import PFSENSE_PACK
 from .unifi import UNIFI_PACK
 
 logger = logging.getLogger(__name__)
 
 #: Packs shipped in this (public) repo. External packs attach via the entry point.
-BUILTIN_PACKS: tuple[VendorPack, ...] = (UNIFI_PACK,)
+BUILTIN_PACKS: tuple[VendorPack, ...] = (UNIFI_PACK, PFSENSE_PACK)
 
 
 def _load_entry_point_packs() -> list[VendorPack]:

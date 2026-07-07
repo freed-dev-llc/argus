@@ -12,6 +12,7 @@ from argus.discovery.vendors import (
     vendor_collectors,
 )
 from argus.discovery.vendors.pack import CLIENTS, DEVICES, TOPOLOGY, VendorPack
+from argus.discovery.vendors.pfsense import PfSenseCollector
 
 
 def test_unifi_is_a_builtin_pack() -> None:
@@ -22,6 +23,17 @@ def test_unifi_is_a_builtin_pack() -> None:
     assert {DEVICES, CLIENTS, TOPOLOGY} <= pack.capabilities
     assert pack.collector is UniFiCollector
     assert pack.knowledge_pack == "ubiquiti"  # paired Mnemosyne knowledge pack (ADR-0013)
+    assert pack in BUILTIN_PACKS
+
+
+def test_pfsense_is_a_builtin_pack() -> None:
+    pack = VENDOR_PACKS["pfsense"]
+    assert isinstance(pack, VendorPack)
+    assert pack.manufacturer == "Netgate"
+    assert pack.transport is Transport.DEVICE_SSH
+    assert {DEVICES} <= pack.capabilities
+    assert pack.collector is PfSenseCollector
+    assert pack.knowledge_pack == "firewall"  # paired Mnemosyne knowledge pack (ADR-0013)
     assert pack in BUILTIN_PACKS
 
 
@@ -36,6 +48,7 @@ def test_collectors_map_merges_vendor_and_legacy() -> None:
 def test_discover_packs_is_deterministic_and_typed() -> None:
     packs = discover_packs()
     assert "unifi" in packs
+    assert "pfsense" in packs
     for pack in packs.values():
         assert isinstance(pack, VendorPack)
         assert issubclass(pack.collector, Collector)

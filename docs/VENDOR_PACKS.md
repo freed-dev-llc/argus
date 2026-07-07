@@ -7,7 +7,7 @@ and writing your own.
 
 ## How packs are discovered
 
-- **Built-in packs** ship in this repo (currently **UniFi**).
+- **Built-in packs** ship in this repo (currently **UniFi** and **pfSense/OPNsense**).
 - **External packs** come from any installed distribution that advertises an
   `argus.vendor_packs` entry point. Install the distribution into the **same environment as
   `argus-netbox`** and it auto-registers — public or private, with no change to Argus.
@@ -16,7 +16,7 @@ Check what's registered at any time:
 
 ```bash
 python -c "from argus.discovery.vendors import discover_packs; print(sorted(discover_packs()))"
-# e.g. ['unifi']  →  ['aruba_central', 'mist', 'unifi'] once external packs are installed
+# e.g. ['pfsense', 'unifi']  →  ['aruba_central', 'mist', 'pfsense', 'unifi'] once external packs are installed
 ```
 
 ## Install a pack
@@ -78,6 +78,95 @@ A pack can do more than discover devices:
   write-back is the gated follow-up.
 
 The in-tree UniFi pack is the worked example for both.
+
+## Paired knowledge packs (Argus ↔ Mnemosyne)
+
+A vendor pack can declare an optional `knowledge_pack` field linking to a **Mnemosyne knowledge
+pack** that explains how to operate the vendor's technology ([ADR-0013](architecture/adr/0013-paired-vendor-knowledge-packs.md)).
+This creates a two-faced integration: **Argus discovers the devices**; **Mnemosyne explains how
+they work**. The two remain independently deployable (Argus carries no RAG dependencies) but
+are wired at runtime by the dashboard's "Ask the Brain" panel.
+
+### For vendor pack authors
+
+When you ship a pack with a `knowledge_pack` name, declare it in your `VendorPack` descriptor:
+
+```python
+EXAMPLE_PACK = VendorPack(
+    name=ExampleCollector.name,
+    manufacturer=MANUFACTURER,
+    transport=Transport.CONTROLLER_API,
+    capabilities=frozenset({DEVICES}),
+    config_vars=CONFIG_VARS,
+    collector=ExampleCollector,
+    knowledge_pack="example_vendor",  # Mnemosyne pack name (ADR-0013)
+)
+```
+
+The dashboard reads this field and queries the matching Mnemosyne pack automatically — no
+hardcoded defaults. If `knowledge_pack=None` (the default), the "Ask the Brain" panel either
+falls back to a default or disables that vendor's knowledge face.
+
+### Reference examples
+
+**UniFi** (in-tree):
+- Argus vendor pack: `discovery/vendors/unifi/`, declares `knowledge_pack="ubiquiti"`
+- Mnemosyne knowledge pack: `src/mnemosyne/packs/ubiquiti/`, contains UniFi documentation
+
+**pfSense/OPNsense** (in-tree):
+- Argus vendor pack: `discovery/vendors/pfsense/`, declares `knowledge_pack="firewall"`
+- Mnemosyne knowledge pack: (to be created) with firewall operations, rules, best practices
+
+### Creating a knowledge pack for your vendor
+
+Create a new directory under `mnemosyne/src/mnemosyne/packs/<your_pack_name>/` with:
+
+1. **manifest.yaml** — declarative config:
+   ```yaml
+   name: your_pack_name           # Must match knowledge_pack value in Argus VendorPack
+   title: Your Vendor Expert
+   description: >
+     An expert on Your Vendor's technology — operations, configuration, troubleshooting.
+   
+   # Models (optional; falls back to global defaults if not set)
+   embedding_model: bge-m3
+   chat_model: qwen2.5:1.5b
+   
+   # Chunking strategy for this domain
+   chunk_size: 500
+   chunk_overlap: 150
+   
+   # Retrieval
+   top_k: 5
+   
+   # The expert's persona
+   system_prompt: >
+     You are a vendor expert helping engineers operate and troubleshoot systems.
+     Answer using ONLY the provided context. Cite sources inline as [n].
+     If the context does not contain the answer, say so plainly.
+   ```
+
+2. **sources/** directory with curated knowledge:
+   - Local files: Markdown, PDF, plaintext documents dropped directly
+   - Remote URLs: Listed in `sources/sources.yaml` for the pipeline to fetch (see Mnemosyne
+     docs on source loading)
+
+3. **Optional pack.py** — a custom `KnowledgePack` subclass if you need to override
+   document loading or post-processing (see the Ubiquiti pack's title cleanup for an example).
+
+For distribution, a **single installation** can ship both the Argus and Mnemosyne faces via
+a distribution with two entry points:
+
+```toml
+[project.entry-points."argus.vendor_packs"]
+your_vendor = "your_vendor_pack:YOUR_PACK"
+
+[project.entry-points."mnemosyne.knowledge_packs"]
+your_vendor = "your_vendor_knowledge:YOUR_KNOWLEDGE_PACK"
+```
+
+This way, `pip install your-vendor-pack` installs the discovery integration into Argus
+and the knowledge pack into Mnemosyne simultaneously, both in separate service environments.
 
 ## Public or private
 

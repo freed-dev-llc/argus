@@ -27,7 +27,7 @@ jobs:
         run: mypy src
         continue-on-error: true
       - name: Pytest
-        run: pytest -v --cov=argus --cov-report=term-missing --cov-report=xml
+        run: pytest -m "not live" -v --cov=argus --cov-report=term-missing --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:

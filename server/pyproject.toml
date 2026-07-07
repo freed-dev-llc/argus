@@ -37,6 +37,7 @@ discovery = [
     "napalm>=5.1.0",
     "netmiko>=4.3",
     "pysnmp>=7.1.27",
+    "asyncssh>=2.14.0",
 ]
 dev = [
     "pytest>=8.0",
@@ -86,3 +87,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "live: integration tests that require lab instances (deselect with '-m \"not live\"')",
+]

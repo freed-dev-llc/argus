@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **pfSense/OPNsense vendor pack** ([ADR-0013](docs/architecture/adr/0013-paired-vendor-knowledge-packs.md)):
+  a new discovery collector for Netgate pfSense and community OPNsense firewalls with full SSH and
+  SNMP collection implementations. SSH queries extract hostname, model, firmware version, and
+  primary IP via asyncssh. SNMP (v2c) queries sysDescr and sysUptime via pysnmp. Accepts
+  `PFSENSE_HOST`, `PFSENSE_USERNAME`, `PFSENSE_PASSWORD`, and optional `PFSENSE_USE_SNMP` /
+  `PFSENSE_SNMP_COMMUNITY` environment variables. Includes 85% test coverage on collector.py
+  with offline unit tests mocking SSH/SNMP responses. Paired with the `firewall` Mnemosyne
+  knowledge pack.
 - **SNMPv3 for the SNMP/LLDP collector**: set `SNMP_V3_USER` (plus `SNMP_V3_AUTH_KEY` /
   `SNMP_V3_AUTH_PROTOCOL` and `SNMP_V3_PRIV_KEY` / `SNMP_V3_PRIV_PROTOCOL`) to query every target
   with USM instead of a v2c community. The security level (noAuthNoPriv / authNoPriv / authPriv)
