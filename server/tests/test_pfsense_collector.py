@@ -144,9 +144,7 @@ async def test_collect_via_ssh_success(monkeypatch) -> None:
             raise Exception("opnsense-version not available (pfSense system)")
         elif cmd == "show version":
             result.stdout = version_output
-        elif cmd == "cat /etc/version":
-            raise Exception("File not found")
-        elif cmd == "cat /etc/os-release":
+        elif cmd in ("cat /etc/version", "cat /etc/os-release"):
             raise Exception("File not found")
         elif cmd == "cat /etc/platform":
             result.stdout = "pfSense"
@@ -199,9 +197,7 @@ async def test_collect_via_ssh_no_hostname(monkeypatch) -> None:
             raise Exception("opnsense-version not available")
         elif cmd == "show version":
             result.stdout = version_output
-        elif cmd == "cat /etc/version":
-            raise Exception("File not found")
-        elif cmd == "cat /etc/os-release":
+        elif cmd in ("cat /etc/version", "cat /etc/os-release"):
             raise Exception("File not found")
         elif cmd == "cat /etc/platform":
             result.stdout = "pfSense"
@@ -253,9 +249,7 @@ async def test_collect_via_ssh_fallback_cat_version(monkeypatch) -> None:
             raise Exception("show version not available")
         elif cmd == "cat /etc/version":
             result.stdout = "OPNsense 24.7.1 (generic)"
-        elif cmd == "cat /etc/os-release":
-            raise Exception("File not found")
-        elif cmd == "cat /etc/platform":
+        elif cmd in ("cat /etc/os-release", "cat /etc/platform"):
             raise Exception("File not found")
         elif cmd == "hostname":
             result.stdout = "opnsense-gw"
@@ -442,9 +436,7 @@ async def test_collect_happy_path(monkeypatch) -> None:
             raise Exception("opnsense-version not available")
         elif cmd == "show version":
             result.stdout = version_output
-        elif cmd == "cat /etc/version":
-            raise Exception("File not found")
-        elif cmd == "cat /etc/os-release":
+        elif cmd in ("cat /etc/version", "cat /etc/os-release"):
             raise Exception("File not found")
         elif cmd == "cat /etc/platform":
             result.stdout = "pfSense"
