@@ -100,7 +100,7 @@ pytest -v          # offline — NetBox is mocked
 | Tool | Kind | Status |
 | --- | --- | --- |
 | `list_devices`, `get_device`, `list_prefixes`, `list_ip_addresses`, `search` | read | real (needs NetBox) |
-| `list_collectors`, `discovery_scan`, `network_topology` | discovery | UniFi real — devices + clients + uplink topology (needs `UNIFI_*`); SNMP/LLDP real for non-UniFi gear (validated via snmpsim replay): devices + LLDP links with local/remote ports, SNMPv2c or SNMPv3 (needs `SNMP_TARGETS` + `argus-netbox[discovery]`); `list_collectors` (also `GET /api/collectors`) surfaces each vendor pack's `manufacturer`/`transport`/`capabilities`/`config_vars` |
+| `list_collectors`, `discovery_scan`, `network_topology` | discovery | UniFi real — devices + clients + uplink topology (needs `UNIFI_*`); pfSense/OPNsense real — devices, firmware, role via SSH/SNMP (needs `PFSENSE_HOST`, `PFSENSE_USERNAME`, `PFSENSE_PASSWORD`, optional `PFSENSE_USE_SNMP`); SNMP/LLDP real for non-UniFi gear (validated via snmpsim replay): devices + LLDP links with local/remote ports, SNMPv2c or SNMPv3 (needs `SNMP_TARGETS` + `argus-netbox[discovery]`); `list_collectors` (also `GET /api/collectors`) surfaces each vendor pack's `manufacturer`/`transport`/`capabilities`/`config_vars` |
 | `drift_report`, `reconcile_apply` | reconcile | real — diffs and (on confirm) persists, auto-creating supporting NetBox objects |
 | `evaluate_practices` | practices | real — runs a collector's best-practice rules, returning advisory `Finding`s (read-only; also `GET /api/practices`) |
 | `health` | meta | real |

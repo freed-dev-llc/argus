@@ -22,8 +22,8 @@ drift, and trigger reconciliation by hand.
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
 
-> **Status:** v0.2.2 — the full loop works end-to-end and is validated against a live UniFi
-> network + NetBox 4.6: discover (devices, clients, uplink topology) → diff → confirm →
+> **Status:** v0.2.2+ — the full loop works end-to-end and is validated against live networks
+> (UniFi + pfSense/OPNsense) + NetBox 4.6: discover (devices, clients, uplink topology) → diff → confirm →
 > reconcile NetBox (DCIM + IPAM), surfaced via MCP tools, a React dashboard, and Ansible
 > inventory. See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
 
@@ -38,9 +38,9 @@ integration.
 ## How it fits together
 
 ```
-Collectors (UniFi / SNMP-LLDP / DHCP-ARP …) ─► normalize ─► diff vs NetBox ─► reconcile plan ─► apply
-        (server/src/argus/discovery/)                          (reconcile/)     (dry-run default,
-                                                                                 confirmation-gated)
+Collectors (UniFi / pfSense-OPNsense / SNMP-LLDP / DHCP-ARP …) ─► normalize ─► diff vs NetBox ─► reconcile plan ─► apply
+        (server/src/argus/discovery/)                                           (reconcile/)     (dry-run default,
+                                                                                                  confirmation-gated)
 NetBox ◄── pynetbox client ──► MCP tools (server/src/argus/tools/) ──► coding agents
                             └─► FastAPI (http_server.py) ──► React dashboard (web/)
 ```
@@ -61,7 +61,7 @@ Optional **bearer-token auth** (`HTTP_TOKEN`) gates `/api` + `/webhooks`. See
 ([ADR-0005](docs/architecture/adr/0005-vendor-packs.md)): each vendor is a self-contained
 `VendorPack` (a read-only collector + declarative metadata) discovered via an
 `argus.vendor_packs` entry point, so packs can live out-of-tree and ship independently.
-UniFi ships in-tree; build your own from
+UniFi and pfSense/OPNsense ship in-tree; build your own from
 [**argus-vendor-pack-template**](https://github.com/freed-dev-llc/argus-vendor-pack-template)
 (a GitHub “Use this template” repo). See [docs/VENDOR_PACKS.md](docs/VENDOR_PACKS.md) to
 install or add packs.
