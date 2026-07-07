@@ -532,6 +532,8 @@ async def test_collect_happy_path(monkeypatch) -> None:
     assert device.model == "SG-5100"
     # Manufacturer is constant.
     assert device.manufacturer == "Netgate"
+    # Site defaults to "Default" when PFSENSE_SITE is unset (needed for reconcile create).
+    assert device.site == "Default"
     # Role derived from model.
     assert device.role == "gateway"
     # Primary IP from SSH ifconfig.
