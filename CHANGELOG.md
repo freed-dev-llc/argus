@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **OPNsense enrolled with the wrong manufacturer**: the `pfsense` collector hardcoded
+  manufacturer `Netgate` for every device, mislabeling OPNsense firewalls (maintained by
+  Deciso). It now picks the manufacturer from the device's own version string — `OPNsense …`
+  → `Deciso`, everything else (pfSense / Netgate appliances) → `Netgate`.
 - **Primary-IP assignment when the IP already exists but is unassigned**: `assign_primary_ip`
   only attached an IP to the device's mgmt interface on the create path, so when the address
   already existed as a bare IPAM entry (e.g. UniFi client discovery had recorded it as a
@@ -28,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Multiple pfSense/OPNsense firewalls in one collector run**: the `pfsense` collector now
+  reads numbered targets — `PFSENSE_HOST` is target 1, `PFSENSE_HOST_2` / `PFSENSE_USERNAME_2`
+  / `PFSENSE_PASSWORD_2` / `PFSENSE_SITE_2` (etc., up to `_16`) add more, each with its own
+  credentials and site. One drift/reconcile run over `collector=pfsense` now discovers every
+  configured firewall (e.g. a pfSense box and an OPNsense box side by side); a per-target
+  failure is noted and skipped without aborting the others. The deploy compose forwards the
+  `_2` target vars. Backward compatible: a lone `PFSENSE_HOST` behaves exactly as before.
 - **pfSense collector assigns a NetBox site**: the `pfsense` collector now sets `site` on the
   discovered device (from a new optional `PFSENSE_SITE`, default `"Default"`). Reconcile
   requires a site to create a device, and SSH/SNMP can't infer one, so without this the

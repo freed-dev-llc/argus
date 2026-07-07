@@ -178,6 +178,13 @@ services:
       PFSENSE_SITE: ${PFSENSE_SITE:-Default}
       PFSENSE_USE_SNMP: ${PFSENSE_USE_SNMP:-}
       PFSENSE_SNMP_COMMUNITY: ${PFSENSE_SNMP_COMMUNITY:-public}
+      # Additional firewall (e.g. an OPNsense box alongside pfSense): append _2 (then _3, ...).
+      PFSENSE_HOST_2: ${PFSENSE_HOST_2:-}
+      PFSENSE_USERNAME_2: ${PFSENSE_USERNAME_2:-}
+      PFSENSE_PASSWORD_2: ${PFSENSE_PASSWORD_2:-}
+      PFSENSE_SITE_2: ${PFSENSE_SITE_2:-Default}
+      PFSENSE_USE_SNMP_2: ${PFSENSE_USE_SNMP_2:-}
+      PFSENSE_SNMP_COMMUNITY_2: ${PFSENSE_SNMP_COMMUNITY_2:-public}
     ports:
       - "127.0.0.1:8094:8080"
     healthcheck:
