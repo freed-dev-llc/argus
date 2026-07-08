@@ -68,6 +68,17 @@ curl -s localhost:8094/api/devices | jq '.count'
 Or use the dashboard at `http://<host>:8095` (Devices / IPAM / Drift / Topology), and the
 NetBox UI at `http://<host>:8096` (log in as `admin`).
 
+### Smoke test (after a `.env` or image change)
+
+```bash
+deploy/smoke-test.sh                 # health → collector discovers devices → drift is 0
+COLLECTOR=unifi deploy/smoke-test.sh # exercise a different collector
+```
+
+Read-only; exits non-zero on any failure. It needs the running stack and network reach to the
+targets, so run it on the deploy host. The compose→collector env *wiring* is guarded separately
+by an offline unit test (`server/tests/test_deploy_compose_env.py`), which runs in CI.
+
 ## Notes
 
 - `NETBOX_IMAGE` pins the NetBox **base** version: the bundled NetBox is built locally

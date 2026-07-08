@@ -50,6 +50,11 @@ CONFIG_VARS = (
 #: Highest numbered firewall target the collector scans for (FIREWALL_HOST .. FIREWALL_HOST_16).
 _MAX_TARGETS = 16
 
+#: Per-target var *bases* the collector reads (as ``FIREWALL_<base>[_n]``, PFSENSE_ fallback).
+#: The single source of truth the deploy-compose wiring test asserts against — keep it in sync
+#: with ``_read_targets`` below and the ``argus-server`` env block in ``deploy/docker-compose.yml``.
+TARGET_ENV_BASES = ("HOST", "USERNAME", "PASSWORD", "SITE", "USE_SNMP", "SNMP_COMMUNITY")
+
 
 def _target_env(base: str, suffix: str) -> str:
     """Read one target var, preferring the canonical ``FIREWALL_`` prefix over legacy ``PFSENSE_``."""

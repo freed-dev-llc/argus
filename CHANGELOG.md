@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Deploy verification for the firewall env wiring**: an offline CI test
+  (`server/tests/test_deploy_compose_env.py`) asserts `deploy/docker-compose.yml` forwards every
+  `FIREWALL_*` var the collector reads (targets 1 + 2), each with its `PFSENSE_*` fallback —
+  guarding against the "collector ships but the compose doesn't pass its env" class of bug. A
+  companion `deploy/smoke-test.sh` runs read-only against the live stack (health → the collector
+  discovers devices → drift is 0) for post-deploy / post-`.env` confirmation.
+
 ### Changed
 
 - **Firewall collector renamed vendor-neutral** (`pfsense` → `firewall`): the pack serves both
