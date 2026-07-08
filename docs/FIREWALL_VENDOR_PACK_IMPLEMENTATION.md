@@ -1,10 +1,12 @@
-# pfSense/OPNsense Vendor Pack Implementation
+# Firewall (pfSense/OPNsense) Vendor Pack Implementation
 
 This document describes the pfSense/OPNsense discovery collector built into Argus, implementing the ADR-0013 pattern (paired vendor + knowledge packs) alongside the UniFi collector.
 
+The collector is named **`firewall`** (use `collector=firewall`); the legacy name **`pfsense`** still resolves as an alias. Config vars use the **`FIREWALL_`** prefix, with the legacy **`PFSENSE_`** prefix accepted as a fallback. Per device, the manufacturer is set from the discovered version string — **Netgate** for pfSense, **Deciso** for OPNsense.
+
 ## Architecture
 
-The collector (`server/src/argus/discovery/vendors/pfsense/collector.py`) implements read-only discovery via two independent paths: SSH CLI (primary) and SNMP (secondary). Both paths honor ADR-0003 (graceful degradation): partial discovery is better than no discovery, and missing fields do not block device registration.
+The collector (`server/src/argus/discovery/vendors/firewall/collector.py`) implements read-only discovery via two independent paths: SSH CLI (primary) and SNMP (secondary). Both paths honor ADR-0003 (graceful degradation): partial discovery is better than no discovery, and missing fields do not block device registration.
 
 ### SSH Collection (Primary)
 
@@ -35,11 +37,11 @@ SSH results take priority when both paths return data (SSH typically has more co
 
 pfSense discovery is configured via environment variables:
 
-- `PFSENSE_HOST` — target IP/hostname (required)
-- `PFSENSE_USERNAME` — SSH username (required)
-- `PFSENSE_PASSWORD` — SSH password OR file path prefixed with `~/` (required)
-- `PFSENSE_USE_SNMP` — "true"/"1"/"yes" to enable SNMP collection (optional, default off)
-- `PFSENSE_SNMP_COMMUNITY` — SNMP v2c community string (optional, default "public")
+- `FIREWALL_HOST` — target IP/hostname (required)
+- `FIREWALL_USERNAME` — SSH username (required)
+- `FIREWALL_PASSWORD` — SSH password OR file path prefixed with `~/` (required)
+- `FIREWALL_USE_SNMP` — "true"/"1"/"yes" to enable SNMP collection (optional, default off)
+- `FIREWALL_SNMP_COMMUNITY` — SNMP v2c community string (optional, default "public")
 
 Credentials are resolved via `load_ssh_creds()` and `load_snmp_creds()` in `credentials.py`, which support:
 
@@ -92,7 +94,7 @@ Pre-recorded SNMP/SSH responses in `server/tests/fixtures/pfsense/`:
 cd server
 
 # Run pfSense tests (offline).
-pytest tests/test_pfsense_collector.py -v --cov=argus.discovery.vendors.pfsense --cov-report=term-missing
+pytest tests/test_firewall_collector.py -v --cov=argus.discovery.vendors.firewall --cov-report=term-missing
 
 # Run all tests except live (no network access).
 pytest -m "not live" -v --tb=short
@@ -104,7 +106,7 @@ mypy src
 
 ## Integration with External Vendor Packs
 
-The built-in pack (in `/server/src/argus/discovery/vendors/pfsense/`) demonstrates the reference pattern. To publish a separate distribution (e.g., `argus-vendor-pack-pfsense`), fork the [argus-vendor-pack-template](https://github.com/freed-dev-llc/argus-vendor-pack-template):
+The built-in pack (in `/server/src/argus/discovery/vendors/firewall/`) demonstrates the reference pattern. To publish a separate distribution (e.g., `argus-vendor-pack-pfsense`), fork the [argus-vendor-pack-template](https://github.com/freed-dev-llc/argus-vendor-pack-template):
 
 1. Copy `collector.py`, `models.py`, and `credentials.py` into the external repo
 2. Add tests and fixtures

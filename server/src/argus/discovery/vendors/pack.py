@@ -58,3 +58,6 @@ class VendorPack:
     #: dashboard's "Ask the Brain" panel queries the right pack instead of a hardcoded
     #: default. ``None`` (default) = this vendor has no paired knowledge pack yet. ADR-0013.
     knowledge_pack: str | None = None
+    #: Legacy/alternate names this pack also answers to. Registered as extra lookup keys so a
+    #: renamed pack keeps resolving old ``collector=<name>`` calls; hidden from ``list_collectors``.
+    aliases: tuple[str, ...] = field(default_factory=tuple)

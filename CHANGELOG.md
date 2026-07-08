@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Firewall collector renamed vendor-neutral** (`pfsense` → `firewall`): the pack serves both
+  pfSense (Netgate) and OPNsense (Deciso), so the collector, module (`discovery/vendors/firewall/`),
+  and env prefix are now `firewall` / `FIREWALL_*`. Fully backward compatible — `collector=pfsense`
+  still resolves (registered as a pack alias, hidden from `list_collectors`), and every `FIREWALL_*`
+  var accepts the legacy `PFSENSE_*` name as a fallback (the deploy compose forwards it too). This
+  aligns the discovery face with the already-neutral Mnemosyne `knowledge_pack="firewall"` (ADR-0013).
+- **VM/white-box firewalls get a `Virtual Machine` device_type**: a generic pfSense/OPNsense install
+  reports its CPU architecture (e.g. `amd64`) where an appliance reports a SKU; that arch token is
+  now mapped to `Virtual Machine` rather than stored as the device_type.
+
 ### Fixed
 
 - **OPNsense enrolled with the wrong manufacturer**: the `pfsense` collector hardcoded

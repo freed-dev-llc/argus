@@ -114,7 +114,7 @@ falls back to a default or disables that vendor's knowledge face.
 - Mnemosyne knowledge pack: `src/mnemosyne/packs/ubiquiti/`, contains UniFi documentation
 
 **pfSense/OPNsense** (in-tree):
-- Argus vendor pack: `discovery/vendors/pfsense/`, declares `knowledge_pack="firewall"`
+- Argus vendor pack: `discovery/vendors/firewall/` (collector `firewall`, alias `pfsense`), declares `knowledge_pack="firewall"`
 - Mnemosyne knowledge pack: (to be created) with firewall operations, rules, best practices
 
 ### Creating a knowledge pack for your vendor

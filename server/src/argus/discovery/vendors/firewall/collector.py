@@ -25,60 +25,69 @@ from typing import Any
 
 from ...base import Collector, DeviceManagement, DiscoveredDevice, DiscoveryResult
 from .credentials import load_snmp_creds, load_ssh_creds
-from .models import manufacturer_from_version, role_from_model, status_from_state
-
-#: Environment variables this pack consumes.
-CONFIG_VARS = (
-    "PFSENSE_HOST",
-    "PFSENSE_USERNAME",
-    "PFSENSE_PASSWORD",
-    # Optional:
-    # - PFSENSE_SITE: NetBox site the firewall is enrolled into (default "Default")
-    # - PFSENSE_USE_SNMP: "true" to enable SNMP (requires pysnmp)
-    # - PFSENSE_SNMP_COMMUNITY: SNMP v2c community (default "public")
-    # Additional firewalls: append a numeric suffix — PFSENSE_HOST_2 / PFSENSE_USERNAME_2 /
-    # PFSENSE_PASSWORD_2 / PFSENSE_SITE_2 (etc.) for a second target, _3 for a third, ...
+from .models import (
+    manufacturer_from_version,
+    normalize_model,
+    role_from_model,
+    status_from_state,
 )
 
-#: Highest numbered firewall target the collector scans for (PFSENSE_HOST .. PFSENSE_HOST_16).
+#: Environment variables this pack consumes. Canonical prefix is ``FIREWALL_``; the legacy
+#: ``PFSENSE_`` prefix is still honored as a backward-compatible alias (see ``_read_targets``).
+CONFIG_VARS = (
+    "FIREWALL_HOST",
+    "FIREWALL_USERNAME",
+    "FIREWALL_PASSWORD",
+    # Optional:
+    # - FIREWALL_SITE: NetBox site the firewall is enrolled into (default "Default")
+    # - FIREWALL_USE_SNMP: "true" to enable SNMP (requires pysnmp)
+    # - FIREWALL_SNMP_COMMUNITY: SNMP v2c community (default "public")
+    # Additional firewalls: append a numeric suffix — FIREWALL_HOST_2 / FIREWALL_USERNAME_2 /
+    # FIREWALL_PASSWORD_2 / FIREWALL_SITE_2 (etc.) for a second target, _3 for a third, ...
+    # Legacy alias: every FIREWALL_* var may instead be given as PFSENSE_* (canonical wins).
+)
+
+#: Highest numbered firewall target the collector scans for (FIREWALL_HOST .. FIREWALL_HOST_16).
 _MAX_TARGETS = 16
+
+
+def _target_env(base: str, suffix: str) -> str:
+    """Read one target var, preferring the canonical ``FIREWALL_`` prefix over legacy ``PFSENSE_``."""
+    return os.environ.get(f"FIREWALL_{base}{suffix}") or os.environ.get(f"PFSENSE_{base}{suffix}", "")
 
 
 def _read_targets() -> list[dict[str, Any]]:
     """Read one or more firewall targets from the environment.
 
-    Target 1 uses the unsuffixed vars (``PFSENSE_HOST`` / ``PFSENSE_USERNAME`` / ...); targets
-    2..N use a ``_<n>`` suffix (``PFSENSE_HOST_2``, ``PFSENSE_USERNAME_2``, ...). Any index whose
-    ``PFSENSE_HOST`` is set becomes a target, so gaps are tolerated. Backward compatible: a lone
-    ``PFSENSE_HOST`` yields exactly one target.
+    Target 1 uses the unsuffixed vars (``FIREWALL_HOST`` / ``FIREWALL_USERNAME`` / ...); targets
+    2..N use a ``_<n>`` suffix (``FIREWALL_HOST_2``, ...). Any index whose host is set becomes a
+    target, so gaps are tolerated. Each var also accepts the legacy ``PFSENSE_`` prefix as an
+    alias. Backward compatible: a lone ``FIREWALL_HOST`` (or ``PFSENSE_HOST``) yields one target.
     """
     targets: list[dict[str, Any]] = []
     for i in range(1, _MAX_TARGETS + 1):
         suffix = "" if i == 1 else f"_{i}"
-        host = os.environ.get(f"PFSENSE_HOST{suffix}", "").strip()
+        host = _target_env("HOST", suffix).strip()
         if not host:
             continue
         targets.append(
             {
                 "label": f"#{i}",
                 "host": host,
-                "username": os.environ.get(f"PFSENSE_USERNAME{suffix}", "").strip(),
-                "password": os.environ.get(f"PFSENSE_PASSWORD{suffix}", "").strip(),
-                "site": os.environ.get(f"PFSENSE_SITE{suffix}", "").strip() or "Default",
-                "use_snmp": os.environ.get(f"PFSENSE_USE_SNMP{suffix}", "").lower()
-                in ("true", "1", "yes"),
-                "community": os.environ.get(
-                    f"PFSENSE_SNMP_COMMUNITY{suffix}", "public"
-                ).strip(),
+                "username": _target_env("USERNAME", suffix).strip(),
+                "password": _target_env("PASSWORD", suffix).strip(),
+                "site": _target_env("SITE", suffix).strip() or "Default",
+                "use_snmp": _target_env("USE_SNMP", suffix).lower() in ("true", "1", "yes"),
+                "community": _target_env("SNMP_COMMUNITY", suffix).strip() or "public",
             }
         )
     return targets
 
 
-class PfSenseCollector(Collector):
+class FirewallCollector(Collector):
     """Discover pfSense/OPNsense firewalls and their network state via SSH and SNMP."""
 
-    name = "pfsense"
+    name = "firewall"
 
     async def collect(self) -> DiscoveryResult:
         result = DiscoveryResult(collector=self.name)
@@ -86,8 +95,8 @@ class PfSenseCollector(Collector):
         targets = _read_targets()
         if not targets:
             result.notes.append(
-                "pfsense pack not configured: set PFSENSE_HOST / PFSENSE_USERNAME / "
-                "PFSENSE_PASSWORD (append _2, _3, ... for additional firewalls)."
+                "firewall pack not configured: set FIREWALL_HOST / FIREWALL_USERNAME / "
+                "FIREWALL_PASSWORD (append _2, _3, ... for additional firewalls)."
             )
             return result
 
@@ -96,7 +105,7 @@ class PfSenseCollector(Collector):
 
         if not result.devices:
             result.notes.append(
-                "pfsense collector: no devices discovered "
+                "firewall collector: no devices discovered "
                 "(SSH/SNMP access may be limited or unconfigured)."
             )
 
@@ -114,7 +123,7 @@ class PfSenseCollector(Collector):
         # A configured host with no creds is a misconfiguration: note it and skip this target.
         if not (target["username"] and target["password"]):
             result.notes.append(
-                f"pfsense target {label} ({host}) missing username/password; skipped."
+                f"firewall target {label} ({host}) missing username/password; skipped."
             )
             return
 
@@ -124,10 +133,10 @@ class PfSenseCollector(Collector):
                 host, target["username"], target["password"]
             )
         except FileNotFoundError as exc:
-            result.notes.append(f"pfsense target {label} credential file not found: {exc}")
+            result.notes.append(f"firewall target {label} credential file not found: {exc}")
             return
         except Exception as exc:
-            result.notes.append(f"pfsense target {label} credential loading failed: {exc}")
+            result.notes.append(f"firewall target {label} credential loading failed: {exc}")
             return
 
         # --- SSH collection (primary) ---
@@ -175,7 +184,8 @@ class PfSenseCollector(Collector):
                 manufacturer=manufacturer_from_version(
                     combined_info.get("firmware_version") or combined_info.get("model")
                 ),
-                model=combined_info.get("model"),
+                # Arch tokens (amd64, ...) from a generic install become "Virtual Machine".
+                model=normalize_model(combined_info.get("model")),
                 role=inferred_role,
                 management=mgmt if any((mgmt.status, mgmt.firmware, mgmt.mgmt_ip)) else None,
                 raw=combined_info,

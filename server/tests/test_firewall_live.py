@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from argus.discovery.vendors.pfsense.collector import PfSenseCollector
+from argus.discovery.vendors.firewall.collector import FirewallCollector
 
 pytestmark = pytest.mark.live
 
@@ -52,7 +52,7 @@ def snmp_settings() -> dict:
 @pytest.mark.asyncio
 async def test_discover_opnsense_192_168_1_92(opnsense_creds: dict) -> None:
     """Test OPNsense discovery at 192.168.1.92."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Create a mock environment for discovery.
     env_vars = {
@@ -94,7 +94,7 @@ async def test_discover_opnsense_192_168_1_92(opnsense_creds: dict) -> None:
 @pytest.mark.asyncio
 async def test_discover_pfsense_192_168_1_93(pfsense_creds: dict) -> None:
     """Test pfSense discovery at 192.168.1.93."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Create a mock environment for discovery.
     env_vars = {

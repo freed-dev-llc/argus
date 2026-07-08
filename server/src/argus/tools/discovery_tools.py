@@ -6,7 +6,7 @@ from dataclasses import asdict
 from typing import Any
 
 from ..discovery.collectors import COLLECTORS
-from ..discovery.vendors import VENDOR_PACKS
+from ..discovery.vendors import PACK_ALIASES, VENDOR_PACKS
 
 
 def _collector_entry(name: str) -> dict[str, Any]:
@@ -28,8 +28,13 @@ def _collector_entry(name: str) -> dict[str, Any]:
 
 
 async def list_collectors() -> dict[str, Any]:
-    """List the available discovery collectors with vendor-pack metadata."""
-    return {"collectors": [_collector_entry(name) for name in sorted(COLLECTORS)]}
+    """List the available discovery collectors with vendor-pack metadata.
+
+    Legacy pack aliases (e.g. ``pfsense`` → ``firewall``) still resolve for ``collector=``
+    calls but are hidden here so each collector is listed once under its canonical name.
+    """
+    names = [n for n in sorted(COLLECTORS) if n not in PACK_ALIASES]
+    return {"collectors": [_collector_entry(name) for name in names]}
 
 
 async def discovery_scan(collector: str) -> dict[str, Any]:

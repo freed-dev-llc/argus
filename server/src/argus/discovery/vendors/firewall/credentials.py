@@ -2,8 +2,8 @@
 
 Supports multiple credential patterns:
 - Direct values in environment variables (existing behavior)
-- File paths with JSON key extraction: PFSENSE_USERNAME="~/.secrets/lab-opnsense-creds:username"
-- Plain text files: PFSENSE_USERNAME="~/.secrets/lab-opnsense-username"
+- File paths with JSON key extraction: FIREWALL_USERNAME="~/.secrets/lab-opnsense-creds:username"
+- Plain text files: FIREWALL_USERNAME="~/.secrets/lab-opnsense-username"
 """
 
 from __future__ import annotations

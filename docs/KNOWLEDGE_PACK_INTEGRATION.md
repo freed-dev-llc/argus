@@ -39,12 +39,12 @@ In your Argus vendor pack's `__init__.py`, declare the paired knowledge pack:
 from argus.discovery.vendors.pack import VendorPack, Transport, DEVICES
 
 FIREWALL_PACK = VendorPack(
-    name="pfsense",
+    name="firewall",
     manufacturer="Netgate",
     transport=Transport.DEVICE_SSH,
     capabilities=frozenset({DEVICES}),
-    config_vars=("PFSENSE_HOST", "PFSENSE_USERNAME", "PFSENSE_PASSWORD"),
-    collector=PfSenseCollector,
+    config_vars=("FIREWALL_HOST", "FIREWALL_USERNAME", "FIREWALL_PASSWORD"),
+    collector=FirewallCollector,
     knowledge_pack="firewall",  # ← Points to Mnemosyne pack named "firewall"
 )
 ```
@@ -185,7 +185,7 @@ Mnemosyne's pack discovery will find and instantiate this class automatically.
 1. Declare `knowledge_pack="firewall"` in your VendorPack
 2. Run `python -c "from argus.discovery.vendors import discover_packs; packs = discover_packs(); print(packs['pfsense'].knowledge_pack)"`
    → should print `"firewall"`
-3. Check the API: `curl http://localhost:8000/api/collectors | jq '.collectors[] | select(.name=="pfsense")'`
+3. Check the API: `curl http://localhost:8000/api/collectors | jq '.collectors[] | select(.name=="firewall")'`
    → should include `"knowledge_pack": "firewall"`
 
 ### Full integration test
