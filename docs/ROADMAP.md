@@ -64,7 +64,7 @@ Phased plan. Each phase is a set of GitHub issues; architectural choices get an 
 - ✅ **Release tooling** (`argus-release`, `argus.devtools.release`): a manifest-driven,
   unit-tested devtool that bumps every version reference from `release.toml`, cuts the
   CHANGELOG, and verifies the build — one command per release instead of a hand-done multi-file
-  edit. Latest release: **0.2.4** (PyPI `argus-netbox` + GHCR images).
+  edit. Latest release: **0.2.5** (PyPI `argus-netbox` + GHCR images).
 - ✅ Docs pass + examples (this step).
 - ✅ **NetBox Prometheus service-discovery** ([#116](https://github.com/freed-dev-llc/argus/pull/116),
   shipped 0.2.0): the bundled NetBox image installs `netbox-plugin-prometheus-sd`

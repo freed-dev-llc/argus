@@ -31,6 +31,15 @@ automatically connects to the right expert, with no hardcoded defaults.
 └─────────────────────────────┘
 ```
 
+### Where the pack selector gets its list
+
+The "Ask the Brain" panel's pack dropdown is fed by `GET /api/packs`, a server-to-server proxy
+to Mnemosyne's `/packs` endpoint, so it offers the brain's **real, built** packs rather than
+guessing from discovered vendors. The proxy needs `MNEMOSYNE_URL` set (same as `/api/ask`);
+when the brain is unconfigured or unreachable it returns `{"error": ...}` and the panel falls
+back to the discovered-vendor packs derived from `/api/collectors` (ADR-0013). The selector only
+appears when more than one pack is available.
+
 ## The Argus side (VendorPack declaration)
 
 In your Argus vendor pack's `__init__.py`, declare the paired knowledge pack:
