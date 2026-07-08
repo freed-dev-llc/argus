@@ -173,7 +173,7 @@ by an offline unit test (`server/tests/test_deploy_compose_env.py`), which runs 
   NetBox's read/write UI on the public internet — gate the hostname behind Cloudflare Access (or
   equivalent); don't rely on the NetBox login alone.
 - **Pre-built images:** released `v*` tags publish the server and web images to GHCR —
-  `ghcr.io/freed-dev-llc/argus-server` and `ghcr.io/freed-dev-llc/argus-web` (tags `0.2.3` /
+  `ghcr.io/freed-dev-llc/argus-server` and `ghcr.io/freed-dev-llc/argus-web` (tags `0.2.4` /
   `latest`). The default compose file builds locally (`--build`); to run the published images
   instead, point the `argus-server` / `argus-web` services at those tags. The server package
   is also on PyPI (`pip install argus-netbox` — the import name is still `argus`).
