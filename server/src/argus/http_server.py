@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 await task
 
 
-app = FastAPI(title="argus", version="0.2.4", lifespan=lifespan)
+app = FastAPI(title="argus", version="0.2.5", lifespan=lifespan)
 
 # Allow the Vite dev server to call the API during development.
 app.add_middleware(
