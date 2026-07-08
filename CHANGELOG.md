@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Pack selector fed by Mnemosyne**: the Ask panel's knowledge-pack dropdown now lists the
+  brain's real, built packs via a new `GET /api/packs` proxy to Mnemosyne's `/packs`, falling
+  back to the discovered-vendor packs (ADR-0013) when the brain is unconfigured/unreachable (#99).
+
 ## [0.2.4] - 2026-07-07
 
 ### Added

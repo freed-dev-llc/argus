@@ -164,6 +164,24 @@ export function getCollectors(): Promise<CollectorsResponse> {
   return getJSON<CollectorsResponse>('/api/collectors')
 }
 
+export interface PackInfo {
+  name: string
+  title?: string
+  description?: string
+  built?: boolean
+}
+
+export interface PacksResponse {
+  packs?: PackInfo[]
+  error?: string
+}
+
+// List the Mnemosyne knowledge packs (proxied by the Argus backend), so the Ask panel can
+// offer the brain's real packs instead of guessing from discovered vendors.
+export function getPacks(): Promise<PacksResponse> {
+  return getJSON<PacksResponse>('/api/packs')
+}
+
 export interface AskSource {
   n?: number
   title?: string

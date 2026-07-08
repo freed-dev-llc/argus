@@ -196,6 +196,28 @@ async def api_ask(q: str, pack: str = "ubiquiti") -> dict[str, Any]:
     return answer
 
 
+@app.get("/api/packs")
+async def api_packs() -> dict[str, Any]:
+    """List the Mnemosyne knowledge packs, proxied server-to-server.
+
+    Feeds the Ask panel's pack selector so it offers the brain's real packs instead of
+    guessing from discovered vendors. Returns ``{"packs": [...]}`` (or ``{"error": ...}``
+    if unconfigured/unreachable). Set ``MNEMOSYNE_URL`` to enable, same as ``/api/ask``.
+    """
+    settings = get_settings()
+    if not settings.mnemosyne_configured:
+        return {"error": "Mnemosyne not configured (set MNEMOSYNE_URL)"}
+    url = settings.mnemosyne_url.rstrip("/") + "/packs"
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url)
+    except httpx.HTTPError as exc:
+        return {"error": f"Mnemosyne unreachable: {exc}"}
+    if resp.status_code != 200:
+        return {"error": f"Mnemosyne returned {resp.status_code}: {resp.text[:200]}"}
+    return {"packs": resp.json()}
+
+
 @app.post("/webhooks/netbox")
 async def netbox_webhook(request: Request) -> Any:
     """Classify and structured-log an inbound NetBox change event, then ack.
