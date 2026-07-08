@@ -25,6 +25,29 @@ def manufacturer_from_version(version: str | None) -> str:
         return OPNSENSE_MANUFACTURER
     return MANUFACTURER
 
+
+#: NetBox device-type used for a non-appliance (VM / white-box) firewall install.
+VIRTUAL_MACHINE_MODEL = "Virtual Machine"
+
+# CPU-architecture tokens a generic pfSense/OPNsense install reports in place of a hardware
+# model (e.g. "OPNsense 26.1.11 (amd64)"). A Netgate appliance instead reports its SKU
+# ("SG-5100"), so an arch token signals a VM / white-box rather than a real hardware model.
+_ARCH_TOKENS: frozenset[str] = frozenset(
+    {"amd64", "x86_64", "i386", "i686", "x86", "arm64", "aarch64", "arm", "armv7"}
+)
+
+
+def normalize_model(model: str | None) -> str | None:
+    """Normalize a discovered model string for NetBox's device_type.
+
+    A pfSense/OPNsense box running on generic hardware reports its CPU architecture where an
+    appliance reports a SKU; those arch tokens are not a meaningful device_type, so map them to
+    ``"Virtual Machine"``. Real model strings (``SG-5100``, ``pfSense``) pass through unchanged.
+    """
+    if model and model.strip().lower() in _ARCH_TOKENS:
+        return VIRTUAL_MACHINE_MODEL
+    return model
+
 # Conservative device state → NetBox status mapping (the single source of truth).
 # pfSense/OPNsense report status via SNMP sysUptime or CLI inspection; these states
 # correspond to operational health. Transient states are omitted so reconcile does not

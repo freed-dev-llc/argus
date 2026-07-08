@@ -13,14 +13,14 @@ import logging
 from importlib.metadata import entry_points
 
 from ..base import Collector
+from .firewall import FIREWALL_PACK
 from .pack import ENTRY_POINT_GROUP, Transport, VendorPack
-from .pfsense import PFSENSE_PACK
 from .unifi import UNIFI_PACK
 
 logger = logging.getLogger(__name__)
 
 #: Packs shipped in this (public) repo. External packs attach via the entry point.
-BUILTIN_PACKS: tuple[VendorPack, ...] = (UNIFI_PACK, PFSENSE_PACK)
+BUILTIN_PACKS: tuple[VendorPack, ...] = (UNIFI_PACK, FIREWALL_PACK)
 
 
 def _load_entry_point_packs() -> list[VendorPack]:
@@ -41,18 +41,32 @@ def _load_entry_point_packs() -> list[VendorPack]:
 
 
 def discover_packs() -> dict[str, VendorPack]:
-    """Merge built-in packs with installed external packs (built-ins win on name clash)."""
-    packs: dict[str, VendorPack] = {pack.name: pack for pack in BUILTIN_PACKS}
-    for pack in _load_entry_point_packs():
+    """Merge built-in packs with installed external packs (built-ins win on name clash).
+
+    Each pack is registered under its canonical ``name`` and any legacy ``aliases`` (extra
+    lookup keys). Canonical names always win; an alias only fills a key no real pack name uses.
+    """
+    packs: dict[str, VendorPack] = {}
+    alias_keys: dict[str, VendorPack] = {}
+    for pack in (*BUILTIN_PACKS, *_load_entry_point_packs()):
         if pack.name in packs:
             logger.warning("vendor pack %r already registered; ignoring duplicate", pack.name)
             continue
         packs[pack.name] = pack
+        for alias in pack.aliases:
+            alias_keys.setdefault(alias, pack)
+    for alias, pack in alias_keys.items():
+        packs.setdefault(alias, pack)  # never shadow a real pack name
     return packs
 
 
-#: All registered packs (built-in + external), keyed by name.
+#: All registered packs (built-in + external), keyed by canonical name and legacy aliases.
 VENDOR_PACKS: dict[str, VendorPack] = discover_packs()
+
+#: Registry keys that are aliases (key != the pack's canonical name); hidden from ``list_collectors``.
+PACK_ALIASES: frozenset[str] = frozenset(
+    name for name, pack in VENDOR_PACKS.items() if name != pack.name
+)
 
 
 def vendor_collectors() -> dict[str, type[Collector]]:
@@ -63,6 +77,7 @@ def vendor_collectors() -> dict[str, type[Collector]]:
 __all__ = [
     "BUILTIN_PACKS",
     "ENTRY_POINT_GROUP",
+    "PACK_ALIASES",
     "Transport",
     "VENDOR_PACKS",
     "VendorPack",

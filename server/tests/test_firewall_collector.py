@@ -13,10 +13,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from argus.discovery.vendors.pfsense.collector import PfSenseCollector, _read_targets
-from argus.discovery.vendors.pfsense.models import manufacturer_from_version, role_from_model
+from argus.discovery.vendors.firewall.collector import FirewallCollector, _read_targets
+from argus.discovery.vendors.firewall.models import (
+    manufacturer_from_version,
+    normalize_model,
+    role_from_model,
+)
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures" / "pfsense"
+FIXTURES_DIR = Path(__file__).parent / "fixtures" / "firewall"
 
 
 # Custom exceptions for mocking asyncssh
@@ -60,13 +64,31 @@ def test_manufacturer_from_version_distinguishes_opnsense() -> None:
     assert manufacturer_from_version(None) == "Netgate"
 
 
+def test_normalize_model_maps_arch_tokens_to_vm() -> None:
+    """A CPU-arch token (a VM/white-box install) becomes 'Virtual Machine'; SKUs pass through."""
+    assert normalize_model("amd64") == "Virtual Machine"
+    assert normalize_model("AMD64") == "Virtual Machine"
+    assert normalize_model("aarch64") == "Virtual Machine"
+    assert normalize_model("SG-5100") == "SG-5100"
+    assert normalize_model("pfSense") == "pfSense"
+    assert normalize_model(None) is None
+
+
+def _clear_firewall_env(monkeypatch) -> None:
+    """Remove any ambient FIREWALL_*/PFSENSE_* target vars so _read_targets tests are hermetic."""
+    for i in range(1, 5):
+        sfx = "" if i == 1 else f"_{i}"
+        for prefix in ("FIREWALL", "PFSENSE"):
+            for base in ("HOST", "USERNAME", "PASSWORD", "SITE", "USE_SNMP", "SNMP_COMMUNITY"):
+                monkeypatch.delenv(f"{prefix}_{base}{sfx}", raising=False)
+
+
 def test_read_targets_single_unsuffixed(monkeypatch) -> None:
-    """A lone PFSENSE_HOST yields exactly one target (backward compatible)."""
-    for var in ("PFSENSE_HOST", "PFSENSE_HOST_2", "PFSENSE_HOST_3"):
-        monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("PFSENSE_HOST", "192.168.1.93")
-    monkeypatch.setenv("PFSENSE_USERNAME", "admin")
-    monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
+    """A lone FIREWALL_HOST yields exactly one target (backward compatible)."""
+    _clear_firewall_env(monkeypatch)
+    monkeypatch.setenv("FIREWALL_HOST", "192.168.1.93")
+    monkeypatch.setenv("FIREWALL_USERNAME", "admin")
+    monkeypatch.setenv("FIREWALL_PASSWORD", "pw1")
     targets = _read_targets()
     assert len(targets) == 1
     assert targets[0]["host"] == "192.168.1.93"
@@ -75,13 +97,14 @@ def test_read_targets_single_unsuffixed(monkeypatch) -> None:
 
 def test_read_targets_multiple_with_suffix(monkeypatch) -> None:
     """A suffixed second target is read alongside the first, with per-target creds/site."""
-    monkeypatch.setenv("PFSENSE_HOST", "192.168.1.93")
-    monkeypatch.setenv("PFSENSE_USERNAME", "admin")
-    monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
-    monkeypatch.setenv("PFSENSE_HOST_2", "192.168.1.92")
-    monkeypatch.setenv("PFSENSE_USERNAME_2", "root")
-    monkeypatch.setenv("PFSENSE_PASSWORD_2", "pw2")
-    monkeypatch.setenv("PFSENSE_SITE_2", "Lab")
+    _clear_firewall_env(monkeypatch)
+    monkeypatch.setenv("FIREWALL_HOST", "192.168.1.93")
+    monkeypatch.setenv("FIREWALL_USERNAME", "admin")
+    monkeypatch.setenv("FIREWALL_PASSWORD", "pw1")
+    monkeypatch.setenv("FIREWALL_HOST_2", "192.168.1.92")
+    monkeypatch.setenv("FIREWALL_USERNAME_2", "root")
+    monkeypatch.setenv("FIREWALL_PASSWORD_2", "pw2")
+    monkeypatch.setenv("FIREWALL_SITE_2", "Lab")
     targets = _read_targets()
     assert [t["host"] for t in targets] == ["192.168.1.93", "192.168.1.92"]
     assert targets[1]["username"] == "root"
@@ -90,15 +113,27 @@ def test_read_targets_multiple_with_suffix(monkeypatch) -> None:
 
 def test_read_targets_tolerates_gaps(monkeypatch) -> None:
     """A gap (HOST + HOST_3, no HOST_2) still surfaces both configured targets."""
-    for var in ("PFSENSE_HOST_2", "PFSENSE_USERNAME_2", "PFSENSE_PASSWORD_2"):
-        monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("PFSENSE_HOST", "10.0.0.1")
+    _clear_firewall_env(monkeypatch)
+    monkeypatch.setenv("FIREWALL_HOST", "10.0.0.1")
+    monkeypatch.setenv("FIREWALL_USERNAME", "admin")
+    monkeypatch.setenv("FIREWALL_PASSWORD", "pw1")
+    monkeypatch.setenv("FIREWALL_HOST_3", "10.0.0.3")
+    monkeypatch.setenv("FIREWALL_USERNAME_3", "admin")
+    monkeypatch.setenv("FIREWALL_PASSWORD_3", "pw3")
+    assert [t["host"] for t in _read_targets()] == ["10.0.0.1", "10.0.0.3"]
+
+
+def test_read_targets_honors_pfsense_alias(monkeypatch) -> None:
+    """Legacy PFSENSE_* still resolves when FIREWALL_* is absent; canonical wins when both set."""
+    _clear_firewall_env(monkeypatch)
+    monkeypatch.setenv("PFSENSE_HOST", "10.0.0.9")
     monkeypatch.setenv("PFSENSE_USERNAME", "admin")
     monkeypatch.setenv("PFSENSE_PASSWORD", "pw1")
-    monkeypatch.setenv("PFSENSE_HOST_3", "10.0.0.3")
-    monkeypatch.setenv("PFSENSE_USERNAME_3", "admin")
-    monkeypatch.setenv("PFSENSE_PASSWORD_3", "pw3")
-    assert [t["host"] for t in _read_targets()] == ["10.0.0.1", "10.0.0.3"]
+    targets = _read_targets()
+    assert [t["host"] for t in targets] == ["10.0.0.9"]
+    # Canonical FIREWALL_* overrides the legacy alias when both are present.
+    monkeypatch.setenv("FIREWALL_HOST", "10.0.0.10")
+    assert _read_targets()[0]["host"] == "10.0.0.10"
 
 
 def test_extract_primary_ip_finds_first_private_ip() -> None:
@@ -106,7 +141,7 @@ def test_extract_primary_ip_finds_first_private_ip() -> None:
     with open(FIXTURES_DIR / "ssh_ifconfig_output.txt") as f:
         ifconfig_output = f.read()
 
-    primary_ip = PfSenseCollector._extract_primary_ip(ifconfig_output)
+    primary_ip = FirewallCollector._extract_primary_ip(ifconfig_output)
     # Should find 192.168.1.1 from em0 (first private, non-loopback, non-link-local).
     assert primary_ip == "192.168.1.1"
 
@@ -119,7 +154,7 @@ lo0: flags=8049<UP,LOOPBACK,RUNNING,SIMPLEX> metric 0 mtu 16384
 em0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
 	inet 192.168.1.1 netmask 0xffffff00 broadcast 192.168.1.255
 """
-    primary_ip = PfSenseCollector._extract_primary_ip(output)
+    primary_ip = FirewallCollector._extract_primary_ip(output)
     assert primary_ip == "192.168.1.1"
 
 
@@ -131,7 +166,7 @@ em0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
 em1: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
 	inet 192.168.1.1 netmask 0xffffff00
 """
-    primary_ip = PfSenseCollector._extract_primary_ip(output)
+    primary_ip = FirewallCollector._extract_primary_ip(output)
     # Should skip 169.254.1.1 (link-local) and return 192.168.1.1.
     assert primary_ip == "192.168.1.1"
 
@@ -139,7 +174,7 @@ em1: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
 @pytest.mark.asyncio
 async def test_collect_unconfigured() -> None:
     """Test that collect returns gracefully when not configured."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Ensure env vars are not set.
     env = {
@@ -158,7 +193,7 @@ async def test_collect_unconfigured() -> None:
 @pytest.mark.asyncio
 async def test_collect_missing_credential_file() -> None:
     """Test that collect handles missing credential files gracefully."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     env = {
         "PFSENSE_HOST": "192.168.1.92",
@@ -176,7 +211,7 @@ async def test_collect_missing_credential_file() -> None:
 @pytest.mark.asyncio
 async def test_collect_via_ssh_success(monkeypatch) -> None:
     """Test SSH collection with mocked asyncssh.connect."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Load fixture data.
     with open(FIXTURES_DIR / "ssh_show_version_sg5100.txt") as f:
@@ -232,7 +267,7 @@ async def test_collect_via_ssh_success(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_collect_via_ssh_no_hostname(monkeypatch) -> None:
     """Test SSH collection when hostname command fails."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     with open(FIXTURES_DIR / "ssh_show_version_sg5100.txt") as f:
         version_output = f.read()
@@ -284,7 +319,7 @@ async def test_collect_via_ssh_no_hostname(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_collect_via_ssh_fallback_cat_version(monkeypatch) -> None:
     """Test SSH collection falls back to 'cat /etc/version' when 'show version' fails."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     with open(FIXTURES_DIR / "ssh_ifconfig_output.txt") as f:
         ifconfig_output = f.read()
@@ -331,7 +366,7 @@ async def test_collect_via_ssh_fallback_cat_version(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_collect_via_ssh_connection_error(monkeypatch) -> None:
     """Test SSH collection handles connection errors gracefully."""
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     def mock_connect_error(*args, **kwargs):
         raise Exception("Connection refused")
@@ -352,7 +387,7 @@ async def test_collect_via_snmp_success(monkeypatch) -> None:
     """Test SNMP collection with mocked pysnmp."""
     import pysnmp.hlapi.asyncio as hlapi
 
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Create a mock value that can be converted to string and int.
     class MockValue:
@@ -423,7 +458,7 @@ async def test_collect_via_snmp_error_indication(monkeypatch) -> None:
     """Test SNMP collection handles error indications."""
     import pysnmp.hlapi.asyncio as hlapi
 
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     async def mock_get_cmd_error(engine, auth, transport, context, *var_binds):
         return ("Host not reachable", 1, 0, [])
@@ -469,7 +504,7 @@ async def test_collect_happy_path(monkeypatch) -> None:
     """
     import pysnmp.hlapi.asyncio as hlapi
 
-    collector = PfSenseCollector()
+    collector = FirewallCollector()
 
     # Load fixture data for SSH responses.
     with open(FIXTURES_DIR / "ssh_show_version_sg5100.txt") as f:
@@ -571,7 +606,7 @@ async def test_collect_happy_path(monkeypatch) -> None:
         result = await collector.collect()
 
     # Verify the result structure.
-    assert result.collector == "pfsense"
+    assert result.collector == "firewall"
     assert len(result.devices) == 1
     assert result.notes == []
 

@@ -172,19 +172,20 @@ services:
       # PASSWORD are required to run the `pfsense` collector; all empty (default) leaves it
       # unconfigured (drift/reconcile with collector=pfsense reports a clear missing-config
       # note). SSH is primary; set PFSENSE_USE_SNMP=true (with a community) to also query SNMP.
-      PFSENSE_HOST: ${PFSENSE_HOST:-}
-      PFSENSE_USERNAME: ${PFSENSE_USERNAME:-}
-      PFSENSE_PASSWORD: ${PFSENSE_PASSWORD:-}
-      PFSENSE_SITE: ${PFSENSE_SITE:-Default}
-      PFSENSE_USE_SNMP: ${PFSENSE_USE_SNMP:-}
-      PFSENSE_SNMP_COMMUNITY: ${PFSENSE_SNMP_COMMUNITY:-public}
-      # Additional firewall (e.g. an OPNsense box alongside pfSense): append _2 (then _3, ...).
-      PFSENSE_HOST_2: ${PFSENSE_HOST_2:-}
-      PFSENSE_USERNAME_2: ${PFSENSE_USERNAME_2:-}
-      PFSENSE_PASSWORD_2: ${PFSENSE_PASSWORD_2:-}
-      PFSENSE_SITE_2: ${PFSENSE_SITE_2:-Default}
-      PFSENSE_USE_SNMP_2: ${PFSENSE_USE_SNMP_2:-}
-      PFSENSE_SNMP_COMMUNITY_2: ${PFSENSE_SNMP_COMMUNITY_2:-public}
+      # Firewall discovery (pfSense/OPNsense). Canonical FIREWALL_*; the legacy PFSENSE_* names
+      # are still accepted from .env as a fallback. Append _2 (then _3, ...) for more firewalls.
+      FIREWALL_HOST: ${FIREWALL_HOST:-${PFSENSE_HOST:-}}
+      FIREWALL_USERNAME: ${FIREWALL_USERNAME:-${PFSENSE_USERNAME:-}}
+      FIREWALL_PASSWORD: ${FIREWALL_PASSWORD:-${PFSENSE_PASSWORD:-}}
+      FIREWALL_SITE: ${FIREWALL_SITE:-${PFSENSE_SITE:-Default}}
+      FIREWALL_USE_SNMP: ${FIREWALL_USE_SNMP:-${PFSENSE_USE_SNMP:-}}
+      FIREWALL_SNMP_COMMUNITY: ${FIREWALL_SNMP_COMMUNITY:-${PFSENSE_SNMP_COMMUNITY:-public}}
+      FIREWALL_HOST_2: ${FIREWALL_HOST_2:-${PFSENSE_HOST_2:-}}
+      FIREWALL_USERNAME_2: ${FIREWALL_USERNAME_2:-${PFSENSE_USERNAME_2:-}}
+      FIREWALL_PASSWORD_2: ${FIREWALL_PASSWORD_2:-${PFSENSE_PASSWORD_2:-}}
+      FIREWALL_SITE_2: ${FIREWALL_SITE_2:-${PFSENSE_SITE_2:-Default}}
+      FIREWALL_USE_SNMP_2: ${FIREWALL_USE_SNMP_2:-${PFSENSE_USE_SNMP_2:-}}
+      FIREWALL_SNMP_COMMUNITY_2: ${FIREWALL_SNMP_COMMUNITY_2:-${PFSENSE_SNMP_COMMUNITY_2:-public}}
     ports:
       - "127.0.0.1:8094:8080"
     healthcheck:

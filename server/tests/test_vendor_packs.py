@@ -6,13 +6,14 @@ from argus.discovery.base import Collector
 from argus.discovery.collectors import COLLECTORS, SnmpLldpCollector, UniFiCollector
 from argus.discovery.vendors import (
     BUILTIN_PACKS,
+    PACK_ALIASES,
     VENDOR_PACKS,
     Transport,
     discover_packs,
     vendor_collectors,
 )
+from argus.discovery.vendors.firewall import FirewallCollector
 from argus.discovery.vendors.pack import CLIENTS, DEVICES, TOPOLOGY, VendorPack
-from argus.discovery.vendors.pfsense import PfSenseCollector
 
 
 def test_unifi_is_a_builtin_pack() -> None:
@@ -26,15 +27,24 @@ def test_unifi_is_a_builtin_pack() -> None:
     assert pack in BUILTIN_PACKS
 
 
-def test_pfsense_is_a_builtin_pack() -> None:
-    pack = VENDOR_PACKS["pfsense"]
+def test_firewall_is_a_builtin_pack() -> None:
+    pack = VENDOR_PACKS["firewall"]
     assert isinstance(pack, VendorPack)
     assert pack.manufacturer == "Netgate"
     assert pack.transport is Transport.DEVICE_SSH
     assert {DEVICES} <= pack.capabilities
-    assert pack.collector is PfSenseCollector
+    assert pack.collector is FirewallCollector
     assert pack.knowledge_pack == "firewall"  # paired Mnemosyne knowledge pack (ADR-0013)
     assert pack in BUILTIN_PACKS
+
+
+def test_firewall_pack_resolves_legacy_pfsense_alias() -> None:
+    # `collector=pfsense` (the pre-rename name) still resolves to the firewall pack/collector...
+    assert VENDOR_PACKS["pfsense"] is VENDOR_PACKS["firewall"]
+    assert COLLECTORS["pfsense"] is FirewallCollector
+    # ...but the alias is flagged so listings show the collector once, under "firewall".
+    assert "pfsense" in PACK_ALIASES
+    assert "firewall" not in PACK_ALIASES
 
 
 def test_collectors_map_merges_vendor_and_legacy() -> None:
@@ -48,7 +58,7 @@ def test_collectors_map_merges_vendor_and_legacy() -> None:
 def test_discover_packs_is_deterministic_and_typed() -> None:
     packs = discover_packs()
     assert "unifi" in packs
-    assert "pfsense" in packs
+    assert "firewall" in packs
     for pack in packs.values():
         assert isinstance(pack, VendorPack)
         assert issubclass(pack.collector, Collector)
