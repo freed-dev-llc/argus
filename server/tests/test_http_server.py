@@ -151,6 +151,48 @@ def test_api_ask_proxies_to_mnemosyne(monkeypatch):
     assert route.called
 
 
+def test_api_packs_unconfigured_returns_error(monkeypatch):
+    """With no MNEMOSYNE_URL set, /api/packs returns a clear error (feature disabled)."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.delenv("MNEMOSYNE_URL", raising=False)
+    get_settings.cache_clear()
+    resp = client.get("/api/packs")
+    assert resp.status_code == 200
+    assert "error" in resp.json()
+
+
+@respx.mock
+def test_api_packs_proxies_to_mnemosyne(monkeypatch):
+    """/api/packs proxies to MNEMOSYNE_URL/packs and wraps the list as {"packs": [...]}."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("MNEMOSYNE_URL", "http://mnemo.test:8088")
+    get_settings.cache_clear()
+    route = respx.get("http://mnemo.test:8088/packs").mock(
+        return_value=httpx.Response(
+            200,
+            json=[{"name": "ubiquiti", "title": "Ubiquiti", "built": True}],
+        )
+    )
+    resp = client.get("/api/packs")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["packs"][0]["name"] == "ubiquiti"
+    assert body["packs"][0]["built"] is True
+    assert route.called
+
+
+@respx.mock
+def test_api_packs_non_200_returns_error(monkeypatch):
+    """A non-200 from Mnemosyne surfaces as an {"error": ...} instead of raising."""
+    monkeypatch.delenv("HTTP_TOKEN", raising=False)
+    monkeypatch.setenv("MNEMOSYNE_URL", "http://mnemo.test:8088")
+    get_settings.cache_clear()
+    respx.get("http://mnemo.test:8088/packs").mock(return_value=httpx.Response(503))
+    resp = client.get("/api/packs")
+    assert resp.status_code == 200
+    assert "error" in resp.json()
+
+
 def test_webhook_open_when_secret_unset(monkeypatch):
     """With no NETBOX_WEBHOOK_SECRET set, the webhook accepts unsigned posts (back-compat)."""
     monkeypatch.delenv("HTTP_TOKEN", raising=False)

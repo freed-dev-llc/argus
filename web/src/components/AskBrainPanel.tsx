@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { askBrain, getCollectors, type AskResponse, type AskSource } from '../api/client'
+import { askBrain, getCollectors, getPacks, type AskResponse, type AskSource } from '../api/client'
+
+interface PackOption {
+  value: string
+  label: string
+}
 
 function dedupeSources(sources: AskSource[]): AskSource[] {
   const seen = new Set<string>()
@@ -34,27 +39,36 @@ export function AskBrainPanel() {
   const [resp, setResp] = useState<AskResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [packs, setPacks] = useState<string[]>([])
+  const [packs, setPacks] = useState<PackOption[]>([])
   const [pack, setPack] = useState('')
 
-  // Discover which Mnemosyne knowledge pack(s) the discovered vendors map to, so the panel
-  // asks the right pack instead of a hardcoded one (ADR-0013). On any failure it leaves the
-  // list empty and ask() falls back to the askBrain default.
+  // Populate the pack selector. Prefer Mnemosyne's real, built packs (GET /api/packs) so the
+  // panel offers what the brain can actually answer; fall back to the packs the discovered
+  // vendors map to (ADR-0013) when the brain is unconfigured/unreachable. Default the selection
+  // to a discovered-vendor pack when one is on offer, else the first option. On total failure the
+  // list stays empty and ask() falls back to the askBrain default.
   useEffect(() => {
-    getCollectors()
-      .then((res) => {
-        const found = Array.from(
+    Promise.all([getPacks(), getCollectors()])
+      .then(([packsRes, collectorsRes]) => {
+        const derived = Array.from(
           new Set(
-            (res.collectors ?? [])
+            (collectorsRes.collectors ?? [])
               .map((c) => c.knowledge_pack)
               .filter((p): p is string => Boolean(p)),
           ),
         )
-        setPacks(found)
-        if (found.length > 0) setPack(found[0])
+        const built = packsRes.error ? [] : (packsRes.packs ?? []).filter((p) => p.built)
+        const options: PackOption[] =
+          built.length > 0
+            ? built.map((p) => ({ value: p.name, label: p.title || p.name }))
+            : derived.map((name) => ({ value: name, label: name }))
+        setPacks(options)
+        if (options.length === 0) return
+        const preferred = derived.find((name) => options.some((o) => o.value === name))
+        setPack(preferred ?? options[0].value)
       })
       .catch(() => {
-        /* no collectors / unreachable — ask() uses the askBrain default */
+        /* no packs / collectors / unreachable — ask() uses the askBrain default */
       })
   }, [])
 
@@ -94,8 +108,8 @@ export function AskBrainPanel() {
             aria-label="Knowledge pack"
           >
             {packs.map((p) => (
-              <option key={p} value={p}>
-                {p}
+              <option key={p.value} value={p.value}>
+                {p.label}
               </option>
             ))}
           </select>
