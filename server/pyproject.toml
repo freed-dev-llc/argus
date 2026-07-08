@@ -47,6 +47,7 @@ dev = [
     "ruff>=0.15.17",
     "mypy>=2.1.0",
     "pysnmp>=7.1.27",
+    "pyyaml>=6.0",  # test_deploy_compose_env.py parses deploy/docker-compose.yml
 ]
 
 [project.scripts]
