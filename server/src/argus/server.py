@@ -1,4 +1,4 @@
-"""FastMCP server exposing Argus tools over stdio (for coding agents)."""
+"""MCP server exposing Argus tools over stdio (for coding agents)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from . import __version__
 from .config import get_settings
@@ -21,7 +21,7 @@ from .tools.read_tools import (
 )
 from .tools.reconcile_tools import drift_report, reconcile_apply
 
-mcp = FastMCP("argus")
+mcp = MCPServer("argus")
 
 
 def _argus_version() -> str:
