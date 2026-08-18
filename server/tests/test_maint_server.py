@@ -1,19 +1,19 @@
 """The maintenance MCP surface is separate from the product `argus` server (ADR-0012).
 
-These assert the two FastMCP servers carry disjoint tool sets, so the read/preview-only
+These assert the two MCP servers carry disjoint tool sets, so the read/preview-only
 maintenance tools never leak into the product network-automation surface (and vice versa).
 """
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from argus import maint_server, server
 
 _MAINT_TOOLS = {"release_current", "release_verify", "release_bump"}
 
 
-async def _tool_names(mcp: FastMCP) -> set[str]:
+async def _tool_names(mcp: MCPServer) -> set[str]:
     return {tool.name for tool in await mcp.list_tools()}
 
 

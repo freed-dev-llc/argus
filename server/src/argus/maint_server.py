@@ -1,4 +1,4 @@
-"""FastMCP server exposing Argus maintenance/devtools over stdio.
+"""MCP server exposing Argus maintenance/devtools over stdio.
 
 A *separate* surface from the product ``argus`` network-automation server (``server.py``):
 this one wraps the repo-maintenance devtools (the ``argus-release`` engine) for an MCP control
@@ -10,11 +10,11 @@ First cut is read/preview-only: current version, build verify, and a dry-run bum
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from .devtools.maint_tools import release_bump, release_current, release_verify
 
-mcp = FastMCP("argus-maint")
+mcp = MCPServer("argus-maint")
 
 # Maintenance / devtools (read + preview only — nothing here writes; see ADR-0012)
 mcp.tool()(release_current)
