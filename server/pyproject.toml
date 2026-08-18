@@ -22,7 +22,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "mcp>=1.28.0",
+    "mcp>=1.28.0,<2",
     "pynetbox>=7.3",
     "httpx>=0.28.1",
     "fastapi>=0.137.1",
