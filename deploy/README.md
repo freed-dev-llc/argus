@@ -177,3 +177,20 @@ by an offline unit test (`server/tests/test_deploy_compose_env.py`), which runs 
   `latest`). The default compose file builds locally (`--build`); to run the published images
   instead, point the `argus-server` / `argus-web` services at those tags. The server package
   is also on PyPI (`pip install argus-netbox` — the import name is still `argus`).
+
+## Local overrides
+
+`docker-compose.override.yml` is picked up automatically by `docker compose`, needs no
+`-f`, and is gitignored. Copy the example to start one:
+
+```bash
+cp docker-compose.override.yml.example docker-compose.override.yml
+```
+
+The example wires up the `docker` workload collector (ADR-0015), which reaches each fleet
+host over SSH and has no `~/.ssh` of its own inside the container. It mounts the host's
+`.ssh` **at the same path it has on the host**: `ssh_config`'s `IdentityFile` lines are
+absolute, so a config mounted anywhere else points its keys at paths that do not exist in
+the container and every connection fails authentication. Same path in and out means
+per-host keys resolve exactly as they do on the host, which is also why `DOCKER_HOSTS` can
+use aliases and why `DOCKER_SSH_KEY` (one key for every host) is not used here.
