@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Docker pack now uses asyncssh instead of shelling out to `ssh`.** The deployed image
+  (`python:3.13-slim`) has no `ssh` binary, so the pack as first written could not run in the
+  container it targets. asyncssh was already a runtime dependency for the firewall pack, so
+  the right transport was already in the image. Beyond making it work, this replaces stderr
+  text matching in the transport layer with real exception types: `PermissionDenied` and a
+  refused connection are now categorically distinct from a host that simply has no Docker
+  installed, and only the last of those reconciles to zero containers. New config:
+  `DOCKER_SSH_KEY` (private key, needed in a container), `DOCKER_SSH_CONFIG` (ssh_config for
+  alias resolution, defaults to `~/.ssh/config` when it exists and is skipped when it does
+  not), and `DOCKER_SSH_KNOWN_HOSTS` (path, or `none` to opt out of host-key verification).
+  Verification is **on** by default, matching what the `ssh` subprocess did and deliberately
+  unlike the firewall pack's `known_hosts=None`.
+
 ### Added
 
 - **Workload discovery: clusters and virtual machines** (ADR-0015). `DiscoveryResult` gains

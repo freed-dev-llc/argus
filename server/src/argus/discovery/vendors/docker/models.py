@@ -60,6 +60,29 @@ class DockerHost:
     def is_local(self) -> bool:
         return self.target.strip().lower() in {"local", "localhost", ""}
 
+    @property
+    def ssh_target(self) -> tuple[str | None, str, int | None]:
+        """Split ``[user@]host[:port]`` into ``(username, host, port)``.
+
+        asyncssh takes these as separate arguments where the ``ssh`` binary took one
+        string. ``host`` may be an ssh_config alias; resolution is left to asyncssh's
+        ``config`` option rather than done here.
+
+        A trailing ``:port`` is only recognized when what follows the last colon is all
+        digits AND the host part contains no other colon, so a bare IPv6 literal is not
+        mangled into a host/port pair.
+        """
+        raw = self.target.strip()
+        username: str | None = None
+        if "@" in raw:
+            username, _, raw = raw.partition("@")
+            username = username or None
+        port: int | None = None
+        head, sep, tail = raw.rpartition(":")
+        if sep and tail.isdigit() and ":" not in head:
+            port, raw = int(tail), head
+        return username, raw, port
+
 
 def parse_hosts(spec: str, binaries: str = "") -> list[DockerHost]:
     """Parse ``DOCKER_HOSTS`` (and ``DOCKER_BINARIES``) into a host list.
