@@ -19,7 +19,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from ..discovery.base import DiscoveredDevice, DiscoveryResult
+from ..discovery.base import (
+    DiscoveredCluster,
+    DiscoveredDevice,
+    DiscoveredVM,
+    DiscoveryResult,
+)
 from ..netbox.client import NetBoxClient, _slugify
 
 Action = Literal["create", "update", "delete"]
@@ -185,6 +190,22 @@ def _desired_device(device: DiscoveredDevice) -> dict[str, Any]:
     return desired
 
 
+def _desired_cluster(cluster: DiscoveredCluster) -> dict[str, Any]:
+    """Build the desired NetBox field set for a (possibly new) cluster."""
+    desired: dict[str, Any] = {"name": cluster.name, "cluster_type": cluster.cluster_type}
+    if cluster.host:
+        desired["group"] = cluster.host
+    return desired
+
+
+def _desired_vm(vm: DiscoveredVM) -> dict[str, Any]:
+    """Build the desired NetBox field set for a (possibly new) virtual machine."""
+    desired: dict[str, Any] = {"name": vm.name, "cluster": vm.cluster}
+    if vm.status:
+        desired["status"] = vm.status
+    return desired
+
+
 class ReconcileEngine:
     """Computes and applies the changes needed to make NetBox match reality."""
 
@@ -226,8 +247,15 @@ class ReconcileEngine:
                     )
                 )
 
+        # A workload-only result (ADR-0015) says nothing about devices, so it must not
+        # report every device in NetBox as stale. Scoped to that case rather than to
+        # "reported no devices" in general: a network pack that legitimately returns an
+        # empty device list still means those NetBox devices went unseen.
+        workload_only = not observed.devices and bool(
+            observed.clusters or observed.virtual_machines
+        )
         stale = [by_name[k].get("name") for k in by_name if k not in matched]
-        if stale:
+        if stale and not workload_only:
             plan.notes.append(
                 f"{len(stale)} device(s) in NetBox not seen by '{observed.collector}' "
                 f"(not auto-deleted): {', '.join(str(s) for s in stale)}"
@@ -256,7 +284,100 @@ class ReconcileEngine:
                         details={"address": ip, "description": client.hostname or ""},
                     )
                 )
+
+        self._diff_workloads(observed, plan)
         return plan
+
+    def _diff_workloads(self, observed: DiscoveryResult, plan: ReconcilePlan) -> None:
+        """Diff the workload plane (clusters + VMs) into ``plan`` (ADR-0015).
+
+        No-ops for every network pack, which reports neither. Clusters belonging to a host
+        the collector could not read are left out of the comparison entirely: an SSH
+        failure means "unknown", and treating it as "empty" would propose deleting a whole
+        stack's worth of workloads on a transient outage.
+        """
+        if not observed.clusters and not observed.virtual_machines:
+            return
+
+        existing_clusters = {
+            (c.get("name") or "").lower()
+            for c in (self.netbox.list_clusters() if self.netbox else [])
+            if c.get("name")
+        }
+        for cluster in observed.clusters:
+            if cluster.name.lower() in existing_clusters:
+                continue
+            plan.changes.append(
+                ReconcileChange(
+                    action="create",
+                    object_type="cluster",
+                    identifier=cluster.name,
+                    details=_desired_cluster(cluster),
+                )
+            )
+
+        netbox_vms = self.netbox.list_virtual_machines() if self.netbox else []
+        # Identity is (cluster, name), not name alone. Container names are unique per
+        # cluster, not globally — a fleet routinely runs `watchtower` on several hosts —
+        # and NetBox scopes VM names the same way. Keying on the name alone collides those
+        # into one record and reports a permanent, unfixable cluster drift between them
+        # (found live: 4 containers on two hosts flip-flopping every run).
+        vm_by_key: dict[tuple[str, str], dict[str, Any]] = {
+            (_slugify(_name_of(v.get("cluster")) or ""), (v.get("name") or "").lower()): v
+            for v in netbox_vms
+            if v.get("name")
+        }
+
+        observed_clusters = {_slugify(c.name) for c in observed.clusters}
+        matched: set[tuple[str, str]] = set()
+        for vm in observed.virtual_machines:
+            key = (_slugify(vm.cluster), vm.name.lower())
+            current = vm_by_key.get(key)
+            if current is None:
+                plan.changes.append(
+                    ReconcileChange(
+                        action="create",
+                        object_type="virtual_machine",
+                        identifier=vm.name,
+                        details=_desired_vm(vm),
+                    )
+                )
+                continue
+            matched.add(key)
+            deltas: dict[str, Any] = {}
+            if vm.status:
+                existing_status = _name_of(current.get("status"))
+                if _norm(existing_status) != _norm(vm.status):
+                    deltas["status"] = {"current": existing_status, "desired": vm.status}
+            if deltas:
+                plan.changes.append(
+                    ReconcileChange(
+                        action="update",
+                        object_type="virtual_machine",
+                        identifier=vm.name,
+                        details=deltas,
+                    )
+                )
+
+        # NetBox-only workloads are reported, never auto-deleted — same posture as devices.
+        # Scoped to clusters this run actually observed, so a stack on an unreachable host
+        # (or one owned by a different collector) is not reported as stale.
+        stale = [
+            str(v.get("name"))
+            for (cluster_slug, _), v in vm_by_key.items()
+            if (cluster_slug, (v.get("name") or "").lower()) not in matched
+            and cluster_slug in observed_clusters
+        ]
+        if stale:
+            plan.notes.append(
+                f"{len(stale)} virtual machine(s) in NetBox no longer seen in an observed "
+                f"cluster (not auto-deleted): {', '.join(sorted(stale))}"
+            )
+        if observed.unreachable_hosts:
+            plan.notes.append(
+                f"{len(observed.unreachable_hosts)} host(s) not collected, their clusters "
+                f"left untouched: {', '.join(observed.unreachable_hosts)}"
+            )
 
     @staticmethod
     def _device_deltas(
@@ -294,8 +415,14 @@ class ReconcileEngine:
             if change.action == "create":
                 if change.object_type == "ip_address":
                     return self._create_ip(change)
+                if change.object_type == "cluster":
+                    return self._create_cluster(change)
+                if change.object_type == "virtual_machine":
+                    return self._create_vm(change)
                 return self._create_device(change)
             if change.action == "update":
+                if change.object_type == "virtual_machine":
+                    return self._update_vm(change)
                 return self._update_device(change)
             return {
                 "action": change.action,
@@ -349,6 +476,68 @@ class ReconcileEngine:
             "identifier": change.identifier,
             "status": "created",
             "detail": "ip_address",
+        }
+
+    def _create_cluster(self, change: ReconcileChange) -> dict[str, Any]:
+        """Create a virtualization cluster (a stack), plus its type and host group."""
+        nb = self.netbox
+        assert nb is not None
+        details = change.details
+        nb.ensure_cluster(
+            details["name"],
+            cluster_type=details.get("cluster_type") or "Docker",
+            group=details.get("group"),
+        )
+        return {
+            "action": "create",
+            "identifier": change.identifier,
+            "status": "created",
+            "detail": "cluster",
+        }
+
+    def _create_vm(self, change: ReconcileChange) -> dict[str, Any]:
+        """Create a virtual machine inside its cluster."""
+        nb = self.netbox
+        assert nb is not None
+        details = change.details
+        nb.create_virtual_machine(
+            {
+                "name": details["name"],
+                "cluster": nb.ensure_cluster(details["cluster"]),
+                "status": details.get("status") or "active",
+            }
+        )
+        return {
+            "action": "create",
+            "identifier": change.identifier,
+            "status": "created",
+            "detail": "virtual_machine",
+        }
+
+    def _update_vm(self, change: ReconcileChange) -> dict[str, Any]:
+        """Apply field deltas to an existing virtual machine."""
+        nb = self.netbox
+        assert nb is not None
+        fields: dict[str, Any] = {}
+        for field_name, delta in change.details.items():
+            desired = delta["desired"]
+            if field_name == "status":
+                fields["status"] = desired
+            elif field_name == "cluster":
+                fields["cluster"] = nb.ensure_cluster(desired)
+        if not fields:
+            return {
+                "action": "update",
+                "identifier": change.identifier,
+                "status": "skipped",
+                "detail": "no resolvable NetBox field to write for the observed drift",
+            }
+        nb.update_virtual_machine(change.identifier, fields)
+        return {
+            "action": "update",
+            "identifier": change.identifier,
+            "status": "updated",
+            "detail": fields,
         }
 
     def _update_device(self, change: ReconcileChange) -> dict[str, Any]:

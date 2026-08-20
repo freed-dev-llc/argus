@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Workload discovery: clusters and virtual machines** (ADR-0015). `DiscoveryResult` gains
+  `clusters`, `virtual_machines`, and `unreachable_hosts`, and the reconcile engine diffs and
+  applies them through the same confirmation gate as devices. Additive for every existing
+  pack: the fields default to empty and the workload diff is a no-op for a result that
+  carries none. `NetBoxClient` gains `ensure_cluster_type` / `ensure_cluster_group` /
+  `ensure_cluster`, `list_clusters`, `list_virtual_machines`, `create_virtual_machine`,
+  and `update_virtual_machine`.
+- **Docker vendor pack** (`collector=docker`), the first workload pack, on a new
+  `Transport.HOST_SSH`. Reads `docker ps -a` from each configured host and normalizes
+  Compose stacks into clusters and containers into virtual machines. Cluster names are
+  qualified by host (`cerebrum/infra`) because Compose project names are unique only per
+  host; the host association lives on a cluster group, since `Device.cluster` is
+  single-valued and a host runs several stacks. Reports no devices on purpose. Config:
+  `DOCKER_HOSTS` (`name=target` pairs; `local` runs without SSH), `DOCKER_BINARIES` (per-host
+  binary paths, for runtimes kept off `PATH` such as QNAP Container Station), and
+  `DOCKER_SSH_TIMEOUT`.
+  - Workload identity is `(cluster, name)`, matching how NetBox scopes VM names: container
+    names are unique per cluster, not globally, so keying on the name alone collides the
+    same-named container on two hosts into one record.
+  - An unreachable host is recorded and its clusters are excluded from the diff, so an SSH
+    failure never diffs as an emptied stack. A host with no Docker installed is a real zero
+    and reconciles normally. A container state Docker adds later maps to `offline`, never
+    `active`.
+
 ### Changed
 
 - **MCP 2.0**: `mcp` 2.0.0 removed `mcp.server.fastmcp`; the `FastMCP` class lives on as

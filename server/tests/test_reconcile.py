@@ -7,7 +7,9 @@ from typing import Any
 from argus.discovery.base import (
     DeviceManagement,
     DiscoveredClient,
+    DiscoveredCluster,
     DiscoveredDevice,
+    DiscoveredVM,
     DiscoveryResult,
 )
 from argus.reconcile.engine import (
@@ -535,3 +537,243 @@ async def test_reconcile_apply_rejects_bad_token(monkeypatch):
     monkeypatch.setattr(reconcile_tools, "_engine", lambda: ReconcileEngine(FakeNetBox([])))
     out = await reconcile_tools.reconcile_apply(confirm_token="bogus")
     assert "error" in out
+
+
+# --- workload plane: clusters + virtual machines (ADR-0015) -----------------
+
+
+class FakeWorkloadNetBox(FakeNetBox):
+    """FakeNetBox plus the virtualization surface the workload diff/apply uses."""
+
+    def __init__(
+        self,
+        clusters: list[dict[str, Any]] | None = None,
+        vms: list[dict[str, Any]] | None = None,
+    ) -> None:
+        super().__init__()
+        self._clusters = clusters or []
+        self._vms = vms or []
+        self.created_vms: list[dict[str, Any]] = []
+        self.updated_vms: list[tuple[str, dict[str, Any]]] = []
+        self.ensured_clusters: list[tuple[str, str | None, str | None]] = []
+
+    def list_clusters(self) -> list[dict[str, Any]]:
+        return self._clusters
+
+    def list_virtual_machines(self) -> list[dict[str, Any]]:
+        return self._vms
+
+    def ensure_cluster(
+        self,
+        name: str,
+        *,
+        cluster_type: str = "Docker",
+        group: str | None = None,
+        site: str | None = None,
+    ) -> int:
+        self.ensured_clusters.append((name, cluster_type, group))
+        return 7
+
+    def create_virtual_machine(self, data: dict[str, Any]) -> dict[str, Any]:
+        self.created_vms.append(data)
+        return {**data, "id": 77}
+
+    def update_virtual_machine(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
+        self.updated_vms.append((name, data))
+        return {"name": name, **data}
+
+
+def _workload_result(**kwargs: Any) -> DiscoveryResult:
+    return DiscoveryResult(collector="docker", **kwargs)
+
+
+class TestWorkloadDiff:
+    def test_new_stack_and_containers_are_proposed(self) -> None:
+        observed = _workload_result(
+            clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+            virtual_machines=[
+                DiscoveredVM(name="aria-prometheus", cluster="cerebrum/infra", status="active")
+            ],
+        )
+        plan = ReconcileEngine(FakeWorkloadNetBox()).diff(observed)
+        kinds = {(c.object_type, c.identifier) for c in plan.changes}
+        assert ("cluster", "cerebrum/infra") in kinds
+        assert ("virtual_machine", "aria-prometheus") in kinds
+
+    def test_existing_objects_produce_no_changes(self) -> None:
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "cerebrum/infra"}],
+            vms=[{"name": "aria-prometheus", "status": "active",
+                  "cluster": {"name": "cerebrum/infra"}}],
+        )
+        observed = _workload_result(
+            clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+            virtual_machines=[
+                DiscoveredVM(name="aria-prometheus", cluster="cerebrum/infra", status="active")
+            ],
+        )
+        assert ReconcileEngine(nb).diff(observed).changes == []
+
+    def test_a_stopped_container_drifts_to_offline(self) -> None:
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "cerebrum/infra"}],
+            vms=[{"name": "aria-redis", "status": "active",
+                  "cluster": {"name": "cerebrum/infra"}}],
+        )
+        observed = _workload_result(
+            clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+            virtual_machines=[
+                DiscoveredVM(name="aria-redis", cluster="cerebrum/infra", status="offline")
+            ],
+        )
+        (change,) = ReconcileEngine(nb).diff(observed).changes
+        assert change.action == "update"
+        assert change.details["status"]["desired"] == "offline"
+
+    def test_the_same_container_name_on_two_hosts_stays_two_workloads(self) -> None:
+        """Found live: `watchtower` and three n8n containers run on both thor and mesh.
+
+        Keying identity on the name alone collided them into one record and produced a
+        permanent cluster drift that flip-flopped on every run. Identity is (cluster, name),
+        matching how NetBox itself scopes VM names.
+        """
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "thor/watchtower"}, {"name": "mesh/watchtower"}],
+            vms=[{"name": "watchtower", "status": "active",
+                  "cluster": {"name": "thor/watchtower"}}],
+        )
+        observed = _workload_result(
+            clusters=[
+                DiscoveredCluster(name="thor/watchtower", host="thor"),
+                DiscoveredCluster(name="mesh/watchtower", host="mesh"),
+            ],
+            virtual_machines=[
+                DiscoveredVM(name="watchtower", cluster="thor/watchtower", status="active"),
+                DiscoveredVM(name="watchtower", cluster="mesh/watchtower", status="active"),
+            ],
+        )
+        plan = ReconcileEngine(nb).diff(observed)
+        # thor's is already correct and must not drift; mesh's is genuinely missing.
+        assert [(c.action, c.identifier) for c in plan.changes] == [
+            ("create", "watchtower")
+        ]
+        assert plan.changes[0].details["cluster"] == "mesh/watchtower"
+
+    def test_a_container_in_a_new_stack_is_created_and_the_old_record_reported(self) -> None:
+        """A container that moves stacks is a new workload record, not a mutated one.
+
+        NetBox scopes VM names per cluster, so the honest report is a create plus a
+        never-auto-deleted note about the record left behind.
+        """
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "thor/leeloo"}, {"name": "thor/old-stack"}],
+            vms=[{"name": "leeloo-gateway-1", "status": "active",
+                  "cluster": {"name": "thor/old-stack"}}],
+        )
+        observed = _workload_result(
+            clusters=[
+                DiscoveredCluster(name="thor/leeloo", host="thor"),
+                DiscoveredCluster(name="thor/old-stack", host="thor"),
+            ],
+            virtual_machines=[
+                DiscoveredVM(name="leeloo-gateway-1", cluster="thor/leeloo", status="active")
+            ],
+        )
+        plan = ReconcileEngine(nb).diff(observed)
+        assert [(c.action, c.identifier) for c in plan.changes] == [
+            ("create", "leeloo-gateway-1")
+        ]
+        assert any("leeloo-gateway-1" in n for n in plan.notes)
+
+    def test_netbox_only_workloads_are_reported_never_deleted(self) -> None:
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "cerebrum/infra"}],
+            vms=[{"name": "retired-container", "status": "active",
+                  "cluster": {"name": "cerebrum/infra"}}],
+        )
+        observed = _workload_result(
+            clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+        )
+        plan = ReconcileEngine(nb).diff(observed)
+        assert not any(c.action == "delete" for c in plan.changes)
+        assert any("retired-container" in n for n in plan.notes)
+
+    def test_workloads_on_an_unreachable_host_are_not_reported_stale(self) -> None:
+        """The core safety property: an SSH blip must not look like an emptied stack."""
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "amp/games"}],
+            vms=[{"name": "minecraft", "status": "active", "cluster": {"name": "amp/games"}}],
+        )
+        observed = _workload_result(unreachable_hosts=["amp"],
+                                    clusters=[DiscoveredCluster(name="c/x", host="c")])
+        plan = ReconcileEngine(nb).diff(observed)
+        assert not any("minecraft" in n for n in plan.notes)
+        assert any("not collected" in n for n in plan.notes)
+
+    def test_a_network_pack_result_touches_no_virtualization(self) -> None:
+        """Every existing collector reports no workloads and must stay a no-op here."""
+        nb = FakeWorkloadNetBox(clusters=[{"name": "x"}], vms=[{"name": "y"}])
+        observed = DiscoveryResult(
+            collector="unifi", devices=[DiscoveredDevice(name="sw1", site="Default")]
+        )
+        plan = ReconcileEngine(nb).diff(observed)
+        assert not any(c.object_type in ("cluster", "virtual_machine") for c in plan.changes)
+
+
+class TestWorkloadApply:
+    def test_apply_creates_cluster_and_vm_only_when_confirmed(self) -> None:
+        nb = FakeWorkloadNetBox()
+        engine = ReconcileEngine(nb)
+        plan = engine.diff(
+            _workload_result(
+                clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+                virtual_machines=[
+                    DiscoveredVM(name="aria-redis", cluster="cerebrum/infra", status="active")
+                ],
+            )
+        )
+        unconfirmed = engine.apply(plan)
+        assert unconfirmed["applied"] is False
+        assert nb.created_vms == []
+
+        result = engine.apply(plan, confirm=True)
+        assert result["applied"] is True
+        assert ("cerebrum/infra", "Docker", "cerebrum") in nb.ensured_clusters
+        assert nb.created_vms[0]["name"] == "aria-redis"
+
+    def test_apply_writes_a_status_update(self) -> None:
+        nb = FakeWorkloadNetBox(
+            clusters=[{"name": "cerebrum/infra"}],
+            vms=[{"name": "aria-redis", "status": "active",
+                  "cluster": {"name": "cerebrum/infra"}}],
+        )
+        engine = ReconcileEngine(nb)
+        plan = engine.diff(
+            _workload_result(
+                clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+                virtual_machines=[
+                    DiscoveredVM(name="aria-redis", cluster="cerebrum/infra", status="offline")
+                ],
+            )
+        )
+        engine.apply(plan, confirm=True)
+        assert nb.updated_vms == [("aria-redis", {"status": "offline"})]
+
+    def test_a_workload_only_result_does_not_call_every_device_stale(self) -> None:
+        """Found live: the docker pack reports no devices, and an unguarded stale check
+        listed all 16 NetBox devices as missing on every run."""
+        nb = FakeWorkloadNetBox()
+        nb._devices = [{"name": "sw1"}, {"name": "cerebrum"}]
+        observed = _workload_result(
+            clusters=[DiscoveredCluster(name="cerebrum/infra", host="cerebrum")],
+            virtual_machines=[DiscoveredVM(name="aria-redis", cluster="cerebrum/infra")],
+        )
+        plan = ReconcileEngine(nb).diff(observed)
+        assert not any("sw1" in n for n in plan.notes)
+
+    def test_a_network_pack_with_no_devices_still_reports_stale(self) -> None:
+        """The narrower guard must not silence the original device-staleness behaviour."""
+        nb = FakeWorkloadNetBox()
+        nb._devices = [{"name": "old-sw"}]
+        plan = ReconcileEngine(nb).diff(DiscoveryResult(collector="unifi"))
+        assert any("old-sw" in n for n in plan.notes)

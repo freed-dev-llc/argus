@@ -40,6 +40,7 @@ decision).
 | [0012](0012-maintenance-mcp-surface.md) | Maintenance MCP Surface — a Separate `argus-maint` Server (Read/Preview-Only First) | 2026-06-27 | Accepted |
 | [0013](0013-paired-vendor-knowledge-packs.md) | Paired Vendor + Knowledge Packs (Argus ↔ Mnemosyne) | 2026-06-29 | Accepted |
 | [0014](0014-unifi-gateway-mgmt-ip-legacy-api.md) | UniFi Gateway Management IP via the Legacy Network API | 2026-06-29 | Accepted |
+| [0015](0015-workload-discovery-clusters-and-vms.md) | Workload Discovery — Clusters and Virtual Machines | 2026-08-20 | Accepted |
 
 ## Adding a new ADR
 
