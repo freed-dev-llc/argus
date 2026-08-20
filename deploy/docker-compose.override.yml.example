@@ -1,0 +1,22 @@
+# Optional local overrides for the Argus stack. Copy to docker-compose.override.yml
+# (gitignored) and `docker compose up -d` picks it up automatically, no -f needed.
+#
+# This example wires up the `docker` workload collector (ADR-0015), which reaches each
+# fleet host over SSH. The container has no ~/.ssh of its own, so it needs the host's.
+#
+#   cp deploy/docker-compose.override.yml.example deploy/docker-compose.override.yml
+#   # then set ARGUS_SSH_DIR, DOCKER_HOSTS and DOCKER_BINARIES in deploy/.env
+services:
+  argus-server:
+    volumes:
+      # Mounted at the SAME path it has on the host, which is the part that is easy to get
+      # wrong. ssh_config's IdentityFile lines are absolute, so a config mounted at
+      # /root/.ssh still points its keys at the host path and every connection fails auth.
+      # Same path in and out means per-host keys resolve exactly as they do on the host.
+      - ${ARGUS_SSH_DIR:?set ARGUS_SSH_DIR in .env, e.g. /home/you/.ssh}:${ARGUS_SSH_DIR}:ro
+    environment:
+      # Per-host keys come from ssh_config, so DOCKER_HOSTS can use aliases and each host
+      # gets its own IdentityFile. DOCKER_SSH_KEY only takes one key for every host, which
+      # is why it is not used here.
+      DOCKER_SSH_CONFIG: ${ARGUS_SSH_DIR}/config
+      DOCKER_SSH_KNOWN_HOSTS: ${ARGUS_SSH_DIR}/known_hosts

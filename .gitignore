@@ -26,6 +26,7 @@ QWEN.md
 # --- Secrets / local env ---
 .env
 .env.*
+deploy/docker-compose.override.yml
 !.env.example
 *.pem
 *.key

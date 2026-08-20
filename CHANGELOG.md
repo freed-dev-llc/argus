@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`deploy/docker-compose.override.yml.example`** and a gitignore entry for the real
+  `docker-compose.override.yml`, which `docker compose` loads automatically. The example
+  wires up the `docker` collector's SSH access by mounting the host's `.ssh` **at the same
+  path it has on the host**, so `ssh_config`'s absolute `IdentityFile` lines resolve inside
+  the container and each host keeps its own key. Mounting it anywhere else silently breaks
+  authentication for every host. New `ARGUS_SSH_DIR` in both `.env.example` files.
+
 ### Fixed
 
 - **The Docker pack now uses asyncssh instead of shelling out to `ssh`.** The deployed image
