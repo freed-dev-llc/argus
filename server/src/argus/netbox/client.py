@@ -81,6 +81,22 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
     }
 
 
+def _vm_to_dict(record: Any) -> dict[str, Any]:
+    """Virtual machine → comparable dict with FK fields resolved (see :func:`_device_to_dict`).
+
+    ``record.serialize()`` flattens ``cluster`` to a bare integer id, which can never match a
+    discovered cluster *name* — every VM would read as drifted on every run. Read the resolved
+    attribute instead, exactly as the device path does.
+    """
+    status = getattr(record, "status", None)
+    return {
+        "id": getattr(record, "id", None),
+        "name": getattr(record, "name", None),
+        "status": str(status) if status else None,
+        "cluster": _fk_name(getattr(record, "cluster", None)),
+    }
+
+
 class NetBoxClient:
     """Access to NetBox, the network's source of truth.
 
@@ -212,6 +228,74 @@ class NetBoxClient:
             {"model": model, "slug": slug, "manufacturer": manufacturer_id}
         )
         return int(created.id)
+
+    # --- virtualization: clusters + VMs (workload plane, ADR-0015) -----------------------------
+
+    def list_clusters(self) -> list[dict[str, Any]]:
+        """All virtualization clusters, as plain dicts."""
+        return [_record(c) for c in self.api.virtualization.clusters.all()]
+
+    def list_virtual_machines(self) -> list[dict[str, Any]]:
+        """All virtual machines, as plain dicts."""
+        return [_vm_to_dict(vm) for vm in self.api.virtualization.virtual_machines.all()]
+
+    def ensure_cluster_type(self, name: str) -> int:
+        """Return the id of the cluster type with this name, creating it if absent."""
+        slug = _slugify(name)
+        existing = self.api.virtualization.cluster_types.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(self.api.virtualization.cluster_types.create({"name": name, "slug": slug}).id)
+
+    def ensure_cluster_group(self, name: str) -> int:
+        """Return the id of the cluster group with this name, creating it if absent.
+
+        Discovery uses one group per host: a host runs several stacks while
+        ``Device.cluster`` is single-valued, so the host association cannot live on the
+        cluster itself (ADR-0015).
+        """
+        slug = _slugify(name)
+        existing = self.api.virtualization.cluster_groups.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(self.api.virtualization.cluster_groups.create({"name": name, "slug": slug}).id)
+
+    def ensure_cluster(
+        self,
+        name: str,
+        *,
+        cluster_type: str = "Docker",
+        group: str | None = None,
+        site: str | None = None,
+    ) -> int:
+        """Return the id of the cluster with this name, creating it if absent."""
+        existing = self.api.virtualization.clusters.get(name=name)
+        if existing is not None:
+            return int(existing.id)
+        data: dict[str, Any] = {
+            "name": name,
+            "type": self.ensure_cluster_type(cluster_type),
+            "status": "active",
+        }
+        if group:
+            data["group"] = self.ensure_cluster_group(group)
+        if site:
+            # NetBox 4.x scopes a cluster generically rather than with a site FK.
+            data["scope_type"] = "dcim.site"
+            data["scope_id"] = self.ensure_site(site)
+        return int(self.api.virtualization.clusters.create(self._stamp_tenant(data)).id)
+
+    def create_virtual_machine(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a virtual machine."""
+        return _record(self.api.virtualization.virtual_machines.create(self._stamp_tenant(data)))
+
+    def update_virtual_machine(self, name: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update a virtual machine by name."""
+        vm = self.api.virtualization.virtual_machines.get(name=name)
+        if vm is None:
+            raise ValueError(f"Virtual machine '{name}' not found in NetBox")
+        vm.update(data)
+        return _record(vm)
 
     # --- shared-instance tenant stamping (find-or-create, create-only; ADR-0007 / #86) ---------
 

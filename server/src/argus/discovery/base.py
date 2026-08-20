@@ -67,6 +67,37 @@ class DiscoveredLink:
 
 
 @dataclass
+class DiscoveredCluster:
+    """A grouping of workloads running on one host (ADR-0015).
+
+    A Docker Compose project is the motivating case: ``name`` is qualified by host
+    (``"cerebrum/infra"``) because stack names are only unique per host, and two hosts
+    running a stack called ``media`` are two different clusters.
+
+    ``host`` names the device this cluster runs on. It maps to a NetBox *cluster group*
+    rather than ``Cluster.scope``, because a host runs several stacks while
+    ``Device.cluster`` is single-valued: pointing every stack's cluster at the same device
+    is not expressible in NetBox.
+    """
+
+    name: str
+    host: str | None = None
+    cluster_type: str = "Docker"
+    status: str | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class DiscoveredVM:
+    """A workload inside a cluster — a container, or a real VM (ADR-0015)."""
+
+    name: str
+    cluster: str  # matches a DiscoveredCluster.name in the same result
+    status: str | None = None  # already a NetBox status token; the pack maps it
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class DiscoveryResult:
     """The normalized output of a single collector run."""
 
@@ -76,6 +107,13 @@ class DiscoveryResult:
     links: list[DiscoveredLink] = field(default_factory=list)
     ip_addresses: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Workload plane (ADR-0015). Empty for every network-facing pack, so a collector that
+    # knows nothing about workloads leaves NetBox's virtualization objects untouched.
+    clusters: list[DiscoveredCluster] = field(default_factory=list)
+    virtual_machines: list[DiscoveredVM] = field(default_factory=list)
+    #: Hosts the collector was asked about but could not read. Their clusters are left
+    #: alone rather than diffed, so an unreachable host never looks like an emptied stack.
+    unreachable_hosts: list[str] = field(default_factory=list)
 
 
 class Collector(ABC):

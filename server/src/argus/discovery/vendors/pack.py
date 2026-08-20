@@ -27,6 +27,9 @@ DEVICES = "devices"
 CLIENTS = "clients"
 TOPOLOGY = "topology"
 CONFIG = "config"
+#: Workload-plane capabilities (ADR-0015). A pack advertising WORKLOADS populates
+#: DiscoveryResult.clusters / .virtual_machines instead of (or alongside) devices.
+WORKLOADS = "workloads"
 
 
 class Transport(StrEnum):
@@ -35,6 +38,7 @@ class Transport(StrEnum):
     CONTROLLER_API = "controller_api"  # one cloud/controller API yields many devices
     DEVICE_SNMP = "device_snmp"  # per-device SNMP
     DEVICE_SSH = "device_ssh"  # per-device SSH / CLI
+    HOST_SSH = "host_ssh"  # per-host SSH to a container/VM runtime (ADR-0015)
 
 
 @dataclass(frozen=True)

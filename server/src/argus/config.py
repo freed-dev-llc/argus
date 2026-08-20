@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     unifi_site: str = "default"  # site internalReference; empty / "*" / "all" → discover all sites
     unifi_verify_ssl: bool = False  # UniFi controllers use self-signed certs
 
+    # Docker workload discovery (ADR-0015). "name=target" pairs, comma-separated:
+    #   cerebrum=cerebrum,thor=thor,helios=root@10.0.0.9,spark=local
+    # target is any SSH destination; "local" runs without SSH (the host Argus is on).
+    docker_hosts: str = ""
+    # Per-host docker binary overrides, same shape. QNAP's Container Station keeps the
+    # binary off PATH, so a fleet needs per-host paths:
+    #   thor=/share/ZFS530_DATA/.qpkg/container-station/bin/docker
+    docker_binaries: str = ""
+    docker_ssh_timeout: int = 10  # SSH connect timeout per host, seconds
+
     # SNMP/LLDP collector (generic, for non-UniFi gear). Comma-separated host[:community].
     snmp_targets: str = ""
     snmp_community: str = "public"
@@ -105,6 +115,11 @@ class Settings(BaseSettings):
     def mnemosyne_configured(self) -> bool:
         """True when a Mnemosyne knowledge-brain URL is set."""
         return bool(self.mnemosyne_url)
+
+    @property
+    def docker_configured(self) -> bool:
+        """True when at least one Docker host is configured."""
+        return bool(self.docker_hosts.strip())
 
     @property
     def unifi_configured(self) -> bool:
