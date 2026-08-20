@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **MCP 2.0**: `mcp` 2.0.0 removed `mcp.server.fastmcp`; the `FastMCP` class lives on as
+  `MCPServer` in `mcp.server.mcpserver` with the decorator and `run(transport="stdio")`
+  surface unchanged. Both stdio servers (product + maintenance) are ported and the
+  dependency floor is now `mcp>=2,<3` (#173, after the interim `mcp<2` pin in #172).
+
+### Dependencies
+
+- Deferred `typescript` 7 via a `dependabot.yml` ignore: typescript-eslint still peer-caps
+  TypeScript at `>=4.8.4 <6.1.0` (8.67.x, alphas included), so a TS 7 bump can't install.
+  It joins the existing frontend-toolchain deferrals to revisit as one coordinated upgrade.
+
 ## [0.2.5] - 2026-07-08
 
 ### Added
