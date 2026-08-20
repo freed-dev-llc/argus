@@ -30,11 +30,17 @@ updates:
       - "javascript"
     commit-message:
       prefix: "deps"
-    # Frontend toolchain majors are deferred until the peer-dep ecosystem aligns:
-    # @vitejs/plugin-react 6 needs vite 8, @eslint/js 10 / eslint 10 are not yet
-    # supported by typescript-eslint, and typescript 7 is peer-capped out by
-    # typescript-eslint (`typescript@">=4.8.4 <6.1.0"` as of 8.67.x, alphas included).
-    # Revisit as a single coordinated upgrade.
+    # Frontend toolchain majors are deferred, but for three different reasons — they are
+    # NOT one blocked bundle. Tracking issue: #175.
+    #   typescript 7        — genuinely blocked: typescript-eslint peer-caps TS at
+    #                         `>=4.8.4 <6.1.0` (8.67.x, alphas included). Unblock check:
+    #                         `npm view typescript-eslint peerDependencies.typescript`.
+    #   eslint / @eslint/js — no longer blocked (typescript-eslint 8.67.0 peers
+    #                         `eslint: ^8.57.0 || ^9.0.0 || ^10.0.0`); held only because
+    #                         eslint 10 wants a deliberate flat-config pass.
+    #   vite / plugin-react — independent of typescript-eslint; plugin-react 6 peers
+    #                         `vite: ^8.0.0`, so the pair moves together. vite 8 is
+    #                         Rolldown-based — a migration, not a bump.
     ignore:
       - dependency-name: "vite"
         update-types: ["version-update:semver-major"]
