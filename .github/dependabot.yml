@@ -31,8 +31,10 @@ updates:
     commit-message:
       prefix: "deps"
     # Frontend toolchain majors are deferred until the peer-dep ecosystem aligns:
-    # @vitejs/plugin-react 6 needs vite 8, and @eslint/js 10 / eslint 10 are not yet
-    # supported by typescript-eslint. Revisit as a single coordinated upgrade.
+    # @vitejs/plugin-react 6 needs vite 8, @eslint/js 10 / eslint 10 are not yet
+    # supported by typescript-eslint, and typescript 7 is peer-capped out by
+    # typescript-eslint (`typescript@">=4.8.4 <6.1.0"` as of 8.67.x, alphas included).
+    # Revisit as a single coordinated upgrade.
     ignore:
       - dependency-name: "vite"
         update-types: ["version-update:semver-major"]
@@ -41,6 +43,8 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
     groups:
       npm-minor:
