@@ -10,7 +10,7 @@ from argus.discovery.base import Collector, DiscoveryResult
 from argus.discovery.collectors import COLLECTORS
 from argus.discovery.vendors import BUILTIN_PACKS, VENDOR_PACKS, Transport
 from argus.discovery.vendors.docker import DockerCollector
-from argus.discovery.vendors.docker.collector import _SEP
+from argus.discovery.vendors.docker.collector import _SEP, CONNECT_FAILED
 from argus.discovery.vendors.docker.models import (
     DockerHost,
     cluster_name,
@@ -131,14 +131,18 @@ class TestCollect:
         collector = DockerCollector(hosts=[DockerHost("amp", "amp")])
         monkeypatch.setattr(
             collector, "_run",
-            FakeRun({"amp": (255, "", "ssh: connect to host amp port 22: No route to host")}),
+            FakeRun({"amp": (CONNECT_FAILED, "", "ssh connection failed: No route to host")}),
         )
         result = await collector.collect()
         assert result.unreachable_hosts == ["amp"]
         assert result.virtual_machines == []
 
-    async def test_permission_denied_is_reported_verbatim(self, monkeypatch) -> None:
-        """A root-owned socket looked exactly like a down host until the reason was kept."""
+    async def test_a_command_failure_is_also_not_a_zero(self, monkeypatch) -> None:
+        """A root-owned socket looked exactly like a down host until the reason was kept.
+
+        The shell ran, so this is not CONNECT_FAILED, but the containers are still unknown
+        and must not reconcile to none.
+        """
         collector = DockerCollector(hosts=[DockerHost("amp", "amp")])
         monkeypatch.setattr(
             collector, "_run",
@@ -146,7 +150,27 @@ class TestCollect:
         )
         result = await collector.collect()
         assert result.unreachable_hosts == ["amp"]
+        assert result.virtual_machines == []
         assert any("permission denied" in n for n in result.notes)
+
+    async def test_auth_failure_is_distinguished_from_a_missing_runtime(
+        self, monkeypatch
+    ) -> None:
+        """A rejected key must never be read as 'this host runs no containers'.
+
+        Both used to arrive as a non-zero exit with text to match on; only the runtime
+        case is a real zero.
+        """
+        collector = DockerCollector(
+            hosts=[DockerHost("a", "a"), DockerHost("b", "b")]
+        )
+        monkeypatch.setattr(collector, "_run", FakeRun({
+            "a": (CONNECT_FAILED, "", "ssh authentication failed: Permission denied"),
+            "b": (127, "", "sh: docker: command not found"),
+        }))
+        result = await collector.collect()
+        assert result.unreachable_hosts == ["a"]
+        assert any("no docker runtime" in n for n in result.notes)
 
     async def test_one_bad_host_does_not_lose_the_others(self, monkeypatch) -> None:
         collector = DockerCollector(
@@ -188,17 +212,56 @@ class TestCollect:
         assert result.clusters == []
         assert any("DOCKER_HOSTS" in n for n in result.notes)
 
-    def test_local_host_argv_has_no_ssh(self) -> None:
-        argv = DockerCollector(hosts=[])._argv(DockerHost("spark", "local"))
-        assert argv[0] == "sh"
-        assert "ssh" not in argv
+    def test_command_uses_the_per_host_binary(self) -> None:
+        cmd = DockerCollector(hosts=[])._command(DockerHost("thor", "thor", "/x/docker"))
+        assert cmd.startswith("/x/docker ps -a")
 
-    def test_remote_host_argv_uses_batchmode(self) -> None:
-        """BatchMode keeps a missing key from hanging discovery on a password prompt."""
-        argv = DockerCollector(hosts=[])._argv(DockerHost("thor", "thor", "/x/docker"))
-        assert argv[0] == "ssh"
-        assert "BatchMode=yes" in argv
-        assert "/x/docker ps -a" in argv[-1]
+
+class TestSshOptions:
+    """asyncssh connect kwargs. The deployed image has no ssh binary, so these matter."""
+
+    def test_user_and_port_are_split_out_of_the_target(self) -> None:
+        opts = DockerCollector(hosts=[])._connect_options(DockerHost("h", "jon@host:2222"))
+        assert opts["username"] == "jon"
+        assert opts["port"] == 2222
+        assert opts["_hostname"] == "host"
+
+    def test_host_key_checking_is_on_by_default(self) -> None:
+        """Matches what the ssh subprocess did (BatchMode refuses an unknown host).
+
+        Deliberately unlike the firewall pack's known_hosts=None: that talks to one
+        appliance, this holds shells across the fleet.
+        """
+        opts = DockerCollector(hosts=[], known_hosts="")._connect_options(DockerHost("h", "h"))
+        assert "known_hosts" not in opts  # asyncssh default = verify
+
+    def test_host_key_checking_can_be_opted_out_explicitly(self) -> None:
+        opts = DockerCollector(hosts=[], known_hosts="none")._connect_options(
+            DockerHost("h", "h")
+        )
+        assert opts["known_hosts"] is None
+
+    def test_key_path_is_expanded(self) -> None:
+        opts = DockerCollector(hosts=[], ssh_key="~/.ssh/fleet")._connect_options(
+            DockerHost("h", "h")
+        )
+        assert opts["client_keys"][0].startswith("/")
+        assert not opts["client_keys"][0].startswith("~")
+
+    def test_a_missing_ssh_config_is_not_passed(self, tmp_path) -> None:
+        """asyncssh raises on a config path that does not exist; a container has none."""
+        opts = DockerCollector(
+            hosts=[], ssh_config=str(tmp_path / "nope")
+        )._connect_options(DockerHost("h", "h"))
+        assert "config" not in opts
+
+    def test_an_existing_ssh_config_is_passed_so_aliases_resolve(self, tmp_path) -> None:
+        cfg = tmp_path / "config"
+        cfg.write_text("Host thor\n  HostName 10.0.0.1\n")
+        opts = DockerCollector(hosts=[], ssh_config=str(cfg))._connect_options(
+            DockerHost("thor", "thor")
+        )
+        assert opts["config"] == [str(cfg)]
 
 
 # --- pack registration -----------------------------------------------------

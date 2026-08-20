@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     #   thor=/share/ZFS530_DATA/.qpkg/container-station/bin/docker
     docker_binaries: str = ""
     docker_ssh_timeout: int = 10  # SSH connect timeout per host, seconds
+    # Private key for the fleet. Needed in a container, which has no ~/.ssh of its own.
+    docker_ssh_key: str = ""
+    # ssh_config to resolve aliases with; defaults to ~/.ssh/config when that file exists.
+    docker_ssh_config: str = ""
+    # known_hosts path, or "none" to disable host-key verification. Empty keeps asyncssh's
+    # default (verify against the user's known_hosts, refuse an unknown host).
+    docker_ssh_known_hosts: str = ""
 
     # SNMP/LLDP collector (generic, for non-UniFi gear). Comma-separated host[:community].
     snmp_targets: str = ""

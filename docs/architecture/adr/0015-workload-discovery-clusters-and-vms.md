@@ -99,10 +99,23 @@ runtime; the only writes Argus makes are into NetBox.
   moves are rarer than name collisions.
 - **NetBox-only workloads are reported, never auto-deleted**, matching the device posture,
   and the staleness report is scoped to clusters the run actually observed.
-- **Hosts must be reachable from wherever the collector runs**, with key-based SSH. The
-  collector uses `BatchMode=yes` so a missing key fails fast instead of hanging discovery
-  on a password prompt. A containerized Argus needs the key mounted and the hosts in
-  `known_hosts`.
+- **Remote hosts are reached with asyncssh, not the `ssh` binary.** The first version of
+  this pack shelled out, and the deployed image (`python:3.13-slim`) has no `ssh` binary at
+  all, so the pack could not have run where it was meant to run. asyncssh is already a
+  runtime dependency for the firewall pack (ADR-0013), so the correct transport was in the
+  image the whole time. The rewrite also removes stderr text matching from the transport
+  layer: a refused connection, a rejected key, and a host with no Docker installed are three
+  outcomes, and only the last is a real "this host runs zero containers".
+- **Host-key verification is on by default**, which is asyncssh's default and matches what
+  the `ssh` subprocess did (`BatchMode` refuses an unknown host rather than prompting).
+  This deliberately differs from the firewall pack's `known_hosts=None`: that pack talks to
+  one appliance with a password, while this one holds shells across the whole fleet.
+  `DOCKER_SSH_KNOWN_HOSTS=none` opts out, so skipping verification is a choice an operator
+  makes rather than one they inherit.
+- **A containerized Argus needs `DOCKER_SSH_KEY`** pointing at a mounted private key, and
+  either a `known_hosts` file or the explicit opt-out. `DOCKER_SSH_CONFIG` (defaulting to
+  `~/.ssh/config` when present, and skipped when absent) is what lets `DOCKER_HOSTS` use
+  ssh_config aliases rather than raw addresses.
 - **Per-host binary overrides are needed in practice.** QNAP's Container Station keeps
   `docker` off `PATH`, so `DOCKER_BINARIES` exists alongside `DOCKER_HOSTS`. Two flat vars
   rather than one nested value, because a Docker path contains characters any single-field
