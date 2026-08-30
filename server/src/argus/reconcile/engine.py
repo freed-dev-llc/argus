@@ -45,6 +45,11 @@ COMPARE_FIELDS: tuple[str, ...] = (
 # Fields whose observed (free-text) value is compared slug-normalized against NetBox's slug.
 _SLUG_COMPARE_FIELDS: frozenset[str] = frozenset({"device_type", "manufacturer"})
 
+# ADR-0016 ownership markers. Intent objects belong to a human/IaC writer and are
+# read-only to Argus. New devices created from observations are marked as discovered.
+INTENT_TAG_SLUG = "argus-intent"
+DISCOVERED_TAG_NAME = "Argus discovered"
+
 
 @dataclass(frozen=True)
 class DeviceTypeIntent:
@@ -70,6 +75,9 @@ class ReconcileChange:
     # surfaced by the drift report (``_change_dict`` serializes only ``details``), so reported
     # deltas stay limited to real drift while apply still resolves under the real manufacturer.
     device_type_resolution: DeviceTypeIntent | None = None
+    # Apply-only source ownership tags. Like ``device_type_resolution``, these are
+    # operational metadata rather than reported field drift.
+    ownership_tags: tuple[str, ...] = ()
 
 
 @dataclass
@@ -148,6 +156,22 @@ def _compare_key(field_name: str, value: str | None) -> str:
     if field_name in _SLUG_COMPARE_FIELDS:
         return _slugify(value) if value else ""
     return _norm(value)
+
+
+def _tag_slugs(device: dict[str, Any]) -> set[str]:
+    """Return normalized tag slugs from a plain NetBox device dict."""
+    values = device.get("tags") or []
+    return {
+        _slugify(str(value.get("slug") or value.get("name") or ""))
+        if isinstance(value, dict)
+        else _slugify(str(value))
+        for value in values
+        if value
+    }
+
+
+def _is_intent_device(device: dict[str, Any]) -> bool:
+    return INTENT_TAG_SLUG in _tag_slugs(device)
 
 
 def _device_type_intent(
@@ -231,10 +255,19 @@ class ReconcileEngine:
                         object_type="device",
                         identifier=device.name,
                         details=_desired_device(device),
+                        ownership_tags=(observed.device_ownership_tag,)
+                        if observed.device_ownership_tag
+                        else (),
                     )
                 )
                 continue
             matched.add(key)
+            if _is_intent_device(current):
+                plan.notes.append(
+                    f"NetBox intent device '{device.name}' was observed by "
+                    f"'{observed.collector}' but remains read-only to Argus"
+                )
+                continue
             deltas, dt_intent = self._device_deltas(device, current)
             if deltas:
                 plan.changes.append(
@@ -254,7 +287,20 @@ class ReconcileEngine:
         workload_only = not observed.devices and bool(
             observed.clusters or observed.virtual_machines
         )
-        stale = [by_name[k].get("name") for k in by_name if k not in matched]
+        stale_candidates = (
+            {
+                key: device
+                for key, device in by_name.items()
+                if observed.device_ownership_tag in _tag_slugs(device)
+            }
+            if observed.device_ownership_tag
+            else by_name
+        )
+        stale = [
+            stale_candidates[k].get("name")
+            for k in stale_candidates
+            if k not in matched and not _is_intent_device(stale_candidates[k])
+        ]
         if stale and not workload_only:
             plan.notes.append(
                 f"{len(stale)} device(s) in NetBox not seen by '{observed.collector}' "
@@ -460,6 +506,10 @@ class ReconcileEngine:
                 "site": nb.ensure_site(details["site"]),
                 # Observed status when discovery mapped one (a valid NetBox token), else the default.
                 "status": details.get("status") or "active",
+                "tags": [
+                    nb.ensure_tag(tag)
+                    for tag in (DISCOVERED_TAG_NAME, *change.ownership_tags)
+                ],
             }
         )
         if details.get("primary_ip"):

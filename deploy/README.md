@@ -23,6 +23,7 @@ cp .env.example .env
   echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
   echo "NETBOX_SUPERUSER_PASSWORD=$(openssl rand -hex 24)"
   echo "NETBOX_API_TOKEN=$(openssl rand -hex 20)"
+  echo "NETBOX_API_TOKEN_PEPPER_1=$(openssl rand -base64 48)"
 } >> .env
 # then set UNIFI_URL + UNIFI_API_TOKEN (+ UNIFI_SITE) in .env
 ```

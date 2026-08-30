@@ -35,6 +35,7 @@ def _mock_device(name="sw1", site="hq", role="switch", ip="10.0.0.2/24"):
     r.site = MagicMock(slug=site)
     r.role = MagicMock(slug=role)
     r.primary_ip = ip
+    r.tags = [MagicMock(slug="argus-discovered")]
     return r
 
 
@@ -50,6 +51,7 @@ def test_list_devices_resolves_fk_fields():
         assert out[0]["site"] == "hq"
         assert out[0]["role"] == "switch"
         assert out[0]["primary_ip"] == "10.0.0.2/24"
+        assert out[0]["tags"] == ["argus-discovered"]
         api.dcim.devices.all.assert_called_once()
         api.dcim.devices.filter.assert_not_called()
 
@@ -99,6 +101,23 @@ def test_ensure_device_type_creates_with_manufacturer():
         assert client.ensure_device_type("USW-24-PoE", 3) == 5
         api.dcim.device_types.create.assert_called_once_with(
             {"model": "USW-24-PoE", "slug": "usw-24-poe", "manufacturer": 3}
+        )
+
+
+def test_ensure_tag_creates_when_missing():
+    with patch("argus.netbox.client.pynetbox") as pnb:
+        api = MagicMock()
+        pnb.api.return_value = api
+        api.extras.tags.get.return_value = None
+        api.extras.tags.create.return_value = MagicMock(id=6)
+        client = NetBoxClient("https://nb", "tok")
+        assert client.ensure_tag("Argus discovered") == 6
+        api.extras.tags.create.assert_called_once_with(
+            {
+                "name": "Argus discovered",
+                "slug": "argus-discovered",
+                "color": "9e9e9e",
+            }
         )
 
 

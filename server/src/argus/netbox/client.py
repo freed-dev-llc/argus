@@ -68,6 +68,7 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
     device_type = getattr(record, "device_type", None)
     manufacturer = getattr(device_type, "manufacturer", None) if device_type is not None else None
     serial = getattr(record, "serial", None)
+    tags = getattr(record, "tags", None) or []
     return {
         "id": getattr(record, "id", None),
         "name": getattr(record, "name", None),
@@ -78,6 +79,10 @@ def _device_to_dict(record: Any) -> dict[str, Any]:
         "device_type": _fk_name(device_type),
         "manufacturer": _fk_name(manufacturer),
         "serial": str(serial) if serial else None,
+        "tags": [
+            str(getattr(tag, "slug", None) or getattr(tag, "name", None) or tag)
+            for tag in tags
+        ],
     }
 
 
@@ -228,6 +233,18 @@ class NetBoxClient:
             {"model": model, "slug": slug, "manufacturer": manufacturer_id}
         )
         return int(created.id)
+
+    def ensure_tag(self, name: str) -> int:
+        """Return the id of an object tag, creating it if absent."""
+        slug = _slugify(name)
+        existing = self.api.extras.tags.get(slug=slug)
+        if existing is not None:
+            return int(existing.id)
+        return int(
+            self.api.extras.tags.create(
+                {"name": name, "slug": slug, "color": "9e9e9e"}
+            ).id
+        )
 
     # --- virtualization: clusters + VMs (workload plane, ADR-0015) -----------------------------
 
