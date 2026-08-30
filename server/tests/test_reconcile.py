@@ -71,6 +71,10 @@ class FakeNetBox:
         self.ensured.append(("device_type", model, manufacturer_id))
         return 4
 
+    def ensure_tag(self, name: str) -> int:
+        self.ensured.append(("tag", name))
+        return 5
+
     def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
         self.primary_ips.append((device_name, ip))
 
@@ -121,6 +125,61 @@ def test_diff_notes_stale_netbox_only_devices():
     assert any("old-sw" in note for note in plan.notes)
 
 
+def test_diff_ignores_intent_device_for_stale_note():
+    plan = ReconcileEngine(
+        FakeNetBox([{"name": "off-lan-vps", "tags": ["argus-intent"]}])
+    ).diff(_observed())
+    assert plan.changes == []
+    assert plan.notes == []
+
+
+def test_diff_does_not_update_observed_intent_device():
+    plan = ReconcileEngine(
+        FakeNetBox(
+            [{"name": "sw1", "primary_ip": "10.0.0.9/32", "tags": [{"slug": "argus-intent"}]}]
+        )
+    ).diff(_observed(DiscoveredDevice(name="sw1", primary_ip="10.0.0.2")))
+    assert plan.changes == []
+    assert any("remains read-only" in note for note in plan.notes)
+
+
+def test_diff_source_scoped_stale_note_ignores_other_collectors_devices():
+    nb = FakeNetBox(
+        [
+            {"name": "removed-vps", "tags": ["argus-discovered", "argus-source-netbird"]},
+            {"name": "lan-switch", "tags": ["argus-discovered"]},
+        ]
+    )
+    observed = DiscoveryResult(
+        collector="netbird",
+        device_ownership_tag="argus-source-netbird",
+    )
+    plan = ReconcileEngine(nb).diff(observed)
+    assert len(plan.notes) == 1
+    assert "removed-vps" in plan.notes[0]
+    assert "lan-switch" not in plan.notes[0]
+
+
+def test_apply_create_stamps_discovered_and_source_tags():
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "create",
+                "device",
+                "vps",
+                {"name": "vps", "site": "Default", "role": "server", "model": "Cloud VPS"},
+                ownership_tags=("argus-source-netbird",),
+            )
+        ]
+    )
+    result = ReconcileEngine(nb).apply(plan, confirm=True)
+    assert result["results"][0]["status"] == "created"
+    assert nb.created[0]["tags"] == [5, 5]
+    assert ("tag", "Argus discovered") in nb.ensured
+    assert ("tag", "argus-source-netbird") in nb.ensured
+
+
 def test_diff_proposes_ip_create_for_new_client():
     obs = DiscoveryResult(
         collector="unifi", clients=[DiscoveredClient(ip="10.0.0.50", hostname="phone")]
@@ -168,7 +227,10 @@ def test_apply_create_persists_with_resolved_fks():
     assert result["results"][0]["status"] == "created"
     assert len(nb.created) == 1
     created = nb.created[0]
-    assert created == {"name": "sw1", "device_type": 4, "role": 2, "site": 1, "status": "active"}
+    assert created == {
+        "name": "sw1", "device_type": 4, "role": 2, "site": 1,
+        "status": "active", "tags": [5],
+    }
     assert nb.primary_ips == [("sw1", "10.0.0.2")]
 
 

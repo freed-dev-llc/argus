@@ -114,6 +114,9 @@ class DiscoveryResult:
     #: Hosts the collector was asked about but could not read. Their clusters are left
     #: alone rather than diffed, so an unreachable host never looks like an emptied stack.
     unreachable_hosts: list[str] = field(default_factory=list)
+    #: Optional NetBox tag slug delimiting the devices this collector owns for stale
+    #: reporting. None preserves the legacy whole-device-catalog comparison.
+    device_ownership_tag: str | None = None
 
 
 class Collector(ABC):

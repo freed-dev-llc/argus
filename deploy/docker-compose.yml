@@ -23,6 +23,9 @@ x-netbox-env: &netbox-env
   REDIS_CACHE_DATABASE: "1"
   REDIS_CACHE_SSL: "false"
   SECRET_KEY: ${NETBOX_SECRET_KEY}
+  # NetBox 4.5+ hashes v2 API tokens with a versioned, server-side pepper.
+  # This is distinct from the API token itself and must remain stable once tokens exist.
+  API_TOKEN_PEPPER_1: ${NETBOX_API_TOKEN_PEPPER_1}
   ALLOWED_HOSTS: "*"
   # Space-separated https origin(s) trusted for CSRF when NetBox is served over HTTPS
   # behind a proxy/tunnel (NetBox v4 / Django requires this for login + edit POSTs).
@@ -151,6 +154,15 @@ services:
       UNIFI_API_TOKEN: ${UNIFI_API_TOKEN:-}
       UNIFI_SITE: ${UNIFI_SITE:-default}
       UNIFI_VERIFY_SSL: "false"
+      NETBIRD_URL: ${NETBIRD_URL:-}
+      NETBIRD_API_TOKEN: ${NETBIRD_API_TOKEN:-}
+      NETBIRD_GROUP: ${NETBIRD_GROUP:-}
+      NETBIRD_VERIFY_SSL: ${NETBIRD_VERIFY_SSL:-true}
+      NETBIRD_TIMEOUT: ${NETBIRD_TIMEOUT:-30}
+      NETBIRD_SITE: ${NETBIRD_SITE:-}
+      NETBIRD_ROLE: ${NETBIRD_ROLE:-}
+      NETBIRD_MODEL: ${NETBIRD_MODEL:-}
+      NETBIRD_MANUFACTURER: ${NETBIRD_MANUFACTURER:-NetBird}
       HTTP_HOST: 0.0.0.0
       HTTP_PORT: "8080"
       # Require Authorization: Bearer <token> on /api and /webhooks. Empty (default) =

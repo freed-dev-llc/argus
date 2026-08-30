@@ -41,6 +41,8 @@ decision).
 | [0013](0013-paired-vendor-knowledge-packs.md) | Paired Vendor + Knowledge Packs (Argus ↔ Mnemosyne) | 2026-06-29 | Accepted |
 | [0014](0014-unifi-gateway-mgmt-ip-legacy-api.md) | UniFi Gateway Management IP via the Legacy Network API | 2026-06-29 | Accepted |
 | [0015](0015-workload-discovery-clusters-and-vms.md) | Workload Discovery — Clusters and Virtual Machines | 2026-08-20 | Accepted |
+| [0016](0016-netbox-device-ownership-tags.md) | Scope NetBox Device Ownership with Tags | 2026-08-30 | Accepted |
+| [0017](0017-netbird-group-scoped-discovery.md) | Group-Scoped NetBird Discovery for Off-LAN Devices | 2026-08-30 | Accepted |
 
 ## Adding a new ADR
 

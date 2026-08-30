@@ -27,6 +27,21 @@ class Settings(BaseSettings):
     unifi_site: str = "default"  # site internalReference; empty / "*" / "all" → discover all sites
     unifi_verify_ssl: bool = False  # UniFi controllers use self-signed certs
 
+    # NetBird management API (off-LAN discovery, ADR-0017). A group is required as an
+    # ownership boundary: importing every peer would make overlay addresses compete with
+    # LAN collectors for primary-IP authority.
+    netbird_url: str = ""
+    netbird_api_token: str = ""
+    netbird_group: str = ""
+    netbird_verify_ssl: bool = True
+    netbird_timeout: float = 30.0
+    # Optional create-time defaults. Leave blank to make NetBird update existing devices
+    # only (IP/status); all three are needed for reconcile to create a new NetBox device.
+    netbird_site: str = ""
+    netbird_role: str = ""
+    netbird_model: str = ""
+    netbird_manufacturer: str = "NetBird"
+
     # Docker workload discovery (ADR-0015). "name=target" pairs, comma-separated:
     #   cerebrum=cerebrum,thor=thor,helios=root@10.0.0.9,spark=local
     # target is any SSH destination; "local" runs without SSH (the host Argus is on).
@@ -112,6 +127,11 @@ class Settings(BaseSettings):
     def netbox_configured(self) -> bool:
         """True when both a NetBox URL and token are set."""
         return bool(self.netbox_url and self.netbox_token)
+
+    @property
+    def netbird_configured(self) -> bool:
+        """True when the API and required peer-group ownership boundary are configured."""
+        return bool(self.netbird_url and self.netbird_api_token and self.netbird_group)
 
     @property
     def tenant_stamping_enabled(self) -> bool:

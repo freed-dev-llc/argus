@@ -23,6 +23,17 @@ def test_get_settings_is_cached():
     assert get_settings() is get_settings()
 
 
+def test_netbird_requires_url_token_and_group(monkeypatch):
+    monkeypatch.setenv("NETBIRD_URL", "https://mesh.example")
+    monkeypatch.setenv("NETBIRD_API_TOKEN", "nbp_secret")
+    settings = Settings(_env_file=None)
+    assert settings.netbird_configured is False
+
+    monkeypatch.setenv("NETBIRD_GROUP", "Off-LAN VPS")
+    settings = Settings(_env_file=None)
+    assert settings.netbird_configured is True
+
+
 def test_netbox_tenant_unset_by_default():
     settings = Settings(netbox_tenant="", _env_file=None)
     assert settings.netbox_tenant == ""

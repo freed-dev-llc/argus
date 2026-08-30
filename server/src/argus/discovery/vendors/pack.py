@@ -39,6 +39,7 @@ class Transport(StrEnum):
     DEVICE_SNMP = "device_snmp"  # per-device SNMP
     DEVICE_SSH = "device_ssh"  # per-device SSH / CLI
     HOST_SSH = "host_ssh"  # per-host SSH to a container/VM runtime (ADR-0015)
+    MESH_API = "mesh_api"  # overlay/mesh control-plane API (ADR-0017)
 
 
 @dataclass(frozen=True)

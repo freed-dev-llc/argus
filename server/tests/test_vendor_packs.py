@@ -13,6 +13,7 @@ from argus.discovery.vendors import (
     vendor_collectors,
 )
 from argus.discovery.vendors.firewall import FirewallCollector
+from argus.discovery.vendors.netbird import NetBirdCollector
 from argus.discovery.vendors.pack import CLIENTS, DEVICES, TOPOLOGY, VendorPack
 
 
@@ -45,6 +46,15 @@ def test_firewall_pack_resolves_legacy_pfsense_alias() -> None:
     # ...but the alias is flagged so listings show the collector once, under "firewall".
     assert "pfsense" in PACK_ALIASES
     assert "firewall" not in PACK_ALIASES
+
+
+def test_netbird_is_a_group_scoped_builtin_pack() -> None:
+    pack = VENDOR_PACKS["netbird"]
+    assert pack.transport is Transport.MESH_API
+    assert {DEVICES} <= pack.capabilities
+    assert pack.collector is NetBirdCollector
+    assert "NETBIRD_GROUP" in pack.config_vars
+    assert pack in BUILTIN_PACKS
 
 
 def test_collectors_map_merges_vendor_and_legacy() -> None:
