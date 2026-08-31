@@ -31,6 +31,7 @@ async def test_unconfigured_is_read_only_and_explanatory(monkeypatch):
     result = await NetBirdCollector().collect()
     assert result.devices == []
     assert "NETBIRD_GROUP" in result.notes[0]
+    assert result.device_ownership_tag is None
 
 
 @pytest.mark.asyncio
@@ -118,6 +119,7 @@ async def test_missing_group_never_fetches_or_imports_all_peers(monkeypatch):
     assert result.devices == []
     assert not peer_route.called
     assert "was not found" in result.notes[0]
+    assert result.device_ownership_tag is None
 
 
 @pytest.mark.asyncio
@@ -128,6 +130,7 @@ async def test_api_error_becomes_note(monkeypatch):
     result = await NetBirdCollector().collect()
     assert result.devices == []
     assert result.notes[0].startswith("NetBird API request failed:")
+    assert result.device_ownership_tag is None
 
 
 @pytest.mark.asyncio

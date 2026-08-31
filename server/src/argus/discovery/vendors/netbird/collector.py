@@ -69,10 +69,7 @@ class NetBirdCollector(Collector):
 
     async def collect(self) -> DiscoveryResult:
         settings = get_settings()
-        result = DiscoveryResult(
-            collector=self.name,
-            device_ownership_tag=self.ownership_tag,
-        )
+        result = DiscoveryResult(collector=self.name)
         if not settings.netbird_configured:
             result.notes.append(
                 "NetBird not configured: set NETBIRD_URL, NETBIRD_API_TOKEN, "
@@ -111,9 +108,15 @@ class NetBirdCollector(Collector):
                 peer_response = await client.get(f"{base}/api/peers")
                 peer_response.raise_for_status()
                 peers = _items(peer_response.json())
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx.HTTPError, httpx.InvalidURL, ValueError) as exc:
             result.notes.append(f"NetBird API request failed: {exc}")
             return result
+
+        # Only a genuinely successful group+peers fetch claims source ownership
+        # (ADR-0016/0017) — an unconfigured, misconfigured, or failed run must never scope
+        # stale-device reporting to a tag it didn't actually observe under, or every
+        # NetBird-owned device would be misreported as removed on a transient outage.
+        result.device_ownership_tag = self.ownership_tag
 
         skipped_unnamed = 0
         for peer in peers:

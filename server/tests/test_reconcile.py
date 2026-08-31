@@ -73,7 +73,9 @@ class FakeNetBox:
 
     def ensure_tag(self, name: str) -> int:
         self.ensured.append(("tag", name))
-        return 5
+        # Distinct per-name ids (not a constant) so a test asserting on `tags` can tell
+        # correct per-tag resolution apart from two tags accidentally resolving alike.
+        return {"Argus discovered": 5}.get(name, 6)
 
     def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
         self.primary_ips.append((device_name, ip))
@@ -160,6 +162,51 @@ def test_diff_source_scoped_stale_note_ignores_other_collectors_devices():
     assert "lan-switch" not in plan.notes[0]
 
 
+def test_diff_unscoped_collector_ignores_devices_owned_by_another_source():
+    """An unscoped collector (e.g. unifi) must not flag another source's devices as stale.
+
+    Otherwise a NetBird-owned VPS, transferred from argus-intent to
+    argus-discovered + argus-source-netbird (ADR-0017), would be reported stale by every
+    unifi run forever — reproducing exactly the noise ADR-0016 was written to eliminate.
+    """
+    nb = FakeNetBox(
+        [
+            {"name": "off-lan-vps", "tags": ["argus-discovered", "argus-source-netbird"]},
+            {"name": "lan-switch", "tags": ["argus-discovered"]},
+        ]
+    )
+    plan = ReconcileEngine(nb).diff(_observed())
+    assert len(plan.notes) == 1
+    assert "lan-switch" in plan.notes[0]
+    assert "off-lan-vps" not in plan.notes[0]
+
+
+def test_diff_skips_update_when_device_owned_by_another_source():
+    """A name collision with a device owned by another source must not overwrite its fields.
+
+    NetBird's mesh address must never displace a LAN management address it doesn't own
+    (ADR-0017); this holds even if a NetBird peer name happens to collide with an existing
+    LAN device NetBox record.
+    """
+    nb = FakeNetBox(
+        [
+            {
+                "name": "helios",
+                "primary_ip": {"address": "10.0.0.9/24"},
+                "tags": ["argus-discovered"],
+            }
+        ]
+    )
+    observed = DiscoveryResult(
+        collector="netbird",
+        devices=[DiscoveredDevice(name="helios", primary_ip="100.119.1.5")],
+        device_ownership_tag="argus-source-netbird",
+    )
+    plan = ReconcileEngine(nb).diff(observed)
+    assert plan.changes == []
+    assert any("outside its ownership scope" in note for note in plan.notes)
+
+
 def test_apply_create_stamps_discovered_and_source_tags():
     nb = FakeNetBox([])
     plan = ReconcilePlan(
@@ -175,7 +222,7 @@ def test_apply_create_stamps_discovered_and_source_tags():
     )
     result = ReconcileEngine(nb).apply(plan, confirm=True)
     assert result["results"][0]["status"] == "created"
-    assert nb.created[0]["tags"] == [5, 5]
+    assert nb.created[0]["tags"] == [5, 6]
     assert ("tag", "Argus discovered") in nb.ensured
     assert ("tag", "argus-source-netbird") in nb.ensured
 

@@ -49,6 +49,9 @@ _SLUG_COMPARE_FIELDS: frozenset[str] = frozenset({"device_type", "manufacturer"}
 # read-only to Argus. New devices created from observations are marked as discovered.
 INTENT_TAG_SLUG = "argus-intent"
 DISCOVERED_TAG_NAME = "Argus discovered"
+# ADR-0016/0017 source-ownership tags (e.g. "argus-source-netbird") narrow a collector's
+# stale-device and update scope to the devices it actually owns.
+SOURCE_TAG_PREFIX = "argus-source-"
 
 
 @dataclass(frozen=True)
@@ -170,8 +173,9 @@ def _tag_slugs(device: dict[str, Any]) -> set[str]:
     }
 
 
-def _is_intent_device(device: dict[str, Any]) -> bool:
-    return INTENT_TAG_SLUG in _tag_slugs(device)
+def _source_owner(tag_slugs: set[str]) -> str | None:
+    """Return the ``argus-source-*`` tag slug owning a device, if any (ADR-0016/0017)."""
+    return next((slug for slug in tag_slugs if slug.startswith(SOURCE_TAG_PREFIX)), None)
 
 
 def _device_type_intent(
@@ -243,6 +247,10 @@ class ReconcileEngine:
         by_name: dict[str, dict[str, Any]] = {
             (d.get("name") or "").lower(): d for d in netbox_devices if d.get("name")
         }
+        tags_by_key: dict[str, set[str]] = {key: _tag_slugs(d) for key, d in by_name.items()}
+        own_tag_slug = (
+            _slugify(observed.device_ownership_tag) if observed.device_ownership_tag else None
+        )
 
         matched: set[str] = set()
         for device in observed.devices:
@@ -262,10 +270,25 @@ class ReconcileEngine:
                 )
                 continue
             matched.add(key)
-            if _is_intent_device(current):
+            current_tags = tags_by_key[key]
+            if INTENT_TAG_SLUG in current_tags:
                 plan.notes.append(
                     f"NetBox intent device '{device.name}' was observed by "
                     f"'{observed.collector}' but remains read-only to Argus"
+                )
+                continue
+            owner = _source_owner(current_tags)
+            if owner != own_tag_slug:
+                # Symmetric with the stale-scoping rule below: a device this collector
+                # doesn't have confirmed source-tag ownership of is never written to, even
+                # on a name match — e.g. NetBird's mesh address must never displace a LAN
+                # management address it doesn't own (ADR-0017), and a LAN collector must
+                # never touch a device NetBird has already claimed via its source tag.
+                owned_by = f"tagged for source '{owner}'" if owner else "not source-tagged"
+                plan.notes.append(
+                    f"NetBox device '{device.name}' ({owned_by}) was observed by "
+                    f"'{observed.collector}' but is outside its ownership scope; leaving "
+                    "it untouched to avoid a cross-source overwrite"
                 )
                 continue
             deltas, dt_intent = self._device_deltas(device, current)
@@ -287,19 +310,17 @@ class ReconcileEngine:
         workload_only = not observed.devices and bool(
             observed.clusters or observed.virtual_machines
         )
-        stale_candidates = (
-            {
-                key: device
-                for key, device in by_name.items()
-                if observed.device_ownership_tag in _tag_slugs(device)
-            }
-            if observed.device_ownership_tag
-            else by_name
-        )
+        # A collector with its own ownership tag (ADR-0016/0017) reports staleness only for
+        # devices explicitly carrying that exact tag — never untagged or other-source devices.
+        # An unscoped collector (own_tag_slug is None) keeps the legacy behavior of considering
+        # every untagged device, but still excludes devices another source explicitly owns —
+        # otherwise a scoped collector's fleet would look permanently stale to every other run.
         stale = [
-            stale_candidates[k].get("name")
-            for k in stale_candidates
-            if k not in matched and not _is_intent_device(stale_candidates[k])
+            device.get("name")
+            for key, device in by_name.items()
+            if key not in matched
+            and _source_owner(tags_by_key[key]) == own_tag_slug
+            and INTENT_TAG_SLUG not in tags_by_key[key]
         ]
         if stale and not workload_only:
             plan.notes.append(

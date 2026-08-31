@@ -114,8 +114,11 @@ class DiscoveryResult:
     #: Hosts the collector was asked about but could not read. Their clusters are left
     #: alone rather than diffed, so an unreachable host never looks like an emptied stack.
     unreachable_hosts: list[str] = field(default_factory=list)
-    #: Optional NetBox tag slug delimiting the devices this collector owns for stale
-    #: reporting. None preserves the legacy whole-device-catalog comparison.
+    #: Optional NetBox tag slug (ADR-0016/0017) delimiting the devices this collector owns.
+    #: When set, stale reporting and updates are scoped to devices carrying exactly this
+    #: tag. When None, untagged devices keep the legacy whole-catalog comparison, but
+    #: devices explicitly owned by another source's tag are still excluded — otherwise an
+    #: unscoped collector would flag a scoped collector's whole fleet as stale.
     device_ownership_tag: str | None = None
 
 
