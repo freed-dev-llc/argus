@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-08-31
+
+### Fixed
+
+- **Device-ownership scoping was one-directional**: `ReconcileEngine.diff()` let a scoped
+  collector (NetBird) correctly ignore other sources' devices, but an unscoped collector
+  (unifi/firewall/docker) still diffed against NetBox's whole device catalog — so a device
+  transferred to `argus-discovered` + `argus-source-netbird` (ADR-0017) was re-flagged stale
+  by every unifi run, forever, and a NetBird peer name colliding with an existing NetBox
+  record could overwrite fields (like `primary_ip`) on a device NetBird doesn't own.
+  Stale-device reporting and updates now use one symmetric rule: a device is only in a
+  collector's scope when its `argus-source-*` tag (if any) exactly matches the collector's
+  own ownership tag. Also: `NetBirdCollector` no longer stamps its ownership tag on an
+  unconfigured/misconfigured/failed run (an outage was indistinguishable from real device
+  removal), the ownership tag is now slugified before comparison against NetBox's tag set,
+  and `httpx.InvalidURL` no longer escapes the collector's error handling.
+
+### Added
+
+- **NetBird vendor pack** (`collector=netbird`), group-scoped off-LAN discovery over
+  NetBird's management REST API (ADR-0017). Imports peers from exactly one configured
+  `NETBIRD_GROUP` — never a fallback to all peers — and maps each to a NetBox device by
+  peer name, mesh address (`primary_ip`), and online/offline status. Site, role, model, and
+  manufacturer are left unknown by default; optional `NETBIRD_SITE` / `NETBIRD_ROLE` /
+  `NETBIRD_MODEL` / `NETBIRD_MANUFACTURER` bootstrap new peers when the group is
+  homogeneous. Pairs with new NetBox device-ownership tags (ADR-0016) —
+  `argus-discovered` / `argus-intent` / `argus-source-*` — so a collector's stale-device
+  reporting and updates stay scoped to the devices it actually owns, letting an
+  off-LAN VPS be entered by hand as `argus-intent` and later transferred to NetBird
+  without producing LAN-discovery noise. Config: `NETBIRD_URL`, `NETBIRD_API_TOKEN`,
+  `NETBIRD_GROUP` (required), plus optional `NETBIRD_VERIFY_SSL` and `NETBIRD_TIMEOUT`.
+
+### Changed
+
+- **New required `NETBOX_API_TOKEN_PEPPER_1` deploy secret**: NetBox 4.5+ hashes v2 API
+  tokens with a versioned, server-side pepper, separate from the API token itself and
+  expected to remain stable once tokens exist. `deploy/docker-compose.yml` now forwards it
+  to the bundled NetBox container. **Existing deployments must add it to `deploy/.env`**
+  (`openssl rand -base64 48` — see `deploy/README.md`) before upgrading; it has no default,
+  so an unset value silently starts NetBox with an empty pepper.
+
 ### Added
 
 - **`deploy/docker-compose.override.yml.example`** and a gitignore entry for the real
@@ -683,7 +724,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/freed-dev-llc/argus/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/freed-dev-llc/argus/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/freed-dev-llc/argus/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/freed-dev-llc/argus/compare/v0.2.2...v0.2.3
