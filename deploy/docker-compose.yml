@@ -50,7 +50,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    restart: unless-stopped
+    restart: always
 
   netbox-redis:
     image: redis:7-alpine
@@ -59,7 +59,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    restart: unless-stopped
+    restart: always
 
   netbox:
     build:
@@ -87,7 +87,7 @@ services:
       timeout: 10s
       retries: 25
       start_period: 180s
-    restart: unless-stopped
+    restart: always
 
   netbox-worker:
     image: argus-netbox:local
@@ -99,7 +99,7 @@ services:
       - /opt/netbox/venv/bin/python
       - /opt/netbox/netbox/manage.py
       - rqworker
-    restart: unless-stopped
+    restart: always
 
   # One-shot: create the v1 API token Argus uses. pynetbox sends "Token <value>", which
   # NetBox 4.6 matches as a v1 token; NetBox's own provisioning only mints v2 tokens
@@ -216,7 +216,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    restart: unless-stopped
+    restart: always
 
   argus-web:
     build: ../web
@@ -231,7 +231,7 @@ services:
       HTTP_TOKEN: ${HTTP_TOKEN:-}
     ports:
       - "8095:80"
-    restart: unless-stopped
+    restart: always
 
 volumes:
   netbox-postgres-data:
