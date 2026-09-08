@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Deploy stack restarts unconditionally**: every long-running service in
+  `deploy/docker-compose.yml` now uses `restart: always` instead of `unless-stopped`.
+  With `unless-stopped`, a container that had ever been stopped by hand stayed down
+  across host reboots. On aria-spark the `argus-server` container was in that state
+  from 2026-08-24 to 2026-09-08 while a second container answered the compose network
+  alias, so the public health probe stayed green and Hermes' `docker exec` into the
+  named container failed on every attempt. `netbox-init` keeps `restart: "no"`.
+
 ## [0.2.6] - 2026-08-31
 
 ### Fixed
