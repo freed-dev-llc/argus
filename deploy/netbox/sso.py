@@ -27,6 +27,26 @@ if _oidc_client_id and _oidc_client_secret and _oidc_endpoint:
     REMOTE_AUTH_DEFAULT_GROUPS = [g.strip() for g in _default_groups.split(",") if g.strip()]
     REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
 
+    # The stock NetBox pipeline never looks up an existing local user by email,
+    # so a first OIDC login would mint a SECOND account (username suffixed) even
+    # when a matching local user exists. Re-declare the stock pipeline with
+    # associate_by_email inserted: a unique email match adopts the existing user
+    # (e.g. an admin created locally before SSO); no match falls through to
+    # auto-create with the default groups above.
+    SOCIAL_AUTH_PIPELINE = (
+        "social_core.pipeline.social_auth.social_details",
+        "social_core.pipeline.social_auth.social_uid",
+        "social_core.pipeline.social_auth.auth_allowed",
+        "social_core.pipeline.social_auth.social_user",
+        "social_core.pipeline.user.get_username",
+        "social_core.pipeline.social_auth.associate_by_email",
+        "social_core.pipeline.user.create_user",
+        "social_core.pipeline.social_auth.associate_user",
+        "netbox.authentication.user_default_groups_handler",
+        "social_core.pipeline.social_auth.load_extra_data",
+        "social_core.pipeline.user.user_details",
+    )
+
     # python-social-auth setting names derive from the backend name ("oidc").
     SOCIAL_AUTH_OIDC_OIDC_ENDPOINT = _oidc_endpoint
     SOCIAL_AUTH_OIDC_KEY = _oidc_client_id
