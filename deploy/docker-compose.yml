@@ -6,6 +6,8 @@
 #
 # Internal Postgres/Redis are NOT published — they won't clash with any host services.
 # Published ports: 8095 (Argus dashboard), 8096 (NetBox UI), 127.0.0.1:8094 (Argus API).
+# Bind addresses are parameterized: set NETBOX_BIND / ARGUS_WEB_BIND to a NetBird
+# overlay IP to expose the ports on the mesh only (default 0.0.0.0 = everywhere).
 name: argus
 
 x-netbox-env: &netbox-env
@@ -35,6 +37,14 @@ x-netbox-env: &netbox-env
   SUPERUSER_NAME: admin
   SUPERUSER_EMAIL: admin@example.com
   SUPERUSER_PASSWORD: ${NETBOX_SUPERUSER_PASSWORD}
+  # OpenID Connect remote auth (Authentik or any OIDC issuer). All optional:
+  # with any of the three required keys unset, NetBox stays on local authentication.
+  NETBOX_OIDC_CLIENT_ID: ${NETBOX_OIDC_CLIENT_ID:-}
+  NETBOX_OIDC_CLIENT_SECRET: ${NETBOX_OIDC_CLIENT_SECRET:-}
+  NETBOX_OIDC_ENDPOINT: ${NETBOX_OIDC_ENDPOINT:-}
+  # Comma-separated NetBox group names auto-created OIDC users join (groups must
+  # already exist in NetBox; membership grants their object permissions).
+  NETBOX_OIDC_DEFAULT_GROUPS: ${NETBOX_OIDC_DEFAULT_GROUPS:-}
 
 services:
   netbox-postgres:
@@ -76,7 +86,10 @@ services:
     volumes:
       - netbox-media:/opt/netbox/netbox/media
     ports:
-      - "8096:8080"
+      # Bind address for the UI. Default listens everywhere; set to a host's
+      # NetBird overlay IP (e.g. 100.x.y.z) so only mesh peers the policy admits
+      # reach it — LAN clients then use the private-proxy path instead.
+      - "${NETBOX_BIND:-0.0.0.0}:8096:8080"
     healthcheck:
       test:
         - CMD
@@ -230,7 +243,10 @@ services:
       # dashboard to authenticate against an auth-enabled API (unset = open default).
       HTTP_TOKEN: ${HTTP_TOKEN:-}
     ports:
-      - "8095:80"
+      # Bind address for the dashboard. Default listens everywhere; set to a host's
+      # NetBird overlay IP (e.g. 100.x.y.z) so only mesh peers the policy admits
+      # reach it — LAN clients then use the private-proxy path instead.
+      - "${ARGUS_WEB_BIND:-0.0.0.0}:8095:80"
     restart: always
 
 volumes:
