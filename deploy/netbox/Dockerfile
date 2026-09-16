@@ -13,3 +13,6 @@ RUN VIRTUAL_ENV=/opt/netbox/venv /usr/local/bin/uv pip install --no-cache netbox
 # Enable the plugin. NetBox loads every *.py in /etc/netbox/config/; the stock
 # plugins.py is only commented examples, so we replace it with the active config.
 COPY plugins.py /etc/netbox/config/plugins.py
+
+# OpenID Connect remote-auth config (env-driven; inert without NETBOX_OIDC_* keys).
+COPY sso.py /etc/netbox/config/sso.py

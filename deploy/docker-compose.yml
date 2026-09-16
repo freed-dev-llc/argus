@@ -35,6 +35,14 @@ x-netbox-env: &netbox-env
   SUPERUSER_NAME: admin
   SUPERUSER_EMAIL: admin@example.com
   SUPERUSER_PASSWORD: ${NETBOX_SUPERUSER_PASSWORD}
+  # OpenID Connect remote auth (Authentik or any OIDC issuer). All optional:
+  # with any of the three required keys unset, NetBox stays on local authentication.
+  NETBOX_OIDC_CLIENT_ID: ${NETBOX_OIDC_CLIENT_ID:-}
+  NETBOX_OIDC_CLIENT_SECRET: ${NETBOX_OIDC_CLIENT_SECRET:-}
+  NETBOX_OIDC_ENDPOINT: ${NETBOX_OIDC_ENDPOINT:-}
+  # Comma-separated NetBox group names auto-created OIDC users join (groups must
+  # already exist in NetBox; membership grants their object permissions).
+  NETBOX_OIDC_DEFAULT_GROUPS: ${NETBOX_OIDC_DEFAULT_GROUPS:-}
 
 services:
   netbox-postgres:
