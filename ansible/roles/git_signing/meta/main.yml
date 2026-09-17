@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: Jon Freed
+  description: Configure SSH-based git commit signing (identity, per-user signing key, fleet allowed_signers) for hosts and agent service accounts.
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  galaxy_tags:
+    - git
+    - ssh
+    - signing
+    - security
+dependencies: []

@@ -8,3 +8,6 @@ collections:
   # For the argus_deploy role (docker_compose_v2):
   - name: community.docker
     version: ">=3.6.0"
+  # For the git_signing role (git_config):
+  - name: community.general
+    version: ">=8.0.0"
