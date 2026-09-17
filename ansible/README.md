@@ -49,6 +49,22 @@ cp inventory/hosts.example.yml inventory/hosts.yml   # edit host + Vault the Uni
 ansible-playbook -i inventory/hosts.yml deploy-argus.yml
 ```
 
+## Configure git commit signing (role)
+
+The [`git_signing`](roles/git_signing/README.md) role sets up SSH commit signing for one
+or more users on a host — git identity, a dedicated `~/.ssh/github-commit-signing`
+ed25519 key, `commit.gpgsign`/`tag.gpgsign`, and a fleet-wide `allowed_signers` file
+built from the keys registered on the GitHub account — so agents and humans on any host
+produce commits that satisfy GitHub's required-signed-commits branch protection.
+
+```bash
+ansible-playbook playbooks/git-signing.yml --limit mesh -e 'git_signing_users=["aria","hermes"]'
+```
+
+Registering each new public key on the GitHub account (as an SSH **signing** key) is the
+one manual step; the role prints the exact `gh api` command for any key it doesn't find
+registered.
+
 ## Notes
 
 - Actually *running tasks* against the devices needs reachability + credentials (SSH/API)

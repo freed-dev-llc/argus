@@ -1,0 +1,34 @@
+---
+# Registered keys feed both the allowed_signers file and the registration check. The
+# endpoint is public and unauthenticated (~60 req/hr/IP), one GET per host per run.
+- name: Fetch SSH signing keys registered on the GitHub account
+  ansible.builtin.uri:
+    url: "https://api.github.com/users/{{ git_signing_github_user }}/ssh_signing_keys"
+    return_content: true
+    status_code: 200
+  register: git_signing_gh_response
+  changed_when: false
+  failed_when: false
+
+- name: Extract registered key material
+  ansible.builtin.set_fact:
+    git_signing_registered_keys: >-
+      {{ git_signing_gh_response.json | default([])
+         | map(attribute='key')
+         | map('regex_replace', '^(\S+ \S+).*$', '\1') | list }}
+    git_signing_registered_blobs: >-
+      {{ git_signing_gh_response.json | default([])
+         | map(attribute='key')
+         | map('regex_replace', '^\S+ (\S+).*$', '\1') | list }}
+
+- name: Normalize user entries to {name, home?} dicts
+  ansible.builtin.set_fact:
+    git_signing_user_objs: "{{ git_signing_user_objs | default([]) + [item if item is mapping else {'name': item}] }}"
+  loop: "{{ git_signing_users }}"
+
+- name: Configure commit signing per user
+  ansible.builtin.include_tasks: per_user.yml
+  loop: "{{ git_signing_user_objs | default([]) }}"
+  loop_control:
+    loop_var: git_signing_user
+    label: "{{ git_signing_user.name }}"

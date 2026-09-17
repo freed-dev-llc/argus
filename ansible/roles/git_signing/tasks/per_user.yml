@@ -1,0 +1,101 @@
+---
+- name: Resolve per-user paths
+  ansible.builtin.set_fact:
+    git_signing_home: "{{ git_signing_user.home | default('/home/' ~ git_signing_user.name) }}"
+    git_signing_key: "{{ (git_signing_user.home | default('/home/' ~ git_signing_user.name)) ~ '/.ssh/' ~ git_signing_key_name }}"
+    git_signing_cfgdir: "{{ (git_signing_user.home | default('/home/' ~ git_signing_user.name)) ~ '/.config/git' }}"
+    git_signing_not_self: "{{ git_signing_user.name != (ansible_user | default('')) }}"
+
+- name: Ensure ~/.ssh exists
+  ansible.builtin.file:
+    path: "{{ git_signing_home }}/.ssh"
+    state: directory
+    mode: "0700"
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+
+# Passphrase-less on purpose: headless agents must never block on a prompt. The key
+# never leaves the host and is revoked by deleting it from the GitHub account.
+- name: Generate the dedicated SSH signing key
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -t
+      - ed25519
+      - -N
+      - ""
+      - -f
+      - "{{ git_signing_key }}"
+      - -C
+      - "{{ git_signing_user.name }}@{{ inventory_hostname }} commit signing"
+    creates: "{{ git_signing_key }}"
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+
+- name: Read the public signing key
+  ansible.builtin.slurp:
+    src: "{{ git_signing_key }}.pub"
+  register: git_signing_pub
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+
+- name: Extract the local key blob
+  ansible.builtin.set_fact:
+    git_signing_blob: "{{ git_signing_pub.content | b64decode | trim | regex_replace('^\\S+ (\\S+).*$', '\\1') }}"
+
+- name: Set git identity and SSH signing config
+  community.general.git_config:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    scope: global
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+  loop:
+    - { name: "user.name", value: "{{ git_signing_name }}" }
+    - { name: "user.email", value: "{{ git_signing_email }}" }
+    - { name: "gpg.format", value: "ssh" }
+    - { name: "user.signingkey", value: "{{ git_signing_key }}.pub" }
+    - { name: "commit.gpgsign", value: "true" }
+    - { name: "tag.gpgsign", value: "true" }
+    - { name: "gpg.ssh.allowedSignersFile", value: "{{ git_signing_cfgdir }}/allowed_signers" }
+  when: item.name != "gpg.ssh.allowedSignersFile" or git_signing_allowed_signers | bool
+
+- name: Ensure the git config directory exists
+  ansible.builtin.file:
+    path: "{{ git_signing_cfgdir }}"
+    state: directory
+    mode: "0755"
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+  when: git_signing_allowed_signers | bool
+
+- name: Install the fleet allowed_signers file
+  ansible.builtin.template:
+    src: allowed_signers.j2
+    dest: "{{ git_signing_cfgdir }}/allowed_signers"
+    mode: "0644"
+  become: "{{ git_signing_not_self }}"
+  become_user: "{{ git_signing_user.name }}"
+  when: git_signing_allowed_signers | bool
+
+- name: Fail if the key is not registered on GitHub
+  ansible.builtin.fail:
+    msg: >-
+      {{ git_signing_key }}.pub is not registered as an SSH signing key on
+      github.com/{{ git_signing_github_user }}; commits will not verify. Register it with:
+      gh api /user/ssh_signing_keys -f title="{{ inventory_hostname }}-{{ git_signing_user.name }}" -f key="{{ git_signing_pub.content | b64decode | trim }}"
+  when: >-
+    git_signing_fail_on_unregistered | bool
+    and git_signing_gh_response.status | default(0) == 200
+    and git_signing_blob not in git_signing_registered_blobs
+
+- name: Warn if the key is not registered on GitHub
+  ansible.builtin.debug:
+    msg: >-
+      REGISTER ME: {{ git_signing_key }}.pub is not on github.com/{{ git_signing_github_user }}
+      as an SSH signing key yet. Run:
+      gh api /user/ssh_signing_keys -f title="{{ inventory_hostname }}-{{ git_signing_user.name }}" -f key="{{ git_signing_pub.content | b64decode | trim }}"
+  when: >-
+    not (git_signing_fail_on_unregistered | bool)
+    and git_signing_gh_response.status | default(0) == 200
+    and git_signing_blob not in git_signing_registered_blobs

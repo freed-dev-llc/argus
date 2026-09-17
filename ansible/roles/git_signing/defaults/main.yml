@@ -1,0 +1,27 @@
+---
+# Identity every configured user commits with. The email must be one GitHub associates
+# with the account that owns the signing keys, or commits will not show as Verified.
+git_signing_name: "Jonathan Freed"
+git_signing_email: "53282525+jfreed-dev@users.noreply.github.com"
+
+# GitHub account whose registered SSH signing keys feed the per-user allowed_signers
+# file and the registration check.
+git_signing_github_user: "jfreed-dev"
+
+# Users to configure on each target host. Plain names assume /home/<name>; use
+# {name: "...", home: "..."} dicts where that differs. Agent service accounts (hermes,
+# elara, ...) belong here — they commit as the human identity above.
+git_signing_users:
+  - "{{ ansible_user }}"
+
+# Basename of the dedicated signing key under each user's ~/.ssh.
+git_signing_key_name: "github-commit-signing"
+
+# Build ~/.config/git/allowed_signers from the GitHub account's registered SSH signing
+# keys, so `git log --show-signature` verifies commits made on any host in the fleet.
+git_signing_allowed_signers: true
+
+# Fail the run when a user's key is not registered on the GitHub account. Registration
+# is the one manual step (needs a token with the admin:ssh_signing_key scope), so the
+# default only warns with the exact `gh api` command to run.
+git_signing_fail_on_unregistered: false
