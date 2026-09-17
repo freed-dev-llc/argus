@@ -10,7 +10,7 @@ on:
 # (Switch `runs-on` to [self-hosted, linux] to use a self-hosted runner fleet.)
 jobs:
   server:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     defaults:
       run:
         working-directory: server
@@ -37,7 +37,7 @@ jobs:
           flags: server
 
   web:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     defaults:
       run:
         working-directory: web
