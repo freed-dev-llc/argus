@@ -4,22 +4,31 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Resolve argus-server through Docker embedded DNS at request time. A static
+    # proxy_pass name is resolved once at startup, so when the server container is
+    # recreated with a new IP, nginx keeps proxying to the dead address (502) until
+    # argus-web itself restarts.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # Argus API + health are proxied to the FastAPI server on the compose network.
     location /api/ {
-        proxy_pass http://argus-server:8080;
+        set $argus_server http://argus-server:8080;
+        proxy_pass $argus_server;
         proxy_set_header Host $host;
-        # ${HTTP_TOKEN} is substituted by the nginx image's envsubst at container
+        # ${HTTP_TOKEN} is substituted by the nginx image envsubst at container
         # start (it is always defined, default empty). When set to match
-        # argus-server's HTTP_TOKEN the dashboard authenticates to the auth-gated
+        # argus-server HTTP_TOKEN the dashboard authenticates to the auth-gated
         # API; when empty it forwards an empty bearer the server ignores.
         proxy_set_header Authorization "Bearer ${HTTP_TOKEN}";
     }
-    # Both /health and /health/deep (the dashboard's NetBox status badge polls the
-    # latter). Prefix match + path-less proxy_pass forwards the full URI unchanged, so
-    # both reach the server; these stay public (no Authorization header). no-store so a
-    # browser never serves a stale health response back to the badge.
+    # Both /health and /health/deep (the dashboard NetBox status badge polls the
+    # latter). With a variable proxy_pass and no URI part the original URI is
+    # forwarded unchanged, so both reach the server; these stay public (no
+    # Authorization header). no-store so a browser never serves a stale health
+    # response back to the badge.
     location /health {
-        proxy_pass http://argus-server:8080;
+        set $argus_server http://argus-server:8080;
+        proxy_pass $argus_server;
         proxy_set_header Host $host;
         add_header Cache-Control "no-store" always;
     }
