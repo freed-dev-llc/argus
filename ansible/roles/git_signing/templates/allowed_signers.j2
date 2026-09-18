@@ -1,0 +1,6 @@
+# Managed by Ansible (git_signing role) — do not edit by hand.
+# Lets `git log --show-signature` verify SSH-signed commits from every host/user whose
+# key is registered on github.com/{{ git_signing_github_user }}.
+{% for key in git_signing_registered_keys %}
+{{ git_signing_email }} {{ key }}
+{% endfor %}

@@ -15,7 +15,7 @@ on:
 
 jobs:
   pip-audit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -27,7 +27,7 @@ jobs:
         run: pip-audit --skip-editable . || true
 
   npm-audit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
