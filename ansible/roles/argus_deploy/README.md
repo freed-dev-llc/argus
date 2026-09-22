@@ -48,7 +48,7 @@ What it does:
 cd ansible
 ansible-galaxy collection install -r requirements.yml
 cp inventory/hosts.example.yml inventory/hosts.yml   # edit
-ansible-playbook -i inventory/hosts.yml deploy-argus.yml
+ansible-playbook deploy-argus.yml                     # hosts.yml is a default inventory source
 ```
 
 Idempotent: a second run with no config change makes no changes (secrets are reused).
