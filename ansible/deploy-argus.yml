@@ -1,6 +1,6 @@
 ---
 # Deploy the Argus stack to the hosts in the `argus_deploy` group.
-#   ansible-playbook -i inventory/hosts.yml deploy-argus.yml
+#   ansible-playbook deploy-argus.yml        # inventory/hosts.yml is a default source (ansible.cfg)
 - name: Deploy Argus
   hosts: argus_deploy
   gather_facts: true

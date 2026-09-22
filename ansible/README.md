@@ -46,7 +46,7 @@ host — repo checkout, `.env` rendering (secrets generated once and **reused** 
 ```bash
 ansible-galaxy collection install -r requirements.yml
 cp inventory/hosts.example.yml inventory/hosts.yml   # edit host + Vault the UniFi creds
-ansible-playbook -i inventory/hosts.yml deploy-argus.yml
+ansible-playbook deploy-argus.yml                     # hosts.yml is a default inventory source
 ```
 
 ## Configure git commit signing (role)
