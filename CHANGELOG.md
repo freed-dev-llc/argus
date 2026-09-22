@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Mesh-bound services still failed a reboot with `argus.service` installed**: on
+  2026-09-22 Docker restored `netbox` and `argus-web` before the NetBird interface had its
+  address, both failed to start, and every later start of the same `netbox` container ran
+  without rejoining the compose network (no published port, no lookup of `netbox-postgres`),
+  so it exited 12 times over 11 minutes. The unit's first step, `docker compose up -d`, started
+  that broken container, waited on its healthcheck, and the failed wait ended the unit before
+  the recreate step could run. The unit now recreates a port-less `netbox` or `argus-web`
+  before `up -d`, and `deploy/90-argus-nonlocal-bind.conf` (`net.ipv4.ip_nonlocal_bind=1`)
+  lets Docker's publish succeed before the interface exists, so the restore itself no longer
+  fails. Install steps for both in `deploy/README.md`.
+
 ## [0.2.7] - 2026-09-21
 
 ### Added

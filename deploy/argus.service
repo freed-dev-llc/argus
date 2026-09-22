@@ -1,7 +1,7 @@
 # Argus stack: repair mesh-address port bindings after boot.
 #
 # Install from the deploy/ directory of your checkout (deploy/README.md has the
-# full walkthrough):
+# full walkthrough, including the sysctl that removes the race itself):
 #
 #   sed "s|^WorkingDirectory=.*|WorkingDirectory=$PWD|" argus.service \
 #     | sudo tee /etc/systemd/system/argus.service >/dev/null
@@ -10,19 +10,28 @@
 # Why this exists: when NETBOX_BIND / ARGUS_WEB_BIND in .env point at an overlay
 # address (NetBird, Tailscale, WireGuard), Docker restores the restart: always
 # containers at boot before that interface has its address. The bind fails with
-# "cannot assign requested address" and the container either does not start or
-# comes up running with no published port. Docker does not retry, and a plain
-# `docker compose up -d` leaves a running container with an unchanged config
-# alone, so the service stays unreachable until someone recreates it. Seen
-# 2026-09-20 on a NetBird host: argus-web ran 29 hours with no listener on 8095
-# while /health on 127.0.0.1:8094 stayed green.
+# "cannot assign requested address" and Docker logs "failed to start container"
+# for netbox and argus-web without retrying. Worse, every later start of that
+# same container (a plain `docker compose up -d`, or Docker's own restart
+# policy) runs it without joining the compose network again: no published port,
+# and no name resolution for its peers. Seen 2026-09-20 on a NetBird host
+# (argus-web ran 29 hours with no listener on 8095) and 2026-09-22 (netbox
+# restarted 12 times over 11 minutes, each run failing to resolve
+# netbox-postgres, until the container was recreated). Only a recreate fixes
+# such a container, which is why the recreate step below runs first.
+#
+# 90-argus-nonlocal-bind.conf (net.ipv4.ip_nonlocal_bind=1) lets the bind
+# succeed before the interface exists, so with it installed Docker's restore
+# works and this unit finds nothing to repair. Keep both: the sysctl prevents,
+# the unit recovers.
 #
 # What it does, once per boot (and on `systemctl restart argus`):
 #   1. waits up to 180 s for every non-wildcard bind address in .env to be
 #      present on an interface;
-#   2. runs `docker compose up -d` to start anything Docker could not;
-#   3. recreates netbox or argus-web when `docker compose port` shows no
-#      published port for it.
+#   2. recreates netbox or argus-web when the container exists but
+#      `docker compose port` shows no published port for it (not running, or
+#      running without its port);
+#   3. runs `docker compose up -d` to start anything Docker could not.
 # There is no ExecStop on purpose: Docker's restart: always owns shutdown and
 # startup, so `systemctl restart argus` re-runs the checks without touching
 # healthy containers. Stop the stack with `docker compose stop`.
@@ -43,9 +52,14 @@ RemainAfterExit=yes
 # Edit to the deploy/ directory of your checkout (the sed line above does this).
 WorkingDirectory=/opt/argus/deploy
 ExecStartPre=/bin/bash -c 'for a in $$(grep -E "^(NETBOX_BIND|ARGUS_WEB_BIND)=" .env | cut -d= -f2 | sort -u); do case "$$a" in ""|0.0.0.0|127.*) continue;; esac; for i in $$(seq 1 180); do [ -n "$$(ip -4 -o addr show to "$$a")" ] && continue 2; sleep 1; done; echo "bind address $$a not present after 180s" >&2; exit 1; done'
+# Recreate before `up -d`: `up -d` would start the broken container as-is and
+# then wait on its healthcheck, and that wait failing ends the unit before any
+# later step runs (the 2026-09-22 failure). The `ps -aq` guard skips a service
+# that has never been created, so a first bring-up still goes through `up -d`
+# with its dependencies.
+ExecStart=/bin/bash -c '[ -z "$$(docker compose --env-file .env ps -aq netbox)" ] || docker compose --env-file .env port netbox 8080 >/dev/null 2>&1 || docker compose --env-file .env up -d --force-recreate --no-deps netbox'
+ExecStart=/bin/bash -c '[ -z "$$(docker compose --env-file .env ps -aq argus-web)" ] || docker compose --env-file .env port argus-web 80 >/dev/null 2>&1 || docker compose --env-file .env up -d --force-recreate --no-deps argus-web'
 ExecStart=/bin/bash -c 'docker compose --env-file .env up -d'
-ExecStart=/bin/bash -c 'docker compose --env-file .env port netbox 8080 >/dev/null 2>&1 || docker compose --env-file .env up -d --force-recreate --no-deps netbox'
-ExecStart=/bin/bash -c 'docker compose --env-file .env port argus-web 80 >/dev/null 2>&1 || docker compose --env-file .env up -d --force-recreate --no-deps argus-web'
 # Covers the address wait plus a cold start where compose waits on the NetBox
 # healthcheck (start_period 180s, 25 retries at 15s).
 TimeoutStartSec=900
