@@ -13,8 +13,8 @@ on:
 
 # This workflow stays on GitHub-hosted runners. The self-hosted fleet is arm64 Linux with no
 # docker CLI on the runner's PATH, and pypa/gh-action-pypi-publish ships an amd64-only image,
-# so the v0.2.7 run there failed in both the images and pypi jobs (2026-09-22). GHCR images
-# are therefore built for linux/amd64, as every release before it.
+# so the first release run on that fleet failed in the images and pypi jobs (2026-09-22). GHCR
+# images are therefore built for linux/amd64, as for every earlier release.
 
 # Least privilege by default; each job widens only what it needs.
 permissions:
