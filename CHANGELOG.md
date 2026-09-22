@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has no `ExecStop`, so `systemctl restart argus` re-runs the checks without bouncing
   healthy containers. Install steps in `deploy/README.md`; an offline test keeps its port
   checks aligned with the compose file.
+- **`argus_env_no_log` role variable**: the `argus_deploy` task that renders `deploy/.env`
+  hides its output because the file holds secrets, which also hides its `--diff`. Set the
+  variable to `false` (`-e argus_env_no_log=false`) to see the render diff in a
+  `--check --diff` preview, accepting that secrets then appear in the terminal.
 
 ### Changed
 

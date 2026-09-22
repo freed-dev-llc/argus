@@ -45,6 +45,11 @@ argus_netbox_oidc_client_secret: ""
 argus_netbox_oidc_endpoint: ""
 argus_netbox_oidc_default_groups: ""
 
+# Hide the deploy/.env render task's output (the file holds secrets). Set false to see the
+# render diff with --diff, for example: ansible-playbook deploy-argus.yml --check --diff
+# -e argus_env_no_log=false. Secrets then appear in the terminal and in any log of it.
+argus_env_no_log: true
+
 # Set false to render deploy/.env and stop: no compose up and no recreate handler.
 # playbooks/argus-env-render-check.yml uses this to exercise the template on localhost.
 argus_manage_stack: true
