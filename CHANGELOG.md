@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alias, so the public health probe stayed green and Hermes' `docker exec` into the
   named container failed on every attempt. `netbox-init` keeps `restart: "no"`.
 
+### Fixed
+
+- **Apply responses reported `dry_run: true`**: the `summary` block returned by a confirmed
+  `reconcile_apply` (MCP tool and `POST /api/reconcile?confirm_token=...`) echoed the plan's
+  dry-run flag even though `applied` was true and every result said `created` or `updated`.
+  The applied response now reports `dry_run: false`; the plan object itself is unchanged.
+
 ## [0.2.6] - 2026-08-31
 
 ### Fixed
