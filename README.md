@@ -37,7 +37,7 @@ integration.
 
 ## How it fits together
 
-```
+```text
 Collectors (UniFi / pfSense-OPNsense / SNMP-LLDP / DHCP-ARP …) ─► normalize ─► diff vs NetBox ─► reconcile plan ─► apply
         (server/src/argus/discovery/)                                           (reconcile/)     (dry-run default,
                                                                                                   confirmation-gated)
