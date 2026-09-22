@@ -195,3 +195,37 @@ absolute, so a config mounted anywhere else points its keys at paths that do not
 the container and every connection fails authentication. Same path in and out means
 per-host keys resolve exactly as they do on the host, which is also why `DOCKER_HOSTS` can
 use aliases and why `DOCKER_SSH_KEY` (one key for every host) is not used here.
+
+## Surviving reboots with a mesh bind address (systemd unit)
+
+When `NETBOX_BIND` / `ARGUS_WEB_BIND` point at an overlay address (NetBird, Tailscale,
+WireGuard), Docker restores the `restart: always` containers at boot before that interface
+has its address. The bind fails with `cannot assign requested address`, and the container
+either does not start or comes up running with no published port. Docker does not retry,
+and a plain `docker compose up -d` leaves a running container with an unchanged config
+alone, so the service stays unreachable until someone recreates it. Seen 2026-09-20 on a
+NetBird host: `argus-web` ran for 29 hours with no listener on 8095 while `/health` on
+`127.0.0.1:8094` stayed green.
+
+[`argus.service`](argus.service) repairs this after each boot. It waits up to 180 s for
+every non-wildcard bind address in `.env` to appear on an interface, runs
+`docker compose up -d`, and recreates `netbox` or `argus-web` when `docker compose port`
+shows no published port. It has no `ExecStop`: Docker's `restart: always` still owns
+shutdown and startup, and `systemctl restart argus` only re-runs the checks (a few seconds
+on a healthy stack). With the default `0.0.0.0` binds the wait is skipped and the unit is
+a no-op. Install it from this directory:
+
+```bash
+sed "s|^WorkingDirectory=.*|WorkingDirectory=$PWD|" argus.service \
+  | sudo tee /etc/systemd/system/argus.service >/dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable --now argus.service
+systemctl status argus.service        # active (exited) once the checks pass
+```
+
+One recreate after a rebuild is expected: with Compose v5.2.0 (measured 2026-09-21), a
+container created by `up -d --build` carries the build digest in its image label rather
+than the image ID, so the next plain `up -d` (by hand, or by this unit at boot) recreates
+the built services once. Runs after that change nothing. The offline test
+`server/tests/test_deploy_systemd_unit.py` keeps the unit's port checks in step with the
+ports this compose file publishes.
