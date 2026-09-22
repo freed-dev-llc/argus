@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `reconcile_apply` (MCP tool and `POST /api/reconcile?confirm_token=...`) echoed the plan's
   dry-run flag even though `applied` was true and every result said `created` or `updated`.
   The applied response now reports `dry_run: false`; the plan object itself is unchanged.
+- **Ansible role dropped host-specific `.env` keys**: `argus_deploy` rendered `deploy/.env`
+  from a fixed list, so a re-run removed every key it did not manage (`NETBOX_BIND` /
+  `ARGUS_WEB_BIND`, `NETBOX_API_TOKEN_PEPPER_1`, `NETBOX_OIDC_*`, and the NetBird, firewall,
+  and Docker collector settings), which the local compose override then refused to start
+  without. The role now carries unmanaged keys over verbatim, generates the token pepper once
+  and reuses it like the other secrets, and gains `argus_netbox_bind`, `argus_web_bind`, the
+  `argus_netbox_oidc_*` variables, and `argus_manage_stack` (render `.env` without touching
+  the stack). `ansible/playbooks/argus-env-render-check.yml` exercises those guarantees on
+  localhost; an offline pytest keeps the managed key list in step with `deploy/.env.example`.
 
 ## [0.2.6] - 2026-08-31
 

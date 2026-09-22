@@ -9,5 +9,6 @@
     # only fires on a repo/.env change, so an unconditional rebuild here is correct.
     build: always
     recreate: always
+  when: argus_manage_stack | bool
   environment:
     PATH: "{{ argus_docker_path }}"
