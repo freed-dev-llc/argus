@@ -19,18 +19,22 @@ export NETBOX_API=http://10.0.0.10:8096   # your NetBox
 export NETBOX_TOKEN=<a NetBox API token>
 ```
 
+The NetBox inventory is opt-in: pass `-i netbox_inventory.yml` to the commands below. The
+default inventory is the static deploy inventory (`inventory/hosts.yml`), so deploy runs need
+neither variable.
+
 ## Use it
 
 ```bash
 # See the inventory NetBox produces, grouped by site / role / manufacturer / ...
-ansible-inventory --graph
-ansible-inventory --host <device-name>      # host vars for one device
+ansible-inventory -i netbox_inventory.yml --graph
+ansible-inventory -i netbox_inventory.yml --host <device-name>   # host vars for one device
 
 # Demo playbook (prints only, no device connection needed):
-ansible-playbook playbooks/facts.yml
+ansible-playbook -i netbox_inventory.yml playbooks/facts.yml
 
 # Target a group built from NetBox:
-ansible-playbook playbooks/facts.yml --limit device_roles_switch
+ansible-playbook -i netbox_inventory.yml playbooks/facts.yml --limit device_roles_switch
 ```
 
 `group_by` (in `netbox_inventory.yml`) creates groups like `sites_<slug>`,
@@ -58,7 +62,7 @@ built from the keys registered on the GitHub account — so agents and humans on
 produce commits that satisfy GitHub's required-signed-commits branch protection.
 
 ```bash
-ansible-playbook playbooks/git-signing.yml --limit mesh -e 'git_signing_users=["aria","hermes"]'
+ansible-playbook -i netbox_inventory.yml playbooks/git-signing.yml --limit mesh -e 'git_signing_users=["aria","hermes"]'
 ```
 
 Registering each new public key on the GitHub account (as an SSH **signing** key) is the

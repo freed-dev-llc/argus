@@ -2,7 +2,7 @@
 # Demo playbook: prints each NetBox-sourced device with its role/site/IP. Printing only —
 # `connection: local` means it does NOT connect to the devices, so it's safe to run without
 # device credentials. Target a subset by group, e.g.:
-#   ansible-playbook playbooks/facts.yml --limit device_roles_switch
+#   ansible-playbook -i netbox_inventory.yml playbooks/facts.yml --limit device_roles_switch
 - name: Show NetBox-sourced inventory
   hosts: all
   gather_facts: false

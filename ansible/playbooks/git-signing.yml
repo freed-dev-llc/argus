@@ -3,7 +3,7 @@
 # ed25519 signing key, auto-signing of commits/tags, and the fleet allowed_signers file.
 # NetBox inventory supplies the hosts; narrow with --limit and list extra agent users
 # with -e, e.g.:
-#   ansible-playbook playbooks/git-signing.yml --limit sites_mesh -e 'git_signing_users=["aria","hermes"]'
+#   ansible-playbook -i netbox_inventory.yml playbooks/git-signing.yml --limit sites_mesh -e 'git_signing_users=["aria","hermes"]'
 #
 # Registering each new public key on the GitHub account is the one manual step — the
 # role prints the exact `gh api` command for any key it doesn't find registered (or set
