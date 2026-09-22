@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`deploy/argus.service`**: a systemd unit for hosts that bind the dashboard or NetBox to
+  an overlay address (`NETBOX_BIND` / `ARGUS_WEB_BIND`). Docker restores the stack at boot
+  before the mesh interface has its address, so the bind fails and the container stays up
+  with no published port; on 2026-09-20 `argus-web` was unreachable for 29 hours while
+  `/health` on localhost stayed green. The unit waits for each bind address, runs
+  `docker compose up -d`, and recreates any mesh-bound service whose port is missing. It
+  has no `ExecStop`, so `systemctl restart argus` re-runs the checks without bouncing
+  healthy containers. Install steps in `deploy/README.md`; an offline test keeps its port
+  checks aligned with the compose file.
+
 ### Changed
 
 - **Deploy stack restarts unconditionally**: every long-running service in
