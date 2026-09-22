@@ -30,6 +30,25 @@ argus_schedule_collector: ""      # collector the scheduled drift cycle observes
 argus_alert_webhook_url: ""       # Slack-compatible webhook; alerts on drift when set
 argus_mnemosyne_url: ""           # mnemosyne-http base URL for "Ask the Brain"; blank = disabled
 
+# Bind addresses for the NetBox UI (:8096) and the dashboard (:8095). Blank reuses the
+# target's existing deploy/.env; the compose default is 0.0.0.0 (every interface). Set a
+# host's mesh address (NetBird/Tailscale/WireGuard) to keep both off the LAN, and install
+# deploy/argus.service on that host so the bindings survive reboots.
+argus_netbox_bind: ""
+argus_web_bind: ""
+
+# NetBox OpenID Connect remote auth (Authentik or any OIDC issuer). Blank reuses the
+# target's existing deploy/.env; with any of the three required keys unset, NetBox stays on
+# local authentication. Keep the secret in Ansible Vault.
+argus_netbox_oidc_client_id: ""
+argus_netbox_oidc_client_secret: ""
+argus_netbox_oidc_endpoint: ""
+argus_netbox_oidc_default_groups: ""
+
+# Set false to render deploy/.env and stop: no compose up and no recreate handler.
+# playbooks/argus-env-render-check.yml uses this to exercise the template on localhost.
+argus_manage_stack: true
+
 # PATH for the docker CLI on the target (OrbStack/Docker Desktop on macOS aren't on the
 # default non-login PATH). Adjust for Linux hosts if needed.
 argus_docker_path: "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"

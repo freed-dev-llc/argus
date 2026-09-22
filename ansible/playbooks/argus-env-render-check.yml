@@ -1,0 +1,76 @@
+---
+# Render deploy/.env through the argus_deploy role into a scratch directory and assert the
+# role's guarantees:
+#   * a secret present in the existing .env is reused, not rotated;
+#   * keys the role does not manage are carried over verbatim;
+#   * a render generates every secret it owns, including NETBOX_API_TOKEN_PEPPER_1.
+# Runs on localhost and never touches Docker or a real checkout (argus_manage_stack: false).
+#
+#   cd ansible && ansible-playbook -i localhost, playbooks/argus-env-render-check.yml
+- name: Render-check the argus_deploy .env template
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    argus_render_check_dir: "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}/argus-env-render-check"
+  tasks:
+    - name: Start from an empty scratch checkout
+      ansible.builtin.file:
+        path: "{{ argus_render_check_dir }}"
+        state: absent
+
+    - name: Create the scratch deploy directory
+      ansible.builtin.file:
+        path: "{{ argus_render_check_dir }}/deploy"
+        state: directory
+        mode: "0700"
+
+    - name: Seed an existing .env with one secret and four keys the role does not manage
+      ansible.builtin.copy:
+        dest: "{{ argus_render_check_dir }}/deploy/.env"
+        mode: "0600"
+        content: |
+          NETBOX_API_TOKEN=keep-this-token
+          NETBOX_BIND=100.64.0.1
+          NETBIRD_URL=https://netbird.example
+          FIREWALL_HOST_2=10.0.0.2
+          ARGUS_SSH_DIR=/home/deploy/.ssh
+
+    - name: Render through the role (no git, no compose)
+      ansible.builtin.include_role:
+        name: argus_deploy
+      vars:
+        argus_dest: "{{ argus_render_check_dir }}"
+        argus_manage_repo: false
+        argus_manage_stack: false
+
+    - name: Read the rendered .env
+      ansible.builtin.slurp:
+        src: "{{ argus_render_check_dir }}/deploy/.env"
+      register: argus_render_check_raw
+
+    - name: Parse the rendered .env
+      ansible.builtin.set_fact:
+        argus_render_check_env: >-
+          {{ dict((argus_render_check_raw.content | b64decode)
+                  | regex_findall('(?m)^([A-Z0-9_]+)=(.*)$')) }}
+
+    - name: Assert the role's guarantees
+      ansible.builtin.assert:
+        that:
+          - argus_render_check_env.NETBOX_API_TOKEN == 'keep-this-token'
+          - argus_render_check_env.NETBOX_BIND == '100.64.0.1'
+          - argus_render_check_env.NETBIRD_URL == 'https://netbird.example'
+          - argus_render_check_env.FIREWALL_HOST_2 == '10.0.0.2'
+          - argus_render_check_env.ARGUS_SSH_DIR == '/home/deploy/.ssh'
+          - argus_render_check_env.NETBOX_SECRET_KEY | length >= 40
+          - argus_render_check_env.POSTGRES_PASSWORD | length >= 40
+          - argus_render_check_env.NETBOX_SUPERUSER_PASSWORD | length >= 40
+          - argus_render_check_env.NETBOX_API_TOKEN_PEPPER_1 | length >= 40
+        fail_msg: "argus_deploy rendered .env without honouring reuse or passthrough"
+        success_msg: "secrets reused, unmanaged keys carried over, generated secrets present"
+
+    - name: Remove the scratch checkout
+      ansible.builtin.file:
+        path: "{{ argus_render_check_dir }}"
+        state: absent
