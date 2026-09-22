@@ -91,7 +91,7 @@ Container images are published to GHCR — see the top-level README's
 
 ```bash
 ruff check src tests
-mypy src
+mypy src           # must pass CI, same as ruff
 pytest -v          # offline — NetBox is mocked
 ```
 
