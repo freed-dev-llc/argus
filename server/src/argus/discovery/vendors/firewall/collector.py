@@ -222,17 +222,9 @@ class FirewallCollector(Collector):
             async with asyncssh.connect(
                 host, username=username, password=password, known_hosts=None
             ) as conn:
-                # For pfSense/OPNsense: try selecting shell option if menu appears
-                try:
-                    async with await conn.open_session(term_type='xterm') as process:
-                        # Send "8" to select shell option (pfSense menu)
-                        process.stdin.write(b"8\n")
-                        await process.stdin.drain()
-                        # Give the shell a moment to initialize
-                        import asyncio
-                        await asyncio.sleep(0.2)
-                except Exception:
-                    pass  # Might not be interactive, fall through to direct commands
+                # Each conn.run() below opens its own exec channel, so the pfSense console
+                # menu is handled per command (the `input="8\n"` on "show version"), not
+                # by a separate interactive session up front.
 
                 # Query version info - try multiple approaches
                 version_output = None
