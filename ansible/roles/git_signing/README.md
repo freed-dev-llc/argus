@@ -59,10 +59,10 @@ Via `playbooks/git-signing.yml` against the NetBox inventory:
 
 ```bash
 # One host, just its login user
-ansible-playbook playbooks/git-signing.yml --limit mesh
+ansible-playbook -i netbox_inventory.yml playbooks/git-signing.yml --limit mesh
 
 # A host with an agent service account
-ansible-playbook playbooks/git-signing.yml --limit mesh -e 'git_signing_users=["aria","hermes"]'
+ansible-playbook -i netbox_inventory.yml playbooks/git-signing.yml --limit mesh -e 'git_signing_users=["aria","hermes"]'
 ```
 
 ## Verify
