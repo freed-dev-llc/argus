@@ -92,6 +92,13 @@ def test_optional_values_read_back_the_existing_file_when_blank() -> None:
         assert f"argus_existing.{key}" in expr, f"{key} would be reset on every run"
 
 
+def test_env_render_hides_secrets_unless_overridden() -> None:
+    """The template task stays no_log by default, and the override is the documented variable."""
+    render = [t for t in _tasks() if "ansible.builtin.template" in t]
+    assert len(render) == 1, "expected exactly one template task in tasks/env.yml"
+    assert "argus_env_no_log" in str(render[0].get("no_log")), "no_log is not overridable"
+
+
 def test_unmanaged_keys_pass_through_to_the_template() -> None:
     facts = [t.get("ansible.builtin.set_fact") or {} for t in _tasks()]
     assert any("argus_env_passthrough" in f for f in facts), "no passthrough set_fact"

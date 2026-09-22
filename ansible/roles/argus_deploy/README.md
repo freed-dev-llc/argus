@@ -40,6 +40,7 @@ What it does:
 | `argus_netbox_bind` / `argus_web_bind` | `""` | Bind address for the NetBox UI (`:8096`) and the dashboard (`:8095`); a mesh address keeps them off the LAN (pair with `deploy/argus.service`). Blank reuses existing `.env`; compose defaults to `0.0.0.0`. |
 | `argus_netbox_oidc_client_id` / `_client_secret` / `_endpoint` / `_default_groups` | `""` | NetBox OIDC remote auth (Authentik or any issuer); with any of the three required keys unset NetBox stays on local auth. Blank reuses existing `.env`. |
 | `argus_manage_stack` | `true` | `false` renders `deploy/.env` only: no `compose up`, no recreate handler. |
+| `argus_env_no_log` | `true` | Hides the `.env` render task's output, which includes secrets. `false` lets `--check --diff` show the render diff. |
 | `argus_docker_path` | macOS OrbStack/Homebrew + system paths | PATH so the module finds `docker`. |
 
 ## Usage
@@ -52,6 +53,14 @@ ansible-playbook deploy-argus.yml                     # hosts.yml is a default i
 ```
 
 Idempotent: a second run with no config change makes no changes (secrets are reused).
+
+To preview a run, use `--check`. The `.env` render task hides its output because the file
+holds secrets, so `--diff` shows nothing for it by default; pass `-e argus_env_no_log=false`
+to see the diff, accepting that secrets then appear in the terminal:
+
+```bash
+ansible-playbook deploy-argus.yml --check --diff -e argus_env_no_log=false
+```
 
 ## Render check
 
