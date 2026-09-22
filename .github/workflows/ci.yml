@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [main]
 
-# Jobs `server` and `web` are the required status checks on main.
-# (Switch `runs-on` to [self-hosted, linux] to use a self-hosted runner fleet.)
+# Jobs `server` and `web` are the required status checks on main. Both run on the
+# self-hosted runner fleet, and every step in them (including Mypy) is a hard gate.
 jobs:
   server:
     runs-on: [self-hosted, linux]

@@ -8,7 +8,7 @@
 #   3. drift for that collector is 0 (NetBox matches the live network)
 #
 # This is NOT a CI test — it needs the running stack and real network reach to the firewalls,
-# so run it on the deploy host (cerebrum) after a change. The compose→collector env *wiring* is
+# so run it on the deploy host after a change. The compose→collector env *wiring* is
 # guarded separately by an offline unit test (server/tests/test_deploy_compose_env.py).
 #
 # Usage:

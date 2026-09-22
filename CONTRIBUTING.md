@@ -27,7 +27,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 ruff check src tests        # lint (must pass CI)
-mypy src                    # type check
+mypy src                    # type check (must pass CI)
 pytest -v                   # tests (offline — NetBox is mocked)
 ```
 

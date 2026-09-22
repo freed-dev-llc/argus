@@ -6,10 +6,16 @@ Docker host, replacing the manual rsync / secret-generation / `docker compose up
 What it does:
 
 1. (Optional) `git` the Argus repo to `argus_dest` (`argus_manage_repo: true`).
-2. Render `deploy/.env` — **secrets are generated once and reused** from the existing `.env`
+2. Render `deploy/.env`. **Secrets are generated once and reused** from the existing `.env`
    on subsequent runs, so re-running never rotates the NetBox DB password or API token. The
-   template covers every stack var, so optional values (`HTTP_TOKEN`, the `SCHEDULE_*`
-   pair, `ALERT_WEBHOOK_URL`) are preserved across runs rather than dropped.
+   optional values the template knows about (`HTTP_TOKEN`, `NETBOX_WEBHOOK_SECRET`, the
+   `SCHEDULE_*` pair, `ALERT_WEBHOOK_URL`, `MNEMOSYNE_URL`, `NETBOX_CSRF_TRUSTED_ORIGINS`)
+   are read back from the existing file when their role variable is blank, so they survive
+   re-runs. The template renders the whole file, so a variable it does not know about is
+   dropped: the bind addresses (`NETBOX_BIND`, `ARGUS_WEB_BIND`), `NETBOX_API_TOKEN_PEPPER_1`,
+   the `NETBOX_OIDC_*` keys, and the NetBird, firewall, and Docker collector settings listed
+   in `deploy/.env.example`. Add any of those to `templates/env.j2` and `argus_env` before
+   running the role against a host that relies on them.
 3. `docker compose up` (build + start) via `community.docker.docker_compose_v2`; a `.env`
    change triggers a recreate handler.
 
