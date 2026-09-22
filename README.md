@@ -22,7 +22,7 @@ drift, and trigger reconciliation by hand.
 In Greek myth, Argus Panoptes was the hundred-eyed giant who never slept and saw
 everything. That's the job: always watching, always keeping the record true.
 
-> **Status:** v0.2.6+ — the full loop works end-to-end and is validated against live networks
+> **Status:** v0.2.7+ — the full loop works end-to-end and is validated against live networks
 > (UniFi + pfSense/OPNsense) + NetBox 4.6: discover (devices, clients, uplink topology) → diff → confirm →
 > reconcile NetBox (DCIM + IPAM), surfaced via MCP tools, a React dashboard, and Ansible
 > inventory. See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
@@ -130,11 +130,11 @@ keeps mesh-bound ports alive across reboots.
 Released `v*` tags publish to GHCR and PyPI:
 
 - **Container images** — `ghcr.io/freed-dev-llc/argus-server` and
-  `ghcr.io/freed-dev-llc/argus-web` (tags `0.2.6` and `latest`):
+  `ghcr.io/freed-dev-llc/argus-web` (tags `0.2.7` and `latest`):
 
   ```bash
-  docker pull ghcr.io/freed-dev-llc/argus-server:0.2.6
-  docker pull ghcr.io/freed-dev-llc/argus-web:0.2.6
+  docker pull ghcr.io/freed-dev-llc/argus-server:0.2.7
+  docker pull ghcr.io/freed-dev-llc/argus-web:0.2.7
   ```
 
 - **Python package** — the server installs from PyPI as `argus-netbox` (the import package stays

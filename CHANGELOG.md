@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-09-21
+
 ### Added
 
 - **`deploy/argus.service`**: a systemd unit for hosts that bind the dashboard or NetBox to
@@ -41,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Dashboard kept proxying to a dead server address after a recreate**: nginx resolved
+  `argus-server` once at startup, so when the server container came back with a new IP every
+  `/api` and `/health` request returned 502 until `argus-web` itself restarted (seen
+  2026-09-17 during a token rotation). The template now uses Docker's embedded DNS resolver
+  with a 10 s TTL and a variable `proxy_pass`, so the name is re-resolved per request; URI
+  forwarding is unchanged. (#192)
 - **Apply responses reported `dry_run: true`**: the `summary` block returned by a confirmed
   `reconcile_apply` (MCP tool and `POST /api/reconcile?confirm_token=...`) echoed the plan's
   dry-run flag even though `applied` was true and every result said `created` or `updated`.
@@ -772,7 +780,8 @@ and Ansible integration.
 - Deferred frontend toolchain majors via `dependabot.yml` ignores: `@vitejs/plugin-react`
   6 (needs vite 8) and `eslint` / `@eslint/js` 10 (not yet supported by typescript-eslint).
 
-[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/freed-dev-llc/argus/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/freed-dev-llc/argus/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/freed-dev-llc/argus/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/freed-dev-llc/argus/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/freed-dev-llc/argus/compare/v0.2.3...v0.2.4
