@@ -196,24 +196,42 @@ the container and every connection fails authentication. Same path in and out me
 per-host keys resolve exactly as they do on the host, which is also why `DOCKER_HOSTS` can
 use aliases and why `DOCKER_SSH_KEY` (one key for every host) is not used here.
 
-## Surviving reboots with a mesh bind address (systemd unit)
+## Surviving reboots with a mesh bind address (sysctl + systemd unit)
 
 When `NETBOX_BIND` / `ARGUS_WEB_BIND` point at an overlay address (NetBird, Tailscale,
 WireGuard), Docker restores the `restart: always` containers at boot before that interface
-has its address. The bind fails with `cannot assign requested address`, and the container
-either does not start or comes up running with no published port. Docker does not retry,
-and a plain `docker compose up -d` leaves a running container with an unchanged config
-alone, so the service stays unreachable until someone recreates it. Seen 2026-09-20 on a
-NetBird host: `argus-web` ran for 29 hours with no listener on 8095 while `/health` on
-`127.0.0.1:8094` stayed green.
+has its address. The bind fails with `cannot assign requested address`, Docker logs
+`failed to start container` for `netbox` and `argus-web`, and it does not retry. The
+container is then worse than stopped: every later start of it, whether by `docker compose
+up -d` or by Docker's restart policy, runs without joining the compose network again, so it
+has no published port and cannot resolve its peers. Seen twice on a NetBird host:
+2026-09-20, `argus-web` ran for 29 hours with no listener on 8095 while `/health` on
+`127.0.0.1:8094` stayed green; 2026-09-22, `netbox` restarted 12 times over 11 minutes,
+each run exiting on a failed lookup of `netbox-postgres`, until `docker compose down && up
+-d` recreated it. Two pieces address this; install both.
 
-[`argus.service`](argus.service) repairs this after each boot. It waits up to 180 s for
-every non-wildcard bind address in `.env` to appear on an interface, runs
-`docker compose up -d`, and recreates `netbox` or `argus-web` when `docker compose port`
-shows no published port. It has no `ExecStop`: Docker's `restart: always` still owns
-shutdown and startup, and `systemctl restart argus` only re-runs the checks (a few seconds
-on a healthy stack). With the default `0.0.0.0` binds the wait is skipped and the unit is
-a no-op. Install it from this directory:
+**Sysctl (prevents the failed bind).** [`90-argus-nonlocal-bind.conf`](90-argus-nonlocal-bind.conf)
+sets `net.ipv4.ip_nonlocal_bind = 1`, which lets a process bind an address the host does not
+hold yet. Docker's publish then succeeds at restore time and the listener starts receiving
+traffic once the overlay interface comes up. Checked 2026-09-22 on Docker 29.6.2 with an
+address the host does not have: the publish fails at 0 and succeeds at 1, with the DNAT rule
+and `docker-proxy` listener in place.
+
+```bash
+sudo install -m 0644 90-argus-nonlocal-bind.conf /etc/sysctl.d/
+sudo sysctl -p /etc/sysctl.d/90-argus-nonlocal-bind.conf
+```
+
+**Unit (repairs what still slips through).** [`argus.service`](argus.service) runs once per
+boot. It waits up to 180 s for every non-wildcard bind address in `.env` to appear on an
+interface, recreates `netbox` or `argus-web` when the container exists but `docker compose
+port` shows no published port (not running, or running without its port), and then runs
+`docker compose up -d` for anything else Docker could not start. The recreate comes first on
+purpose: `up -d` would start the broken container as-is and wait on its healthcheck, and
+that wait failing ends the unit before any later step runs. It has no `ExecStop`: Docker's
+`restart: always` still owns shutdown and startup, and `systemctl restart argus` only re-runs
+the checks (a few seconds on a healthy stack). With the default `0.0.0.0` binds the wait is
+skipped and the unit is a no-op. Install it from this directory:
 
 ```bash
 sed "s|^WorkingDirectory=.*|WorkingDirectory=$PWD|" argus.service \
