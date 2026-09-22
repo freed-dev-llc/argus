@@ -1,5 +1,7 @@
 ---
-# Copy to hosts.yml and edit. The deploy target is the Docker host that runs the stack.
+# Copy to hosts.yml and edit. hosts.yml is gitignored and is the default inventory
+# (ansible.cfg), so `ansible-playbook deploy-argus.yml` needs no -i. The deploy target is the
+# Docker host that runs the stack.
 all:
   children:
     argus_deploy:
@@ -10,10 +12,29 @@ all:
           # Reuse the repo already on the host instead of git-cloning, and point at it:
           # argus_manage_repo: false
           # argus_dest: /opt/argus
+          # When the control node is the deploy host, run locally against its own checkout:
+          # ansible_connection: local
+          # argus_dest: /home/you/Repos/argus
+          # argus_manage_repo: false
       vars:
-        # Set these via Ansible Vault in real use (group_vars/argus_deploy/vault.yml):
+        # Blank role variables reuse whatever is already in the target's deploy/.env, and keys
+        # the role does not manage are carried over, so only set what Ansible should own.
+        # Set secrets via Ansible Vault in real use (group_vars/argus_deploy/vault.yml):
         # argus_unifi_url: "https://10.0.0.1"
         # argus_unifi_api_token: "{{ vault_unifi_api_token }}"
         argus_unifi_site: default
         # Set if serving the NetBox UI on a public hostname over HTTPS (reverse proxy / tunnel):
         # argus_netbox_csrf_trusted_origins: "https://netbox.example.com"
+        # Bind the NetBox UI (:8096) and dashboard (:8095) to a mesh address instead of 0.0.0.0;
+        # install deploy/argus.service on the host so the bindings survive reboots:
+        # argus_netbox_bind: 100.64.0.10
+        # argus_web_bind: 100.64.0.10
+        # NetBox OpenID Connect remote auth (all three required keys, or NetBox stays local):
+        # argus_netbox_oidc_client_id: netbox
+        # argus_netbox_oidc_client_secret: "{{ vault_netbox_oidc_client_secret }}"
+        # argus_netbox_oidc_endpoint: https://auth.example.com/application/o/netbox/
+        # argus_netbox_oidc_default_groups: netbox-users
+        # Render deploy/.env without touching the running stack (no compose up, no recreate):
+        # argus_manage_stack: false
+        # Show the .env render diff in `--check --diff` previews (secrets appear in the terminal):
+        # argus_env_no_log: false

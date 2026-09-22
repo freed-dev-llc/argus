@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from 2026-08-24 to 2026-09-08 while a second container answered the compose network
   alias, so the public health probe stayed green and Hermes' `docker exec` into the
   named container failed on every attempt. `netbox-init` keeps `restart: "no"`.
+- **Ansible default inventory**: `ansible/inventory/hosts.yml` (gitignored; copy
+  `hosts.example.yml`) is now the default inventory, so `ansible-playbook deploy-argus.yml`
+  needs no `-i`. The NetBox dynamic inventory is opt-in with `-i netbox_inventory.yml` for the
+  commands that target NetBox devices (`ansible-inventory --graph`, `playbooks/facts.yml`,
+  `playbooks/git-signing.yml`); as a default source it printed five warnings on every deploy
+  run that lacked `NETBOX_API` and `NETBOX_TOKEN`.
 
 ### Fixed
 

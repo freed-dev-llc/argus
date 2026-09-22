@@ -54,6 +54,11 @@ ansible-playbook deploy-argus.yml                     # hosts.yml is a default i
 
 Idempotent: a second run with no config change makes no changes (secrets are reused).
 
+After a run that fired the recreate handler, the next plain `docker compose up -d` in
+`deploy/` recreates the built services once more and is then a no-op: Compose v5.2.0 labels a
+container created by a build with the build digest rather than the image ID, and the
+module's `recreate: never` does not correct that. See the note in `deploy/README.md`.
+
 To preview a run, use `--check`. The `.env` render task hides its output because the file
 holds secrets, so `--diff` shows nothing for it by default; pass `-e argus_env_no_log=false`
 to see the diff, accepting that secrets then appear in the terminal:

@@ -120,7 +120,10 @@ npm run dev       # http://localhost:5173 — proxies /api to the server on :808
 For a complete, self-contained environment (NetBox + its datastore + Argus server + web),
 see [`deploy/`](deploy/README.md): `docker compose --env-file .env up -d --build` brings up
 a bundled NetBox (auto-provisioned with the API token Argus uses) plus the Argus server and
-dashboard. Intended for validation and home/lab use.
+dashboard. Intended for validation and home/lab use. The
+[`argus_deploy` Ansible role](ansible/roles/argus_deploy/README.md) automates the same steps
+on a Docker host, and [`deploy/argus.service`](deploy/README.md#surviving-reboots-with-a-mesh-bind-address-systemd-unit)
+keeps mesh-bound ports alive across reboots.
 
 ### Published artifacts
 
@@ -150,6 +153,9 @@ Argus is the **inbound** source-of-truth layer; outbound automation consumes Net
   sourced from the NetBox Argus keeps current; target hosts by site/role with no
   hand-maintained inventory. See [ADR-0004](docs/architecture/adr/0004-netbox-ansible-inventory.md)
   for how Argus, Ansible, and (future) Terraform share NetBox without fighting over it.
+- **Ansible deploy role** ([`ansible/roles/argus_deploy/`](ansible/roles/argus_deploy/README.md)):
+  installs the self-contained stack from `deploy/` on a Docker host. Repo checkout, `.env`
+  rendering (secrets generated once and reused, unmanaged keys carried over), `docker compose up`.
 
 ## Contributing
 
