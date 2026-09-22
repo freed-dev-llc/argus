@@ -325,6 +325,26 @@ def test_apply_creates_ip_address():
     assert nb.ensured_ips == [("10.0.0.50", "phone")]
 
 
+def test_apply_summary_dry_run_reflects_whether_writes_happened():
+    nb = FakeNetBox([])
+    plan = ReconcilePlan(
+        changes=[
+            ReconcileChange(
+                "create", "ip_address", "10.0.0.50",
+                {"address": "10.0.0.50", "description": "phone"},
+            )
+        ]
+    )
+    engine = ReconcileEngine(nb)
+    assert engine.apply(plan, confirm=False)["summary"]["dry_run"] is True
+    applied = engine.apply(plan, confirm=True)
+    assert applied["applied"] is True
+    assert applied["summary"]["dry_run"] is False
+    # The stored plan stays dry-run; only the applied response says otherwise.
+    assert plan.dry_run is True
+    assert plan.summary["dry_run"] is True
+
+
 def test_apply_captures_per_change_errors():
     class Boom(FakeNetBox):
         def assign_primary_ip(self, device_name: str, ip: str, interface_name: str = "mgmt") -> None:
@@ -623,10 +643,12 @@ async def test_reconcile_apply_confirmation_flow(monkeypatch):
 
     first = await reconcile_tools.reconcile_apply()
     assert first["confirmation_required"] is True
+    assert first["summary"]["dry_run"] is True
 
     confirmed = await reconcile_tools.reconcile_apply(confirm_token=first["confirm_token"])
     assert confirmed["confirmed"] is True
     assert confirmed["applied"] is True
+    assert confirmed["summary"]["dry_run"] is False
     assert nb.primary_ips == [("sw1", "10.0.0.2")]
 
 

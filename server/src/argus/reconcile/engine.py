@@ -473,7 +473,9 @@ class ReconcileEngine:
         return {
             "applied": True,
             "applied_count": applied_count,
-            "summary": plan.summary,
+            # The plan is dry-run by construction; this branch performed the writes, so
+            # report that here without mutating the plan the confirmation store handed us.
+            "summary": {**plan.summary, "dry_run": False},
             "results": results,
         }
 
