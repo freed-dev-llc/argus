@@ -11,13 +11,18 @@ on:
     tags:
       - "v*"
 
+# This workflow stays on GitHub-hosted runners. The self-hosted fleet is arm64 Linux with no
+# docker CLI on the runner's PATH, and pypa/gh-action-pypi-publish ships an amd64-only image,
+# so the first release run on that fleet failed in the images and pypi jobs (2026-09-22). GHCR
+# images are therefore built for linux/amd64, as for every earlier release.
+
 # Least privilege by default; each job widens only what it needs.
 permissions:
   contents: read
 
 jobs:
   release:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -28,7 +33,7 @@ jobs:
           generate_release_notes: true
 
   images:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -65,7 +70,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   pypi:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
