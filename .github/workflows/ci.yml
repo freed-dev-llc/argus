@@ -6,11 +6,11 @@ on:
   pull_request:
     branches: [main]
 
-# Jobs `server` and `web` are the required status checks on main. Both run on the
-# self-hosted runner fleet, and every step in them (including Mypy) is a hard gate.
+# Jobs `server` and `web` are the required status checks on main. Both run on
+# GitHub-hosted runners, and every step in them (including Mypy) is a hard gate.
 jobs:
   server:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
@@ -36,7 +36,7 @@ jobs:
           flags: server
 
   web:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
